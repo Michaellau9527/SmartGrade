@@ -1,0 +1,63 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+build/
+.output/
+.nuxt/
+.next/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage
+coverage/
+.nyc_output/
+
+# Taro
+miniapp/.temp/
+miniapp/.rn_temp/
+miniapp/.h5_temp/
+
+# NestJS
+backend/dist/
+
+# Vite
+admin/dist/
+
+# Prisma
+backend/prisma/migrations/*_*
+
+# Uploads
+uploads/*
+!uploads/.gitkeep
+
+# Test
+*.lcov

@@ -1,0 +1,982 @@
+# Sprint 2 Planning v3 — 双体系角色 + 出入闭环 + 工作台前置
+
+> Version：3.0
+> Project：SmartGrade 智慧年级管理平台
+> Status：**现行版**（v2 → v3 在评审后修订）
+> Author：Trae（基于刘老师 2026-07-18 第三轮评审反馈）
+> Date：2026-07-18
+> 历史版本：[v1](./SPRINT2_PLANNING_v1.md) · [v2.bak](./SPRINT2_PLANNING_v2.md.bak)
+
+---
+
+## 文档目的
+
+v3 不是 v2 的推翻，而是**产品底层逻辑的最后一轮打磨**。在 Sprint 2.1 启动前一次性把 10 个底层设计点定清楚，避免后续返工。
+
+v3 核心变化（相对 v2）：
+
+1. **角色拆双体系**：「管理端 RBAC」+「用户端业务参与」
+2. **请假与离校闭环**：「批假」≠「离校」，必须门卫/值班登记
+3. **学生出入管理合并**：请假 + 离校 + 返校 + 销假 = 一个模块
+4. **通知生命周期补全**：增加按班级聚合的未读统计
+5. **任务中心优先级再提**：与通知、请假、工作台并列 P0 最高
+6. **班主任工作台前置**：从 Step 6 → **Sprint 2.2**
+7. **基础数据模型定字段**：User/Teacher/Class/Student/Parent
+8. **家长端弱化**：仅接收 + 确认
+9. **Sprint 2 路线重构**：2.1 用户体系 → 2.2 工作台 → 2.3 出入 → 2.4 通知 → 2.5 任务 → 2.6 违纪 → 2.7 宿舍
+10. **明确"成绩管理"在 Sprint 2 范围外**
+
+> 不变：Project Rule（R-001 ~ R-028）、单数据源、Timeline 唯一历史、3 次点击原则、班主任 ⭐⭐⭐⭐⭐、家长仅接收。
+
+---
+
+# 第一章 产品底层逻辑定调
+
+## 1.1 系统的本质
+
+> **Sprint 1 做的是"骨架"，Sprint 2 做的是"灵魂"。**
+
+具体来说：
+- 骨架 = 工程底座（权限、组件、Mock、状态机、Design Token）
+- 灵魂 = **班主任每天的工作流**
+
+成功的标准不是"上线了"，而是"**班主任每天早晨打开它，晚上关闭它**"。
+
+## 1.2 核心价值的"反推"
+
+如果问"为什么要做这个系统"，不是"学校数字化转型"，而是：
+
+> **帮老师减少微信群、Excel、纸质登记。**
+
+每天 7:20 打开小程序：
+- 看看今天谁请假
+- 看看哪些学生已离校
+- 看看年级有没有新通知
+- 看看有没有任务要完成
+- 看看违纪情况
+
+晚上 21:00 关闭小程序：
+- 所有当日数据已沉淀
+- 家长已收到通知
+- 年级已看到汇总
+
+这就是 Sprint 2 的全部目标。
+
+## 1.3 明确排除（Sprint 2 范围外）
+
+| ❌ 不做 | 原因 |
+|---|---|
+| 成绩管理系统 | 学校已有成熟方案，差异化价值低 |
+| 家长请假申请 | **产品红线**（家长仅接收） |
+| 家长工作台 | 价值低 |
+| 家长社区 | 风险高 |
+| 家校即时聊天 | 微信群已满足 |
+| 教务排课 | 教务系统已有 |
+| 题库/作业 | 不在「班主任每天打开」场景 |
+| 学生社交 | 风险高 |
+
+---
+
+# 第二章 角色模型：双体系拆分（v3 核心调整 1）
+
+> v2 把学生/家长与管理员混在一个 RBAC 体系，造成权限语义模糊。
+> v3 拆为两个独立体系，权限语义清晰。
+
+## 2.1 双体系
+
+```
+┌─────────────────────────────────────────────┐
+│ Management RBAC (管理端权限)                 │
+│ ────────────────────────────                 │
+│ 管理者拥有「岗位角色」+「数据范围」            │
+│ 例：HEAD_TEACHER + class_id=11              │
+│ 例：GRADE_ADMIN + grade_id=1                │
+└─────────────────────────────────────────────┘
+                       ↕ 业务关联 ↕
+┌─────────────────────────────────────────────┐
+│ User Participation (用户端参与)              │
+│ ────────────────────────────                 │
+│ 业务参与者拥有「参与能力」+「关联资源」        │
+│ 例：PARENT + child_id=[1, 2]                │
+│ 例：STUDENT + student_id=11                 │
+└─────────────────────────────────────────────┘
+```
+
+## 2.2 管理端角色（6 类）
+
+| 角色 Key | 名称 | DataScope | 关键能力 |
+|---|---|---|---|
+| `SUPER_ADMIN` | 超级管理员 | ALL | 全平台配置 |
+| `GRADE_ADMIN` | 年级主任 | GRADE | 请假审批、年级通知、年级任务 |
+| `POLITICAL_ADMIN` | 政教管理 | GRADE/ALL | 违纪终审、安全通知 |
+| `HEAD_TEACHER` | 班主任 | CLASS | **请假发起、班级通知、家长沟通** |
+| `SUBJECT_TEACHER` | 科任教师 | GRADE | 任务接收、课堂反馈 |
+| `DORM_ADMIN` | 宿管 | DORM | 查寝、住宿 |
+
+**特点**：
+- 一个 Teacher 账号可同时拥有多个角色（Project Rule R-006）
+- DataScope 决定数据可见性
+- 用 RBAC 控制"能不能做"
+
+## 2.3 用户端角色（2 类，不在 RBAC 中）
+
+| 角色 Key | 名称 | 关联资源 | 关键能力 |
+|---|---|---|---|
+| `STUDENT` | 学生 | student_id | 查看通知、查看请假、查看个人信息 |
+| `PARENT` | 家长 | child_ids[] | 接收通知、确认信息、查看离校记录 |
+
+**特点**：
+- 不是 RBAC 角色，是**业务参与身份**
+- 用「业务能力位」控制能力：`parent.notice.receive`、`parent.confirm.read`
+- 一个手机号最多绑 3 个孩子（一码通）
+
+## 2.4 家长端弱化（v3 核心调整 8）
+
+家长端**只做 4 件事**：
+
+1. ✅ **收到通知**（请假、违纪、离校、年级通知）
+2. ✅ **查看孩子状态**（基本信息、请假状态）
+3. ✅ **确认信息**（强制已读确认）
+4. ✅ **查看离校记录**（历史）
+
+家长端**绝对不做**：
+
+- ❌ 家长工作台
+- ❌ 家长社区
+- ❌ 家长聊天
+- ❌ 家长发起请假
+- ❌ 家长查看其他孩子
+
+---
+
+# 第三章 请假与离校闭环（v3 核心调整 2）
+
+> v2 把"批假"和"离校"当作同一状态。
+> v3 明确：**批假 ≠ 离校**，必须有门卫/值班确认。
+
+## 3.1 闭环流程
+
+```mermaid
+flowchart TD
+    A[班主任创建请假] -->|DRAFT| B[待审批]
+    B -->|提交| C[年级主任审批]
+    C -->|通过| D[APPROVED 已批准]
+    C -->|驳回| E[REJECTED 已驳回]
+    E -->|班主任可改后重提| A
+    D -->|学生离开| F[门卫/值班扫码/人工登记]
+    F -->|确认离校| G[LEFT 已离校]
+    G -->|学生回校| H[班主任/宿管确认]
+    H -->|确认返校| I[RETURNED 已返校]
+    I -->|班主任销假| J[CLOSED 已销假]
+    D -.->|学生未走| K[APPROVED 保留 逾期自动取消]
+    K -.->|班主任可手动取消| L[CANCELLED 已取消]
+```
+
+## 3.2 状态机
+
+```mermaid
+stateDiagram-v2
+    [*] --> DRAFT: 班主任创建
+    DRAFT --> PENDING: 提交
+    PENDING --> APPROVED: 年级通过
+    PENDING --> REJECTED: 年级驳回
+    REJECTED --> DRAFT: 改后重提
+    APPROVED --> LEFT: 门卫/值班确认离校
+    APPROVED --> CANCELLED: 班主任撤销
+    LEFT --> RETURNED: 班主任/宿管确认返校
+    RETURNED --> CLOSED: 班主任销假
+    LEFT --> OVERDUE: 超期未返
+    OVERDUE --> RETURNED: 补登记返校
+    REJECTED --> [*]
+    CANCELLED --> [*]
+    CLOSED --> [*]
+```
+
+## 3.3 6 状态语义
+
+| 状态 | Key | 含义 | 触发者 |
+|---|---|---|---|
+| 草稿 | `DRAFT` | 班主任填写中 | 班主任 |
+| 待审批 | `PENDING` | 已提交待年级审核 | 系统 |
+| 已批准 | `APPROVED` | 年级通过，待离校 | 年级主任 |
+| 已驳回 | `REJECTED` | 年级驳回，可改后重提 | 年级主任 |
+| 已离校 | `LEFT` | 门卫/值班确认离开 | 门卫/值班 |
+| 已返校 | `RETURNED` | 班主任/宿管确认回校 | 班主任/宿管 |
+| 已销假 | `CLOSED` | 班主任销假 | 班主任 |
+| 已撤销 | `CANCELLED` | 班主任主动撤销 | 班主任 |
+| 逾期未返 | `OVERDUE` | 超过预计返校时间 | 系统 |
+
+## 3.4 数据模型（v3 强化）
+
+```typescript
+interface LeaveRecord {
+  id: string;
+  student_id: string;          // 学生
+  class_id: string;            // 班级（冗余便于查询）
+  head_teacher_id: string;     // 班主任
+  type: 'SICK' | 'PERSONAL' | 'OTHER';
+  reason: string;
+  start_at: Date;
+  end_at: Date;
+  attachments: string[];       // 证明材料
+  status: 'DRAFT' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'LEFT' | 'RETURNED' | 'CLOSED' | 'CANCELLED' | 'OVERDUE';
+
+  // 闭环字段（v3 新增）
+  approved_by?: string;        // 审批人
+  approved_at?: Date;
+  left_at?: Date;              // 实际离校时间
+  left_by?: string;            // 门卫/值班人
+  left_method?: 'MANUAL' | 'SCAN';  // 离校登记方式
+  returned_at?: Date;          // 实际返校时间
+  returned_by?: string;        // 返校确认人
+  closed_at?: Date;            // 销假时间
+}
+```
+
+## 3.5 实际在校人数计算
+
+```typescript
+// 今日应到 = 班级人数
+// 今日请假中 (PENDING) 不算在校
+// 今日已离校 (LEFT) 不算在校
+// 今日已返校 (RETURNED) 算在校
+// 今日走读 = 不算应到
+// 今日外出 = 算应到但实际不在
+
+在校人数 = 应到人数 - PENDING - LEFT + (RETURNED in day)
+```
+
+---
+
+# 第四章 学生出入管理（v3 核心调整 3：合并模块）
+
+> v2: 2.2 请假 / 2.3 离校（两个模块）
+> v3: **2.3 学生出入管理**（一个模块，包含请假 + 离校 + 返校 + 销假）
+
+## 4.1 合并理由
+
+班主任每天关注的是「**今天哪些学生不在学校**」，而不是「哪些学生请假」。
+
+| 视角 | 旧（v2） | 新（v3） |
+|---|---|---|
+| 班主任视角 | 班级请假列表 + 离校列表（两个） | **班级出入列表**（一个） |
+| 后台统计 | 今日请假数 / 离校数 | **今日实际在校人数**（直接可用） |
+| 操作流 | 批假 → 离校（两次切换） | **批假 → 离校登记**（同一页） |
+
+## 4.2 模块设计
+
+```
+学生出入管理
+├── 请假申请
+│   ├── 创建请假（班主任 3 步）
+│   ├── 我的请假（班主任视角）
+│   └── 请假审批（年级主任）
+├── 离校管理
+│   ├── 离校登记（门卫/值班/班主任）
+│   ├── 今日离校列表
+│   └── 未离校预警
+├── 返校管理
+│   ├── 返校登记（班主任/宿管）
+│   └── 逾期未返预警
+├── 销假管理
+│   └── 班主任销假
+└── 班级出入看板
+    ├── 今日应到 / 实到 / 请假 / 离校 / 返校
+    └── 历史回溯
+```
+
+---
+
+# 第五章 家校通知中心（v3 强化）
+
+> v2 已确立三大类通知，v3 进一步强化生命周期 + 阅读统计。
+
+## 5.1 通知生命周期
+
+```mermaid
+stateDiagram-v2
+    [*] --> DRAFT: 草稿
+    DRAFT --> SCHEDULED: 定时发布
+    DRAFT --> SENT: 立即发布
+    SCHEDULED --> SENT: 到达时间
+    SENT --> READING: 接收人阅读中
+    READING --> ARCHIVED: 阅读结束/过期
+    SENT --> WITHDRAWN: 24h 内撤回
+    WITHDRAWN --> [*]
+    ARCHIVED --> [*]
+```
+
+## 5.2 阅读统计（按班级聚合）
+
+年级主任最关心的能力：
+
+```text
+【暑假安全通知】
+━━━━━━━━━━━━━━━━
+发送：620 人
+已读：598 人 (96.5%)
+未读：22 人 (3.5%)
+
+未读班级分布：
+  高一3班  5人未读  [一键催]
+  高一8班  7人未读  [一键催]
+  高一11班 4人未读  [一键催]
+  其他     6人未读
+
+[导出未读名单]  [发送催读通知]
+━━━━━━━━━━━━━━━━
+```
+
+## 5.3 v3 新增字段
+
+```typescript
+interface Notice {
+  // ... 原有字段
+  scheduled_at?: Date;         // 定时发布时间
+  read_window_hours?: number;  // 阅读窗口（默认 48h）
+  is_force_read: boolean;      // 是否强制已读
+  expire_at?: Date;            // 过期时间
+  withdrawn_at?: Date;         // 撤回时间
+  withdrawn_by?: string;
+}
+
+interface NoticeReadStat {
+  notice_id: string;
+  total_count: number;         // 应读总数
+  read_count: number;          // 已读数
+  ack_count: number;           // 强制已读确认数
+  by_class: Array<{            // 按班级聚合
+    class_id: string;
+    class_name: string;
+    total: number;
+    read: number;
+    unread: number;
+  }>;
+  by_role: Array<{             // 按角色聚合
+    role: string;
+    total: number;
+    read: number;
+    unread: number;
+  }>;
+}
+```
+
+---
+
+# 第六章 年级任务中心（v3 提升为 P0 最高）
+
+> v2 已确立任务中心，v3 进一步提升优先级，并强化完整生命周期。
+
+## 6.1 任务中心核心价值
+
+> 学校大量工作不是"通知"，而是"**请各班完成**"。
+>
+> 例如：收集贫困学生材料、统计疫苗情况、上传安全教育截图、收集学生信息、检查班级卫生、完成主题班会。
+
+任务中心是真正**替代微信群**的地方。
+
+## 6.2 完整任务看板
+
+```text
+【任务】请各班完成学生暑假安全教育统计
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+发布人：王主任
+发布时间：7/20 09:00
+截止时间：7/25 18:00
+接收人：高一全体班主任 (12人)
+附件：安全教育反馈表.xlsx
+是否需要回执：✅
+
+完成进度：
+应完成 12 / 已完成 9 / 未完成 3
+完成率 75%
+
+详细：
+  11班 ✅ 王老师  7/24 15:30  提交：完成情况报告.pdf
+  12班 ⏳ 李老师  进行中  最后操作：7/24 21:00
+  13班 ✅ 张老师  7/25 09:12
+  14班 ❌ 赵老师  未开始  [催办]  [查看]
+  15班 ⚠️ 陈老师  已逾期  T+2h
+  ...
+
+[一键催办未完成]  [导出完成情况]  [关闭任务]
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+## 6.3 任务状态机
+
+```mermaid
+stateDiagram-v2
+    [*] --> DRAFT: 草稿
+    DRAFT --> PUBLISHED: 发布
+    PUBLISHED --> PROCESSING: 接收人开始
+    PROCESSING --> SUBMITTED: 接收人提交
+    SUBMITTED --> REVIEWED: 发起人审核
+    REVIEWED --> COMPLETED: 全部完成
+    PUBLISHED --> OVERDUE: 超截止时间
+    OVERDUE --> SUBMITTED: 补交
+    PUBLISHED --> CANCELLED: 发起人撤销
+    CANCELLED --> [*]
+    COMPLETED --> ARCHIVED: 归档
+    ARCHIVED --> [*]
+```
+
+## 6.4 自动提醒策略
+
+| 触发时机 | 提醒对象 | 通知方式 |
+|---|---|---|
+| T-3 天上午 | 未完成人员 | 站内 |
+| T-1 天下午 | 未完成人员 | 站内 + 短信 |
+| 超时 1 小时 | 未完成人员 + 发起人 | 站内 + 短信 |
+| 完成后 | 发起人 | 站内 |
+
+## 6.5 数据模型
+
+```typescript
+interface Task {
+  id: string;
+  title: string;
+  description: string;
+  creator_id: string;
+  scope_type: 'GRADE' | 'CLASS' | 'ROLE' | 'TAG' | 'CUSTOM';
+  scope_ids: string[];
+  deadline: Date;
+  attachments: string[];
+  require_acknowledgment: boolean;  // 是否需要回执
+  allow_late_submission: boolean;   // 是否允许补交
+  parent_task_id?: string;          // 子任务
+  status: 'DRAFT' | 'PUBLISHED' | 'PROCESSING' | 'SUBMITTED' | 'REVIEWED' | 'COMPLETED' | 'OVERDUE' | 'CANCELLED' | 'ARCHIVED';
+}
+
+interface TaskAssignee {
+  task_id: string;
+  assignee_id: string;
+  status: 'PENDING' | 'PROCESSING' | 'SUBMITTED' | 'OVERDUE';
+  started_at?: Date;
+  submitted_at?: Date;
+  submission_data?: object;
+  reminder_count: number;
+  last_remind_at?: Date;
+}
+```
+
+---
+
+# 第七章 班主任工作台（v3 核心调整 6：前置）
+
+> v2 把工作台放在 Step 8。
+> v3 把工作台**前置到 Sprint 2.2**，作为所有模块的入口与数据汇聚点。
+
+## 7.1 为什么必须前置
+
+> 「**Sprint 2.1 就设计数据接口。否则后面所有模块都没有入口。**」——刘老师
+
+工作台不是"最后一步"功能，而是**所有模块的入口 + 数据汇聚**。如果后做，前面所有模块都"没有家"。
+
+## 7.2 班主任工作台 UI 草图
+
+```text
+[今日工作台]   2026-07-18 周五   早上 7:20
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+早安，李老师
+今日高一年级 11 班  ·  48 人
+
+┌─ 今日概览 ──────────────────────┐
+│ 👥 班级人数   48 人              │
+│ 🏫 在校人数   46 人（应到-请假-离校）│
+│ 🚪 今日离校   2 人               │
+│ 📝 待处理请假 2 条                │
+│ ⚠️ 今日违纪   0 人               │
+│ 📢 年级通知   3 条（2条未读）     │
+│ 📋 年级任务   1 条（进行中）      │
+└──────────────────────────────────┘
+
+┌─ 待办列表 ──────────────────────┐
+│ 🔴 张三  请假待提交  [去处理]    │
+│ 🟡 李四  离校登记    [去登记]    │
+│ 🟡 王五  返校登记    [去登记]    │
+│ 📢 年级：暑假安全  [去阅读]      │
+│ 📋 年级：统计疫苗  [去完成]      │
+└──────────────────────────────────┘
+
+┌─ 快捷入口 ──────────────────────┐
+│ [+ 请假登记]  [+ 离校登记]      │
+│ [+ 发布通知]  [+ 违纪记录]      │
+│ [+ 查寝登记]  [📋 班级学生]     │
+└──────────────────────────────────┘
+```
+
+## 7.3 数据接口（Sprint 2.1 必须预留）
+
+```typescript
+interface WorkbenchOverview {
+  date: string;            // YYYY-MM-DD
+  class_id: string;
+  class_size: number;      // 班级人数
+  in_school: number;       // 在校人数
+  left_today: number;      // 今日离校
+  pending_leave: number;   // 待处理请假
+  incidents_today: number; // 今日违纪
+  notices_unread: number;  // 未读通知
+  tasks_active: number;    // 进行中任务
+}
+
+interface WorkbenchTodo {
+  type: 'LEAVE_PENDING' | 'LEAVE_RETURN' | 'NOTICE_UNREAD' | 'TASK_ACTIVE' | 'INCIDENT_FOLLOW';
+  priority: 'URGENT' | 'HIGH' | 'NORMAL';
+  title: string;
+  target_id: string;
+  created_at: Date;
+}
+```
+
+> **重要**：Sprint 2.1 必须定义这两个接口，2.2 即可用 Mock 数据联调。
+
+---
+
+# 第八章 基础数据模型（v3 核心调整 7）
+
+> v1/v2 只列了字段名，v3 给出**完整字段定义**，作为 Sprint 2.1 编码依据。
+
+## 8.1 User（用户基表，所有角色统一）
+
+```typescript
+interface User {
+  id: string;
+  name: string;
+  phone: string;            // 唯一，手机号登录
+  avatar?: string;
+  email?: string;
+  wechat_openid?: string;   // 微信绑定
+  wechat_unionid?: string;
+  status: 'ACTIVE' | 'DISABLED' | 'PENDING';
+  created_at: Date;
+  updated_at: Date;
+  last_login_at?: Date;
+}
+```
+
+## 8.2 Teacher（教师 - 复用 User）
+
+```typescript
+interface Teacher {
+  teacher_id: string;      // 主键，与 User.id 同
+  user_id: string;          // 关联 User
+  teacher_no: string;       // 工号
+  name: string;
+  gender: 'MALE' | 'FEMALE';
+  phone: string;
+  department: string;       // 部门（年级组/教研组）
+  subject?: string;         // 任教学科（科任教师必填）
+  title?: string;           // 职称
+  // 多角色（Project Rule R-006）
+  roles: Array<'GRADE_ADMIN' | 'POLITICAL_ADMIN' | 'HEAD_TEACHER' | 'SUBJECT_TEACHER' | 'DORM_ADMIN'>;
+  // 角色关联的资源
+  role_assignments: Array<{
+    role: string;
+    scope_type: 'GRADE' | 'CLASS' | 'DORM';
+    scope_id: string;
+  }>;
+  tags: string[];           // 教师标签（党员、骨干等）
+  status: 'ACTIVE' | 'LEAVE' | 'RESIGNED';
+}
+```
+
+## 8.3 Class（班级）
+
+```typescript
+interface Class {
+  class_id: string;
+  class_name: string;       // 高一(1)班
+  grade_id: string;         // 所属年级
+  grade_name: string;
+  head_teacher_id: string;  // 班主任
+  head_teacher_name: string;
+  student_count: number;
+  monitor_id?: string;      // 班长
+  entry_year: number;       // 入学年份
+  status: 'ACTIVE' | 'GRADUATED';
+}
+```
+
+## 8.4 Student（学生）
+
+```typescript
+interface Student {
+  student_id: string;
+  user_id: string;          // 关联 User
+  student_no: string;       // 学号
+  name: string;
+  gender: 'MALE' | 'FEMALE';
+  class_id: string;
+  class_name: string;
+  parent_ids: string[];     // 关联家长（多对一）
+  parent_phones: string[];
+  boarding_type: 'BOARDING' | 'DAY';   // 住宿/走读
+  dorm_room_id?: string;    // 床位
+  bed_id?: string;
+  avatar?: string;
+  id_card?: string;         // 身份证（敏感）
+  birth_date?: Date;
+  enrollment_year: number;
+  current_status: 'IN_SCHOOL' | 'PENDING_LEAVE' | 'LEFT_SCHOOL' | 'SUSPENDED' | 'GRADUATED';
+  status: 'ACTIVE' | 'TRANSFERRED' | 'GRADUATED';
+}
+```
+
+## 8.5 Parent（家长 - 复用 User）
+
+```typescript
+interface Parent {
+  parent_id: string;        // 主键，与 User.id 同
+  user_id: string;
+  name: string;
+  phone: string;            // 登录账号
+  student_ids: string[];    // 关联孩子（多对一）
+  relationship: 'FATHER' | 'MOTHER' | 'GRANDPARENT' | 'GUARDIAN';
+  // 接收偏好
+  notify_preference: {
+    channels: Array<'WECHAT' | 'SMS' | 'IN_APP'>;
+    categories: {
+      leave: boolean;       // 请假通知
+      incident: boolean;    // 违纪通知
+      notice: boolean;      // 年级/班级通知
+      safety: boolean;      // 安全通知
+    };
+    quiet_hours?: { start: string; end: string };  // 免打扰
+  };
+  is_primary: boolean;      // 是否主联系人
+}
+```
+
+## 8.6 实体关系
+
+```mermaid
+erDiagram
+    User ||--o| Teacher : 1:0..1
+    User ||--o| Parent : 1:0..1
+    User ||--o| Student : 1:0..1
+
+    Grade ||--o{ Class : 包含
+    Class ||--o{ Student : 拥有
+    Class }o--|| Teacher : head_teacher
+    Class ||--o{ LeaveRecord : 产生
+    Class ||--o{ IncidentReport : 产生
+    Class ||--o{ Notice : 接收范围
+
+    Student ||--o{ LeaveRecord : 申请
+    Student ||--o{ IncidentReport : 涉及
+    Student ||--o{ TimelineEvent : 拥有
+    Student }o--o{ Parent : 关联
+    Student }o--o| Bed : 分配
+
+    DormBuilding ||--o{ DormRoom : 包含
+    DormRoom ||--o{ Bed : 包含
+
+    Teacher ||--o{ TaskAssignee : 接收
+    Teacher ||--o{ Notice : 发布
+
+    Task ||--o{ TaskAssignee : 分派
+    Notice ||--o{ NoticeReceipt : 触达
+```
+
+---
+
+# 第九章 权限模型（v3 扩展）
+
+> v1: 31 权限点 / v2: 46 权限点 / v3: **52 权限点**（+6 家长能力位 + 工作台）
+
+## 9.1 管理端权限位（v2 46 + 6 = 52）
+
+| 新增权限位 | 用途 |
+|---|---|
+| `WORKBENCH_VIEW` | 班主任工作台查看 |
+| `WORKBENCH_QUICK_LEAVE` | 工作台快速请假 |
+| `WORKBENCH_QUICK_NOTICE` | 工作台快速发通知 |
+| `LEAVE_GATE_RECORD` | 门卫/值班离校登记 |
+| `LEAVE_OVERDUE_HANDLE` | 逾期未返处理 |
+| `TASK_REVIEW` | 任务审核（年级主任） |
+
+## 9.2 用户端业务能力位（新增）
+
+**不属于 RBAC**，是业务能力标识：
+
+```typescript
+PARENT_ABILITIES = {
+  'parent.notice.receive': '接收通知',
+  'parent.notice.acknowledge': '强制已读确认',
+  'parent.leave.view': '查看请假',
+  'parent.leave.return.view': '查看返校',
+  'parent.incident.view': '查看违纪',
+  'parent.preference.set': '设置接收偏好',
+};
+
+STUDENT_ABILITIES = {
+  'student.notice.receive': '接收通知',
+  'student.leave.view': '查看请假',
+  'student.profile.view': '查看个人信息',
+};
+```
+
+---
+
+# 第十章 Sprint 2 路线（v3 核心调整 9）
+
+> v3 路线：**2.1 用户体系 → 2.2 工作台 → 2.3 出入 → 2.4 通知 → 2.5 任务 → 2.6 违纪 → 2.7 宿舍**
+
+## 10.1 Gantt（7 步 / 8 周）
+
+```mermaid
+gantt
+    title Sprint 2 Roadmap v3 (8 周)
+    dateFormat YYYY-MM-DD
+    section Sprint 2.1 用户体系 + 基础数据
+    用户体系 + 登录（账号/微信）:s1, 2026-07-20, 7d
+    班级/教师/学生/家长导入 :s2, after s1, 5d
+    section Sprint 2.2 班主任工作台
+    工作台 UI + 数据接口（Mock）:s3, after s2, 5d
+    section Sprint 2.3 学生出入管理
+    请假 + 离校 + 返校 + 销假 闭环 :s4, after s3, 8d
+    section Sprint 2.4 家校通知中心
+    通知中心 MVP :s5, after s4, 6d
+    阅读统计 + 模板 + 附件 :s6, after s5, 4d
+    section Sprint 2.5 年级任务中心
+    任务中心 MVP :s7, after s6, 5d
+    催办 + 自动提醒 + 报表 :s8, after s7, 3d
+    section Sprint 2.6 违纪管理
+    班主任记录 + 年级审核 + 政教终审 :s9, after s8, 5d
+    section Sprint 2.7 宿舍管理
+    查寝 + 住宿信息 :s10, after s9, 5d
+```
+
+## 10.2 步骤详细
+
+| Step | 模块 | 端 | 关键交付 | 周期 |
+|---|---|---|---|---|
+| **2.1** | 用户体系 + 基础数据 | 全端 | 8 类账号、登录、家长绑定、Teacher/Class/Student/Parent 导入 | 12 天 |
+| **2.2** | **班主任工作台** ⭐⭐⭐⭐⭐ | 小程序 | 工作台 UI + 数据接口（Mock）、7 卡片数据流 | 5 天 |
+| **2.3** | **学生出入管理** ⭐⭐⭐⭐⭐ | 小程序 | 请假+离校+返校+销假闭环、班级出入看板 | 8 天 |
+| **2.4** | **家校通知中心** ⭐⭐⭐⭐⭐ | 小程序 + 后台 | 通知中心 MVP、阅读统计、模板、附件 | 10 天 |
+| **2.5** | **年级任务中心** ⭐⭐⭐⭐⭐ | 小程序 + 后台 | 任务中心 MVP、催办、自动提醒、报表 | 8 天 |
+| **2.6** | 违纪管理 | 小程序 + 后台 | 班主任记录、年级审核、政教终审、通报 | 5 天 |
+| **2.7** | 宿舍管理 | 小程序 | 上午/晚间查寝、住宿信息、缺寝登记 | 5 天 |
+
+**总周期：约 8 周（53 个工作日）**
+
+## 10.3 优先级
+
+| P | Step | 备注 |
+|---|---|---|
+| **P0** | 2.1 用户体系 | 全部业务前置 |
+| **P0** | 2.2 班主任工作台 | 所有模块入口 |
+| **P0** | 2.3 出入管理 | 班主任核心场景 |
+| **P0** | 2.4 通知中心 | 触达家长唯一通道 |
+| **P0** | 2.5 任务中心 | 替代微信群 |
+| **P1** | 2.6 违纪管理 | 政教日常 |
+| **P1** | 2.7 宿舍管理 | 宿管日常 |
+
+## 10.4 v1/v2/v3 Step 对比
+
+| 范围 | v1 | v2 | v3 |
+|---|---|---|---|
+| 用户体系 | Step 1 | 2.1 | **2.1** |
+| 班主任工作台 | Step 8 | Step 8 | **2.2 ⬆️ 前置** |
+| 请假 | Step 3 | 2.2 | **2.3 合并** |
+| 离校管理 | Step 4 | 2.3 | **2.3 合并** |
+| 通知系统 | Step 5 | 2.4 | **2.4** |
+| 任务中心 | — | 2.5 | **2.5** |
+| 违纪 | Step 6 | 2.6 | 2.6 |
+| 宿舍 | Step 7 | 2.7 | 2.7 |
+| 总 Step 数 | 8 | 7 | 7 |
+| 周期 | 8 周 | 8 周 | 8 周 |
+
+---
+
+# 第十一章 小程序端页面规划（v3 强化）
+
+## 11.1 班主任（最高频 ⭐⭐⭐⭐⭐）
+
+| # | 页面 | 入口 | 关键功能 |
+|---|---|---|---|
+| **B-01** | **今日工作台** | 启动页 | 概览、待办、快捷入口 |
+| B-02 | 班级出入看板 | 工作台 | 应到/实到/请假/离校/返校 |
+| B-03 | 请假登记 | 工作台 | 3 步发起 |
+| B-04 | 班级请假列表 | 工作台 | 今日/本周/本月，状态机筛选 |
+| B-05 | 请假详情 | 列表 | 完整状态机、审批历史、Timeline |
+| B-06 | 离校登记 | 列表/工作台 | 已批请假一键登记（门卫/班主任） |
+| B-07 | 返校登记 | 列表/工作台 | 返校确认 |
+| B-08 | 销假 | 详情 | 班主任销假 |
+| B-09 | 班级通知（家校沟通） | 工作台 | 向本班家长发布 |
+| B-10 | 年级通知收件箱 | 工作台 | 接收年级通知、强制已读 |
+| B-11 | 年级任务收件箱 | 工作台 | 任务列表、完成上报 |
+| B-12 | 违纪记录 | 工作台/班级 | 快速登记 |
+| B-13 | 班级学生 | 工作台 | 学生名单 |
+| B-14 | 学生详情 | 学生列表 | 信息 + 完整 Timeline |
+| B-15 | 通知模板 | 工作台 | 预置模板 + 自定义 |
+
+## 11.2 年级主任、政教、科任、宿管、学生、家长
+
+> 沿用 v2 规划，本节不变。详见附录 A。
+
+---
+
+# 第十二章 后台端页面规划（v3 强化）
+
+> 后台只做：配置、跨年级数据、发布、统计。
+
+| 模块 | 页面 | v3 新增 |
+|---|---|---|
+| 数据驾驶舱 | 跨年级 KPI | + 通知触达率 + 任务完成率 + 出入统计 |
+| **班主任工作台** | 后台仅可查看 | **新增只读视图**（领导视角） |
+| 组织管理 | 学校/年级/班级/教研组 | — |
+| 教师管理 | 教师列表/角色分配/标签 | — |
+| 学生管理 | 学生列表/批量导入 | — |
+| 班级管理 | 班级列表/班主任设置 | — |
+| **出入管理** | 全校出入查询、跨年级报表 | **新增** |
+| 家校通知管理 | 通知列表/模板/触达报表/阅读统计 | **强化按班级聚合** |
+| 年级任务管理 | 任务列表/完成率/催办 | — |
+| 违纪管理 | 违纪查询/政教终审 | — |
+| 宿舍管理 | 楼栋/寝室/床位 | — |
+| 政教管理 | 安全通知/跨班级预警 | — |
+| 权限管理 | 角色/标签/权限点 | + 6 个 |
+| 系统设置 | 字典/流程/模板/推送 | + 工作台数据源配置 |
+
+---
+
+# 第十三章 验收标准
+
+| 项 | 标准 |
+|---|---|
+| **班主任每天打开工作台 ≤ 2 次 ≤ 5 秒** | 性能 + 入口 |
+| **请假 → 离校 → 返校 闭环可用** | 真实场景跑通 |
+| **家长端通知 ≤ 30 秒触达** | 推送有效 |
+| **任务完成率 ≥ 90%** | 替代微信群 |
+| **工作台数据源全部就位** | 7 个卡片全部有数据 |
+| **真实场景跑通请假闭环** | 1 个完整流程：批假→门卫登记→返校→销假 |
+| **后端接口文档 100% 输出** | 为小程序联调准备 |
+| **文档同步更新** | DESIGN_TOKEN、PROJECT_RULE 增量 |
+
+---
+
+# 第十四章 风险与决策点
+
+| 风险 | 决策点 | 建议 |
+|---|---|---|
+| 微信小程序 vs H5 | 推送/扫码/性能 | **原生小程序** |
+| 家长账号 | 一码通 vs 多孩子切换 | **一码通**（一手机号最多绑 3 个孩子） |
+| 离校登记方式 | 扫码 vs 人工 | **先人工，扫码留接口** |
+| 推送通道 | 微信订阅消息 + 短信 | 微信优先 |
+| 任务提醒频率 | T-3 / T-1 / 超时 1h | **3 次提醒** |
+| 强制已读范围 | 哪些需要 | **安全类 + 放假通知** |
+| 家长评论 | 是否允许 | **仅班级通知** |
+| 政教 vs 年级主任 | 权责边界 | **年级主任管请假、政教管违纪与安全** |
+| **班主任工作台数据更新策略** | 实时 vs 轮询 | **实时（React Query invalidate）** |
+| **离校闭环必填项** | 门卫/值班确认 | **强校验**，无门卫确认不能算"已离校" |
+
+---
+
+# 第十五章 Sprint 2.1 Planning Review 检查表
+
+> v3 启动前的一次**自检**，全部通过才能进入编码。
+
+## 15.1 产品层
+
+- [ ] 角色模型已拆为「管理端 RBAC + 用户端业务能力位」
+- [ ] STUDENT/PARENT 不在 RBAC 中
+- [ ] 家长端仅 4 个能力：接收 / 查看 / 确认 / 离校记录
+- [ ] 班主任工作台 UI 草图已确认
+- [ ] 工作台 7 个数据卡片接口已定义
+- [ ] 通知生命周期 5 状态确认（DRAFT/SCHEDULED/SENT/READING/ARCHIVED + WITHDRAWN）
+- [ ] 任务状态机 9 状态确认
+- [ ] 出入闭环 9 状态确认
+
+## 15.2 数据层
+
+- [ ] User / Teacher / Class / Student / Parent 字段已定义
+- [ ] 一码通家长（多孩子）已建模
+- [ ] DataScope 已分（GRADE/CLASS/DORM/SELF/CHILD）
+- [ ] 单数据源原则（R-003）已贯彻
+- [ ] Timeline 唯一历史（R-013）已贯彻
+
+## 15.3 接口层
+
+- [ ] 登录接口（手机号 + 微信）
+- [ ] 用户 CRUD 接口
+- [ ] 班级/教师/学生/家长导入接口
+- [ ] **工作台数据接口**（WorkbenchOverview / WorkbenchTodo）
+- [ ] 通知 CRUD + 阅读统计接口
+- [ ] 任务 CRUD + 完成率接口
+- [ ] 出入闭环全状态接口
+
+## 15.4 权限层
+
+- [ ] 52 个权限点已注册
+- [ ] 6 个家长能力位已定义
+- [ ] RBAC 与业务能力位分离已实现
+- [ ] 路由守卫已更新
+
+## 15.5 UI/UX 层
+
+- [ ] Design Token 与小程序共享
+- [ ] 工作台设计稿已对齐
+- [ ] 通知中心设计稿已对齐
+- [ ] 任务看板设计稿已对齐
+- [ ] 出入看板设计稿已对齐
+
+## 15.6 工程层
+
+- [ ] TypeScript 类型已定义（含 v3 新增字段）
+- [ ] MSW Mock 已扩展至 v3 数据规模
+- [ ] 后台 + 小程序**复用** Mock 后端
+- [ ] 性能预算已确定（工作台 ≤ 2 秒）
+
+---
+
+# 附录 A：保留的页面规划（来自 v2，未变）
+
+> v2 中年级主任、政教、科任、宿管、学生、家长的页面规划在 v3 中保持不变，详见章节 11.2 ~ 11.7（在实际 Sprint 2.1 启动时输出）。
+> v3 新增/调整集中在班主任 15 个页面 + 工作台数据接口。
+
+---
+
+# 附录 B：v2 → v3 变更对比
+
+| 维度 | v2 | v3 | 变化 |
+|---|---|---|---|
+| 角色 | 7 类统一 RBAC | **管理端 6 + 用户端 2 双体系** | 拆分 |
+| 家长端 | 通知 + 评论 + 偏好 | **仅 4 能力** | 弱化 |
+| 请假状态 | 5 状态 | **9 状态（含 DRAFT/OVERDUE/LEFT/RETURNED/CLOSED）** | 细化 |
+| 离校闭环 | 模糊 | **强制 9 状态闭环** | 强化 |
+| 通知生命周期 | 5 状态 | **6 状态 + 阅读统计** | 强化 |
+| 任务优先级 | P0 | **P0 最高** | 不变 |
+| 班主任工作台 | Step 8 | **Step 2.2** | **前置** |
+| 出入模块 | 请假 + 离校（2 Step） | **学生出入管理（1 Step）** | **合并** |
+| 基础数据字段 | 仅列名 | **完整 TypeScript 定义** | 详细化 |
+| 权限点 | 46 | **52 + 6 家长能力位** | 扩展 |
+| 成绩管理 | 排除 | **明确排除** | 不变 |
+| Sprint Step | 7 | 7 | 不变 |
+| 周期 | 8 周 | 8 周 | 不变 |
+
+---
+
+# 附录 C：术语确认（v3 修订）
+
+| 术语 | 含义 | 反例 |
+|---|---|---|
+| **管理端 RBAC** | 教师拥有的岗位角色 + 数据范围 | ❌ 把学生/家长当 RBAC |
+| **用户端能力位** | 业务参与者的能力标识 | ❌ 用 RBAC 管理家长 |
+| **学生出入管理** | 请假 + 离校 + 返校 + 销假 | ❌ 拆成两个模块 |
+| **离校闭环** | 批假 ≠ 离校，必须门卫/值班确认 | ❌ 批假即视为离校 |
+| **班主任工作台** | 7 卡片数据汇聚 + 快捷入口 | ❌ 后置到最后一步 |
+| **年级任务** | 替代微信群的分派式工作 | ❌ 通知 |
+| **家校通知** | 班主任/年级向家长发送的正式通知 | ❌ 家长发起 |
+| **政教管理** | 政教处/德育处角色（违纪+安全） | ❌ 与年级主任混用 |
+| **强制已读** | 家长必须点击"已知悉" | ❌ 静默通知 |
+| **一码通** | 一手机号最多绑 3 个孩子 | ❌ 一孩子一账号 |
+
+---
+
+**Sprint 2.1 Planning Review 通过后，方可启动编码。**
+
+— End of Sprint 2 Planning v3 —

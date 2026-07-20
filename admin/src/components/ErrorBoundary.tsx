@@ -1,0 +1,59 @@
+import { Component, type ErrorInfo, type ReactNode } from 'react';
+import { Result, Button } from 'antd';
+
+interface ErrorBoundaryProps {
+  children: ReactNode;
+  fallback?: ReactNode;
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+}
+
+export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
+    console.error('ErrorBoundary caught:', error, errorInfo);
+  }
+
+  handleReset = (): void => {
+    this.setState({ hasError: false, error: null });
+  };
+
+  handleReload = (): void => {
+    window.location.reload();
+  };
+
+  render(): ReactNode {
+    if (this.state.hasError) {
+      if (this.props.fallback) {
+        return this.props.fallback;
+      }
+      return (
+        <Result
+          status="error"
+          title="页面渲染出错"
+          subTitle={this.state.error?.message || '发生了未知错误'}
+          extra={[
+            <Button key="retry" type="primary" onClick={this.handleReset}>
+              重试
+            </Button>,
+            <Button key="reload" onClick={this.handleReload}>
+              刷新页面
+            </Button>,
+          ]}
+        />
+      );
+    }
+    return this.props.children;
+  }
+}

@@ -1,0 +1,872 @@
+// =====================================================================
+// SmartGrade Prisma Schema v1.2
+// =====================================================================
+//
+// 上游规则：SPRINT2_DOMAIN_RULE_v1.2 + docs/domain-model.md
+// 数据库：MySQL 8.0+
+// 字符集：utf8mb4 / utf8mb4_unicode_ci
+//
+// 关键变更（vs Sprint 1 schema）：
+// 1. 双维度状态：Student.current_status (4) + Student.current_location (6)
+// 2. 三个新时间戳：statusUpdatedAt / locationUpdatedAt（v1.2 关键）
+// 3. 新增 UserIdentity 表（5 登录提供方）
+// 4. 新增 Parent 表（独立于 Student）
+// 5. 新增 School / GradeStage / GradeStatus 字段
+// 6. 新增 TeacherClassRelation（多角色关联）
+// 7. 新增 LeaveReasonType（必填，6 枚举）
+// 8. 新增 Task 表（独立，含 OVERDUE）
+// 9. 新增 TimelineEvent 表（21 事件 + metadata Json）
+// 10. ID 改用 String @default(cuid())，跨端共享 TypeScript 类型一致
+//
+// =====================================================================
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native"]
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// =====================================================================
+// 枚举定义（28 个枚举 / 与 shared/types/domain/enums/ 严格同步）
+// =====================================================================
+
+// -------- 组织层 6 枚举 --------
+
+enum SchoolType {
+  HIGH_SCHOOL
+  JUNIOR_HIGH
+  NINE_YEAR
+  COMPLETE
+}
+
+enum SchoolStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum GradeStage {
+  GRADE_10
+  GRADE_11
+  GRADE_12
+  GRADUATED
+}
+
+enum GradeStatus {
+  ACTIVE
+  GRADUATED
+  ARCHIVED
+}
+
+enum ClassStatus {
+  ACTIVE
+  GRADUATED
+  ARCHIVED
+}
+
+// -------- 人员 2 枚举 --------
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum BoardingType {
+  BOARDING
+  DAY_STUDENT
+}
+
+// -------- 学生状态 2 枚举（v1.2 双维度核心）--------
+
+enum StudentStatus {
+  ON_CAMPUS
+  OUT_OF_SCHOOL
+  GRADUATED
+  TRANSFERRED
+}
+
+enum StudentLocation {
+  CLASSROOM
+  DORM
+  PLAYGROUND
+  GATE
+  OFF_CAMPUS
+  UNKNOWN
+}
+
+// -------- 教师 / 角色 / 标签 5 枚举 --------
+
+enum TeacherStatus {
+  ACTIVE
+  ON_LEAVE
+  RESIGNED
+}
+
+enum UserType {
+  SYSTEM_ADMIN
+  TEACHER
+  STUDENT
+  PARENT
+}
+
+enum UserStatus {
+  ACTIVE
+  FROZEN
+  LOCKED
+}
+
+enum IdentityProvider {
+  PHONE
+  WECHAT
+  ACCOUNT
+}
+
+enum IdentityStatus {
+  ACTIVE
+  DISABLED
+}
+
+// -------- 家长 2 枚举 --------
+
+enum ParentRelation {
+  FATHER
+  MOTHER
+  GRANDFATHER
+  GRANDMOTHER
+  GUARDIAN
+  OTHER
+}
+
+enum ParentStatus {
+  ACTIVE
+  FROZEN
+}
+
+enum NotifyPreference {
+  ALL
+  IMPORTANT_ONLY
+  LEAVE_ONLY
+  NONE
+}
+
+// -------- 请假 3 枚举 --------
+
+enum LeaveStatus {
+  DRAFT
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+  LEFT
+  RETURNED
+  CLOSED
+}
+
+enum LeaveType {
+  SICK
+  PERSONAL
+  OTHER
+}
+
+enum LeaveReasonType {
+  ILLNESS
+  PERSONAL
+  FAMILY
+  SPORT
+  SCHOOL_ACTIVITY
+  OTHER
+}
+
+enum ReturnJudgment {
+  ON_TIME
+  EARLY
+  DELAYED
+  NOT_SET
+}
+
+// -------- 通知 3 枚举 --------
+
+enum NoticeType {
+  NOTICE
+  URGENT
+  MEETING
+  HOLIDAY
+  TEACHING
+}
+
+enum NoticeStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum NotificationTargetType {
+  ALL_TEACHERS
+  GRADE
+  CLASS
+  TEACHING_GROUP
+  TAG
+  ROLE
+  STUDENT_PARENT
+  INDIVIDUAL_TEACHER
+}
+
+// -------- 任务 3 枚举 --------
+
+enum TaskStatus {
+  DRAFT
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  DEFERRED
+  CANCELLED
+  OVERDUE
+}
+
+enum TaskPriority {
+  URGENT
+  HIGH
+  NORMAL
+  LOW
+}
+
+enum TaskSource {
+  GRADE_DIRECTOR
+  HEAD_TEACHER
+  SYSTEM_TEMPLATE
+  CROSS_DEPARTMENT
+  OTHER
+}
+
+// -------- Timeline 2 枚举（21 事件 / 5 来源）--------
+
+enum TimelineEventType {
+  // LeaveTimeline 10
+  LEAVE_CREATED
+  LEAVE_SUBMITTED
+  LEAVE_APPROVED
+  LEAVE_REJECTED
+  LEAVE_CANCELLED
+  LEAVE_GATE_LEFT
+  LEAVE_RETURNED
+  LEAVE_CLOSED
+  LEAVE_EDITED
+  LEAVE_RESUBMITTED
+  // DormTimeline 3
+  DORM_ABSENT
+  DORM_LATE
+  DORM_CHECKED_IN
+  // NoticeTimeline 2
+  NOTICE_SENT
+  NOTICE_READ
+  // IncidentTimeline 2
+  INCIDENT_RECORDED
+  INCIDENT_HANDLED
+  // Student 4
+  STUDENT_ENROLLED
+  STUDENT_GRADUATED
+  STUDENT_TRANSFERRED
+  STUDENT_STATUS_CHANGED
+}
+
+enum TimelineEventSource {
+  LEAVE
+  DORM
+  NOTICE
+  INCIDENT
+  STUDENT
+}
+
+// -------- 教师班级关系 1 枚举 --------
+
+enum TeacherClassRole {
+  HEAD_TEACHER
+  SUBJECT_TEACHER
+  VICE_HEAD_TEACHER
+  COUNSELOR
+}
+
+// -------- v1.3 新增：Timeline 关联类型 1 枚举 --------
+
+enum RelatedEntityType {
+  LEAVE
+  NOTICE
+  TASK
+  DORM
+  INCIDENT
+  STUDENT
+}
+
+// =====================================================================
+// Step 1: 基础模型 — 组织与身份层（8 张表）
+// =====================================================================
+
+// DB-001 School
+model School {
+  id            String       @id @default(cuid())
+  code          String       @unique @db.VarChar(20)
+  name          String       @db.VarChar(100)
+  shortName     String?      @map("short_name") @db.VarChar(50)
+  type          SchoolType
+  province      String?      @db.VarChar(50)
+  city          String?      @db.VarChar(50)
+  district      String?      @db.VarChar(50)
+  address       String?      @db.VarChar(255)
+  principalName String?      @map("principal_name") @db.VarChar(50)
+  contactPhone  String?      @map("contact_phone") @db.VarChar(20)
+  status        SchoolStatus @default(ACTIVE)
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+  deletedAt     DateTime?    @map("deleted_at")
+
+  grades Grade[]
+
+  @@index([status])
+  @@index([type])
+  @@map("school")
+}
+
+// DB-002 Grade
+model Grade {
+  id             String      @id @default(cuid())
+  schoolId       String      @map("school_id")
+  code           String      @db.VarChar(30)
+  name           String      @db.VarChar(50)
+  enrollmentYear Int         @map("enrollment_year")
+  graduationYear Int         @map("graduation_year")
+  stage          GradeStage
+  directorId     String?     @map("director_id")
+  status         GradeStatus @default(ACTIVE)
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
+  deletedAt      DateTime?   @map("deleted_at")
+
+  school   School   @relation(fields: [schoolId], references: [id])
+  director Teacher? @relation("GradeDirector", fields: [directorId], references: [id])
+  classes  Class[]
+
+  @@unique([schoolId, code])
+  @@index([schoolId, status])
+  @@index([directorId])
+  @@map("grade")
+}
+
+// DB-003 Class
+model Class {
+  id                String      @id @default(cuid())
+  gradeId           String      @map("grade_id")
+  schoolId          String      @map("school_id")
+  code              String      @db.VarChar(30)
+  name              String      @db.VarChar(50)
+  headTeacherId     String?     @map("head_teacher_id")
+  viceHeadTeacherId String?     @map("vice_head_teacher_id")
+  studentCount      Int         @default(0) @map("student_count")
+  status            ClassStatus @default(ACTIVE)
+  createdAt         DateTime    @default(now()) @map("created_at")
+  updatedAt         DateTime    @updatedAt @map("updated_at")
+  deletedAt         DateTime?   @map("deleted_at")
+
+  grade            Grade                  @relation(fields: [gradeId], references: [id])
+  headTeacher      Teacher?               @relation("ClassHeadTeacher", fields: [headTeacherId], references: [id])
+  viceHeadTeacher  Teacher?               @relation("ClassViceHeadTeacher", fields: [viceHeadTeacherId], references: [id])
+  students         Student[]
+  teacherRelations TeacherClassRelation[]
+
+  @@unique([gradeId, code])
+  @@index([schoolId, gradeId, status])
+  @@index([headTeacherId])
+  @@map("class")
+}
+
+// DB-004 Teacher
+model Teacher {
+  id            String        @id @default(cuid())
+  teacherNo     String        @unique @map("teacher_no") @db.VarChar(20)
+  name          String        @db.VarChar(50)
+  gender        Gender
+  phone         String?       @db.VarChar(20)
+  email         String?       @db.VarChar(100)
+  avatar        String?       @db.VarChar(255)
+  teachingGroup String?       @map("teaching_group") @db.VarChar(50)
+  subject       String?       @db.VarChar(50)
+  position      String?       @db.VarChar(50)
+  status        TeacherStatus @default(ACTIVE)
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+  deletedAt     DateTime?     @map("deleted_at")
+
+  user                 User?
+  directedGrades       Grade[]                @relation("GradeDirector")
+  headClasses          Class[]                @relation("ClassHeadTeacher")
+  viceHeadClasses      Class[]                @relation("ClassViceHeadTeacher")
+  teacherRelations     TeacherClassRelation[]
+  appliedLeaves        LeaveRecord[]          @relation("ApplyTeacher")
+  approvedLeaves       LeaveRecord[]          @relation("ApproveTeacher")
+  publishedNotices     Notice[]
+  noticeReads          NoticeRead[]
+  assignedTasks        Task[]                 @relation("TaskAssignee")
+  createdTasks         Task[]                 @relation("TaskCreator")
+  operatedTimelines    TimelineEvent[]
+  managedDormBuildings DormBuilding[]         @relation("DormManager")
+
+  @@index([status])
+  @@index([phone])
+  @@index([teachingGroup])
+  @@map("teacher")
+}
+
+// DB-005 Student（v1.2 双维度核心）
+model Student {
+  id                String          @id @default(cuid())
+  studentNo         String          @unique @map("student_no") @db.VarChar(30)
+  name              String          @db.VarChar(50)
+  gender            Gender
+  classId           String          @map("class_id")
+  gradeId           String          @map("grade_id")
+  schoolId          String          @map("school_id")
+  boardingType      BoardingType    @map("boarding_type")
+  dormId            String?         @map("dorm_id")
+  bedNo             String?         @map("bed_no") @db.VarChar(20)
+  // ===== v1.2 双维度状态（核心）=====
+  currentStatus     StudentStatus   @default(ON_CAMPUS) @map("current_status")
+  currentLocation   StudentLocation @default(UNKNOWN) @map("current_location")
+  // ===== v1.2 三个时间戳（关键）=====
+  statusUpdatedAt   DateTime?       @map("status_updated_at")
+  locationUpdatedAt DateTime?       @map("location_updated_at")
+  // ===== 联系信息 =====
+  phone             String?         @db.VarChar(20)
+  // ===== 关键时间点 =====
+  enrolledAt        DateTime        @map("enrolled_at")
+  graduatedAt       DateTime?       @map("graduated_at")
+  transferredAt     DateTime?       @map("transferred_at")
+  // ===== 时间戳 =====
+  createdAt         DateTime        @default(now()) @map("created_at")
+  updatedAt         DateTime        @updatedAt @map("updated_at")
+  deletedAt         DateTime?       @map("deleted_at")
+
+  class     Class           @relation(fields: [classId], references: [id])
+  dorm      DormRoom?       @relation(fields: [dormId], references: [id])
+  relations StudentParent[]
+  leaves    LeaveRecord[]
+  timelines TimelineEvent[]
+
+  // ===== v1.2 关键索引（您 Day 2 指定的）=====
+  @@index([schoolId, gradeId, classId, currentStatus, currentLocation], name: "idx_student_status_location")
+  @@index([schoolId, currentStatus])
+  @@index([schoolId, currentLocation])
+  @@index([classId, currentStatus])
+  @@index([dormId, currentStatus])
+  @@index([boardingType, currentStatus])
+  @@index([schoolId, classId, name])
+  @@index([studentNo])
+  @@map("student")
+}
+
+// DB-006 Parent
+model Parent {
+  id               String           @id @default(cuid())
+  name             String           @db.VarChar(50)
+  relation         ParentRelation
+  phone            String           @unique @db.VarChar(20)
+  wechatOpenid     String?          @unique @map("wechat_openid") @db.VarChar(100)
+  wechatUnionid    String?          @map("wechat_unionid") @db.VarChar(100)
+  email            String?          @db.VarChar(100)
+  avatar           String?          @db.VarChar(255)
+  status           ParentStatus     @default(ACTIVE)
+  notifyPreference NotifyPreference @default(ALL) @map("notify_preference")
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+  deletedAt        DateTime?        @map("deleted_at")
+
+  user      User?
+  relations StudentParent[]
+
+  @@index([phone])
+  @@index([status])
+  @@map("parent")
+}
+
+// DB-007 StudentParent（多对多关联）
+model StudentParent {
+  id        String   @id @default(cuid())
+  studentId String   @map("student_id")
+  parentId  String   @map("parent_id")
+  isPrimary Boolean  @default(false) @map("is_primary")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  parent  Parent  @relation(fields: [parentId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, parentId])
+  @@index([parentId])
+  @@map("student_parent")
+}
+
+// DB-008 User
+model User {
+  id           String     @id @default(cuid())
+  username     String?    @unique @db.VarChar(50)
+  passwordHash String?    @map("password_hash") @db.VarChar(255)
+  userType     UserType   @map("user_type")
+  teacherId    String?    @unique @map("teacher_id")
+  studentId    String?    @unique @map("student_id")
+  parentId     String?    @unique @map("parent_id")
+  status       UserStatus @default(ACTIVE)
+  lastLoginAt  DateTime?  @map("last_login_at")
+  lastLoginIp  String?    @map("last_login_ip") @db.VarChar(45)
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+  deletedAt    DateTime?  @map("deleted_at")
+
+  teacher    Teacher?       @relation(fields: [teacherId], references: [id])
+  parent     Parent?        @relation(fields: [parentId], references: [id])
+  identities UserIdentity[]
+
+  @@index([userType, status])
+  @@map("user")
+}
+
+// DB-009 UserIdentity（5 提供方）
+model UserIdentity {
+  id             String           @id @default(cuid())
+  userId         String           @map("user_id")
+  provider       IdentityProvider
+  externalId     String           @map("external_id") @db.VarChar(200)
+  credentialHash String?          @map("credential_hash") @db.VarChar(255)
+  verified       Boolean          @default(false)
+  verifiedAt     DateTime?        @map("verified_at")
+  status         IdentityStatus   @default(ACTIVE)
+  createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
+  deletedAt      DateTime?        @map("deleted_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, externalId])
+  @@index([userId])
+  @@index([provider, status])
+  @@map("user_identity")
+}
+
+// =====================================================================
+// Step 2 + Step 3: 业务核心模型 + 关系设计（9 张表）
+// =====================================================================
+
+// DB-010 DormBuilding
+model DormBuilding {
+  id        String    @id @default(cuid())
+  schoolId  String    @map("school_id")
+  name      String    @db.VarChar(50)
+  gender    Gender
+  floors    Int       @default(5)
+  managerId String?   @map("manager_id")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  manager Teacher?   @relation("DormManager", fields: [managerId], references: [id])
+  rooms   DormRoom[]
+
+  @@index([schoolId])
+  @@index([managerId])
+  @@map("dorm_building")
+}
+
+// DB-011 DormRoom
+model DormRoom {
+  id           String    @id @default(cuid())
+  buildingId   String    @map("building_id")
+  floor        Int
+  roomNo       String    @map("room_no") @db.VarChar(20)
+  capacity     Int       @default(4)
+  currentCount Int       @default(0) @map("current_count")
+  status       String    @default("NORMAL") @db.VarChar(20)
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at")
+
+  building DormBuilding @relation(fields: [buildingId], references: [id])
+  students Student[]
+
+  @@unique([buildingId, roomNo])
+  @@index([buildingId, floor])
+  @@map("dorm_room")
+}
+
+// DB-012 TeacherClassRelation（您 Day 2 重点强调：多角色关联）
+model TeacherClassRelation {
+  id        String           @id @default(cuid())
+  teacherId String           @map("teacher_id")
+  classId   String           @map("class_id")
+  role      TeacherClassRole
+  subject   String?          @db.VarChar(50) // 仅 SUBJECT_TEACHER 时使用
+  // ===== v1.3 新增：时间字段 =====
+  startDate DateTime         @map("start_date")
+  endDate   DateTime?        @map("end_date")
+  createdAt DateTime         @default(now()) @map("created_at")
+  updatedAt DateTime         @updatedAt @map("updated_at")
+
+  teacher Teacher @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  class   Class   @relation(fields: [classId], references: [id], onDelete: Cascade)
+
+  @@unique([teacherId, classId, role, startDate], name: "uniq_teacher_class_role_start")
+  @@index([classId, role, endDate])
+  @@index([teacherId, role, endDate])
+  @@index([classId, role, startDate, endDate], name: "idx_tcr_period")
+  @@map("teacher_class_relation")
+}
+
+// DB-013 LeaveRecord（v1.2 8 状态 + 6 原因）
+model LeaveRecord {
+  id                 String          @id @default(cuid())
+  leaveNo            String          @unique @map("leave_no") @db.VarChar(30)
+  studentId          String          @map("student_id")
+  studentName        String          @map("student_name") @db.VarChar(50)
+  classId            String          @map("class_id")
+  className          String          @map("class_name") @db.VarChar(50)
+  gradeId            String          @map("grade_id")
+  schoolId           String          @map("school_id")
+  leaveType          LeaveType       @map("leave_type")
+  leaveReasonType    LeaveReasonType @map("leave_reason_type")
+  reason             String          @db.Text
+  startAt            DateTime        @map("start_at")
+  endAt              DateTime        @map("end_at")
+  expectedReturnTime DateTime?       @map("expected_return_time")
+  expectedReturnNote String?         @map("expected_return_note") @db.VarChar(255)
+  actualLeftAt       DateTime?       @map("actual_left_at")
+  actualReturnedAt   DateTime?       @map("actual_returned_at")
+  closedAt           DateTime?       @map("closed_at")
+  status             LeaveStatus     @default(DRAFT)
+  applicantId        String          @map("applicant_id")
+  applicantName      String          @map("applicant_name") @db.VarChar(50)
+  approverId         String?         @map("approver_id")
+  approverName       String?         @map("approver_name") @db.VarChar(50)
+  approveRemark      String?         @map("approve_remark") @db.Text
+  approvedAt         DateTime?       @map("approved_at")
+  rejectReason       String?         @map("reject_reason") @db.Text
+  rejectedAt         DateTime?       @map("rejected_at")
+  cancelReason       String?         @map("cancel_reason") @db.Text
+  returnJudgment     ReturnJudgment? @map("return_judgment")
+  attachmentIds      Json            @map("attachment_ids") // ["att_001", "att_002"]
+  createdAt          DateTime        @default(now()) @map("created_at")
+  updatedAt          DateTime        @updatedAt @map("updated_at")
+  deletedAt          DateTime?       @map("deleted_at")
+
+  student   Student         @relation(fields: [studentId], references: [id])
+  applicant Teacher         @relation("ApplyTeacher", fields: [applicantId], references: [id])
+  approver  Teacher?        @relation("ApproveTeacher", fields: [approverId], references: [id])
+  timelines TimelineEvent[]
+
+  @@index([studentId, status])
+  @@index([classId, status, startAt])
+  @@index([gradeId, status, startAt])
+  @@index([schoolId, status, startAt])
+  @@index([leaveReasonType, startAt])
+  @@index([startAt])
+  @@index([applicantId])
+  @@index([approverId])
+  @@map("leave_record")
+}
+
+// DB-014 Notice
+model Notice {
+  id              String       @id @default(cuid())
+  noticeNo        String       @unique @map("notice_no") @db.VarChar(30)
+  title           String       @db.VarChar(200)
+  content         String       @db.Text
+  contentFormat   String       @default("PLAIN") @map("content_format") @db.VarChar(20)
+  noticeType      NoticeType   @map("notice_type")
+  targets         Json // [{ "target_type": "GRADE", "target_id": "...", "target_label": "..." }]
+  requireConfirm  Boolean      @default(false) @map("require_confirm")
+  confirmDeadline DateTime?    @map("confirm_deadline")
+  publisherId     String       @map("publisher_id")
+  publisherName   String       @map("publisher_name") @db.VarChar(50)
+  status          NoticeStatus @default(DRAFT)
+  publishedAt     DateTime?    @map("published_at")
+  archivedAt      DateTime?    @map("archived_at")
+  schoolId        String       @map("school_id")
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
+  deletedAt       DateTime?    @map("deleted_at")
+
+  publisher Teacher         @relation(fields: [publisherId], references: [id])
+  reads     NoticeRead[]
+  timelines TimelineEvent[]
+
+  @@index([publisherId])
+  @@index([schoolId, status, publishedAt])
+  @@index([noticeType, status])
+  @@map("notice")
+}
+
+// DB-015 NoticeRead
+model NoticeRead {
+  id        BigInt    @id @default(autoincrement())
+  noticeId  String    @map("notice_id")
+  teacherId String    @map("teacher_id")
+  isRead    Boolean   @default(false) @map("is_read")
+  readAt    DateTime? @map("read_at")
+  confirmAt DateTime? @map("confirm_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  notice  Notice  @relation(fields: [noticeId], references: [id], onDelete: Cascade)
+  teacher Teacher @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@unique([noticeId, teacherId])
+  @@index([teacherId, isRead])
+  @@index([noticeId, isRead])
+  @@map("notice_read")
+}
+
+// DB-016 Task（独立于 Notice，含 OVERDUE）
+model Task {
+  id               String       @id @default(cuid())
+  taskNo           String       @unique @map("task_no") @db.VarChar(30)
+  title            String       @db.VarChar(200)
+  content          String?      @db.Text
+  status           TaskStatus   @default(PENDING)
+  priority         TaskPriority @default(NORMAL)
+  source           TaskSource
+  sourceId         String?      @map("source_id")
+  assigneeId       String       @map("assignee_id")
+  assigneeName     String       @map("assignee_name") @db.VarChar(50)
+  creatorId        String       @map("creator_id")
+  creatorName      String       @map("creator_name") @db.VarChar(50)
+  schoolId         String       @map("school_id")
+  dueAt            DateTime     @map("due_at")
+  completedAt      DateTime?    @map("completed_at")
+  completionRemark String?      @map("completion_remark") @db.Text
+  reminderCount    Int          @default(0) @map("reminder_count")
+  lastRemindedAt   DateTime?    @map("last_reminded_at")
+  createdAt        DateTime     @default(now()) @map("created_at")
+  updatedAt        DateTime     @updatedAt @map("updated_at")
+  deletedAt        DateTime?    @map("deleted_at")
+
+  assignee Teacher @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  creator  Teacher @relation("TaskCreator", fields: [creatorId], references: [id])
+
+  @@index([assigneeId, status])
+  @@index([schoolId, status, dueAt])
+  @@index([creatorId, status])
+  @@index([source, sourceId])
+  @@index([dueAt])
+  @@map("task")
+}
+
+// =====================================================================
+// Step 4: TimelineEvent（21 事件 + metadata Json，AI 友好）
+// =====================================================================
+
+// DB-017 TimelineEvent（核心：唯一历史来源）
+model TimelineEvent {
+  id            String              @id @default(cuid())
+  eventType     TimelineEventType   @map("event_type")
+  eventSource   TimelineEventSource @map("event_source")
+  sourceEventId String              @map("source_event_id") @db.VarChar(100)
+  studentId     String              @map("student_id")
+  operatorId    String?             @map("operator_id")
+  operatorName  String?             @map("operator_name") @db.VarChar(50)
+  operatorRole  String?             @map("operator_role") @db.VarChar(50)
+  // ===== AI 友好的 Json 载荷（您 Day 2 强调的）=====
+  metadata      Json
+  // ===== 时间字段 =====
+  occurredAt    DateTime            @map("occurred_at")
+  recordedAt    DateTime            @default(now()) @map("recorded_at")
+  // ===== 冗余字段（便于按班级 / 年级查询）=====
+  classId       String?             @map("class_id")
+  gradeId       String?             @map("grade_id")
+  schoolId      String?             @map("school_id")
+  // ===== 关联外键（可选，专用）=====
+  leaveRecordId String?             @map("leave_record_id")
+  noticeId      String?             @map("notice_id")
+  // ===== v1.3 新增：通用关联字段（统一）=====
+  relatedType   RelatedEntityType?  @map("related_type")
+  relatedId     String?             @map("related_id") @db.VarChar(100)
+  // ===== 标记 =====
+  isSystem      Boolean             @default(false) @map("is_system")
+
+  student     Student      @relation(fields: [studentId], references: [id])
+  teacher     Teacher?     @relation(fields: [operatorId], references: [id])
+  leaveRecord LeaveRecord? @relation(fields: [leaveRecordId], references: [id])
+  notice      Notice?      @relation(fields: [noticeId], references: [id])
+
+  // ===== v1.2 §10.5 单一性约束 =====
+  @@unique([studentId, eventSource, sourceEventId], name: "uniq_student_source_event")
+  // ===== v1.2 §10.5 主查询索引 =====
+  @@index([studentId, occurredAt(sort: Desc)], name: "idx_student_time_desc")
+  @@index([studentId, eventType])
+  @@index([classId, occurredAt(sort: Desc)])
+  @@index([gradeId, occurredAt(sort: Desc)])
+  @@index([schoolId, occurredAt(sort: Desc)])
+  @@index([eventSource, occurredAt(sort: Desc)])
+  @@index([eventType, occurredAt(sort: Desc)])
+  @@index([leaveRecordId])
+  @@index([noticeId])
+  @@index([relatedType, relatedId], name: "idx_related")
+  @@map("timeline_event")
+}
+
+// =====================================================================
+// 权限模型（保留 Sprint 1 设计 + 适配 v1.2）
+// =====================================================================
+
+// DB-018 Role
+model Role {
+  id          BigInt   @id @default(autoincrement())
+  roleCode    String   @unique @map("role_code") @db.VarChar(50)
+  roleName    String   @map("role_name") @db.VarChar(50)
+  description String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  permissions RolePermission[]
+
+  @@map("role")
+}
+
+// DB-019 Permission
+model Permission {
+  id             BigInt   @id @default(autoincrement())
+  permissionCode String   @unique @map("permission_code") @db.VarChar(50)
+  permissionName String   @map("permission_name") @db.VarChar(50)
+  resource       String   @db.VarChar(50)
+  action         String   @db.VarChar(50)
+  description    String?  @db.Text
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  roles RolePermission[]
+
+  @@index([resource, action])
+  @@map("permission")
+}
+
+// DB-020 RolePermission
+model RolePermission {
+  id           BigInt @id @default(autoincrement())
+  roleId       BigInt @map("role_id")
+  permissionId BigInt @map("permission_id")
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@index([permissionId])
+  @@map("role_permission")
+}
+
+// DB-021 Tag
+model Tag {
+  id          BigInt   @id @default(autoincrement())
+  tagCode     String   @unique @map("tag_code") @db.VarChar(50)
+  tagName     String   @map("tag_name") @db.VarChar(50)
+  description String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("tag")
+}

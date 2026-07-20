@@ -1,0 +1,19 @@
+packages:
+  - backend
+  - miniapp
+  - admin
+  - shared
+
+ignoredBuiltDependencies:
+  - '@nestjs/core'
+  - '@parcel/watcher'
+  - '@prisma/client'
+  - '@prisma/engines'
+  - '@swc/core'
+  - '@tarojs/binding'
+  - core-js
+  - core-js-pure
+  - esbuild
+  - msw
+  - prisma
+  - swiper

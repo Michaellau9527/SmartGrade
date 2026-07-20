@@ -1,0 +1,455 @@
+// SmartGrade Prisma Schema
+// 数据库设计参考: docs/08-Database.md
+// Phase 1: 基础设施 - 13 张核心表 + Permission 权限模型
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== 枚举定义 (docs 第四章) ====================
+
+enum StudentStatus {
+  IN_SCHOOL
+  PENDING_LEAVE
+  LEFT_SCHOOL
+}
+
+enum BoardingType {
+  DAY
+  BOARDING
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  LEFT
+  FINISHED
+  CANCELLED
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum TodoStatus {
+  TODO
+  PROCESSING
+  DONE
+  CANCELLED
+}
+
+enum NoticeType {
+  ALL
+  ROLE
+  TAG
+  ORGANIZATION
+}
+
+enum NoticeStatus {
+  DRAFT
+  PUBLISHED
+  WITHDRAWN
+}
+
+enum EventType {
+  LEAVE_APPLY
+  LEAVE_APPROVED
+  LEAVE_REJECTED
+  LEAVE_CANCELLED
+  LEFT_SCHOOL
+  RETURN_SCHOOL
+  CHECKOUT_DORM
+  CHECKIN_DORM
+  DORM_EXCEPTION
+  NOTICE_PUSH
+  TODO_CREATED
+  SYSTEM
+}
+
+// ==================== Phase 1 核心表 ====================
+
+// DB-001 Teacher
+model Teacher {
+  id            BigInt    @id @default(autoincrement())
+  teacher_no    String    @unique @db.VarChar(20)
+  name          String    @db.VarChar(50)
+  gender        Gender
+  phone         String?   @db.VarChar(20)
+  email         String?   @db.VarChar(100)
+  wechat_openid String?   @unique @db.VarChar(100)
+  avatar        String?   @db.VarChar(255)
+  department    String?   @db.VarChar(100)
+  position      String?   @db.VarChar(100)
+  status        Boolean   @default(true)
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+  deleted_at    DateTime?
+
+  roles         TeacherRole[]
+  tags          TeacherTag[]
+  head_class    Class?         @relation("HeadTeacher")
+  grade_director Grade?
+  leave_apply   LeaveRecord[]  @relation("ApplyTeacher")
+  leave_approve LeaveRecord[]  @relation("ApproveTeacher")
+  timelines     Timeline[]
+  todos         Todo[]
+  notices_published Notice[] @relation("NoticePublisher")
+  notice_reads  NoticeRead[]
+  managed_dormitories Dormitory[] @relation("DormManager")
+
+  @@index([status])
+  @@map("Teacher")
+}
+
+// DB-002 Role
+model Role {
+  id          BigInt   @id @default(autoincrement())
+  role_code   String   @unique @db.VarChar(50)
+  role_name   String   @db.VarChar(50)
+  description String?  @db.Text
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  teachers    TeacherRole[]
+  permissions RolePermission[]
+
+  @@map("Role")
+}
+
+// DB-003 TeacherRole
+model TeacherRole {
+  id         BigInt @id @default(autoincrement())
+  teacher_id BigInt
+  role_id    BigInt
+
+  teacher Teacher @relation(fields: [teacher_id], references: [id], onDelete: Cascade)
+  role    Role    @relation(fields: [role_id], references: [id], onDelete: Cascade)
+
+  @@unique([teacher_id, role_id])
+  @@index([role_id])
+  @@map("TeacherRole")
+}
+
+// DB-004 Tag
+model Tag {
+  id          BigInt   @id @default(autoincrement())
+  tag_code    String   @unique @db.VarChar(50)
+  tag_name    String   @db.VarChar(50)
+  description String?  @db.Text
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  teachers TeacherTag[]
+
+  @@map("Tag")
+}
+
+// DB-005 TeacherTag
+model TeacherTag {
+  id         BigInt @id @default(autoincrement())
+  teacher_id BigInt
+  tag_id     BigInt
+
+  teacher Teacher @relation(fields: [teacher_id], references: [id], onDelete: Cascade)
+  tag     Tag     @relation(fields: [tag_id], references: [id], onDelete: Cascade)
+
+  @@unique([teacher_id, tag_id])
+  @@index([tag_id])
+  @@map("TeacherTag")
+}
+
+// DB-006 Grade
+model Grade {
+  id                  BigInt   @id @default(autoincrement())
+  grade_name          String   @db.VarChar(50)
+  grade_code          String   @unique @db.VarChar(20)
+  director_teacher_id BigInt?  @unique
+  created_at          DateTime @default(now())
+  updated_at          DateTime @updatedAt
+
+  director Teacher? @relation(fields: [director_teacher_id], references: [id])
+  classes  Class[]
+
+  @@map("Grade")
+}
+
+// DB-007 Class
+model Class {
+  id              BigInt   @id @default(autoincrement())
+  grade_id        BigInt
+  class_name      String   @db.VarChar(20)
+  head_teacher_id BigInt?  @unique
+  student_count   Int      @default(0)
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  grade        Grade     @relation(fields: [grade_id], references: [id])
+  head_teacher Teacher?  @relation("HeadTeacher", fields: [head_teacher_id], references: [id])
+  students     Student[]
+
+  @@index([grade_id])
+  @@map("Class")
+}
+
+// DB-008 Student
+model Student {
+  id            BigInt        @id @default(autoincrement())
+  student_no    String        @unique @db.VarChar(30)
+  name          String        @db.VarChar(50)
+  gender        Gender
+  class_id      BigInt
+  boarding_type BoardingType
+  dorm_room_id  BigInt?
+  bed_no        String?       @db.VarChar(20)
+  status        StudentStatus @default(IN_SCHOOL)
+  phone         String?       @db.VarChar(20)
+  parent_name   String?       @db.VarChar(50)
+  parent_phone  String?       @db.VarChar(20)
+  created_at    DateTime      @default(now())
+  updated_at    DateTime      @updatedAt
+  deleted_at    DateTime?
+
+  class     Class         @relation(fields: [class_id], references: [id])
+  dorm_room DormRoom?     @relation(fields: [dorm_room_id], references: [id])
+  leaves    LeaveRecord[]
+  timelines Timeline[]
+
+  @@index([class_id])
+  @@index([status])
+  @@index([dorm_room_id])
+  @@map("Student")
+}
+
+// DB-009 Dormitory
+model Dormitory {
+  id                 BigInt   @id @default(autoincrement())
+  building_name      String   @db.VarChar(50)
+  gender             Gender
+  floors             Int      @default(5)
+  manager_teacher_id BigInt?
+  created_at         DateTime @default(now())
+  updated_at         DateTime @updatedAt
+
+  rooms   DormRoom[]
+  manager Teacher?   @relation("DormManager", fields: [manager_teacher_id], references: [id])
+
+  @@index([manager_teacher_id])
+  @@map("Dormitory")
+}
+
+// DB-010 DormRoom
+model DormRoom {
+  id          BigInt   @id @default(autoincrement())
+  building_id BigInt
+  floor       Int
+  room_no     String   @db.VarChar(20)
+  capacity    Int      @default(4)
+  current_count Int    @default(0)
+  status      String   @default("NORMAL") @db.VarChar(20)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  building Dormitory @relation(fields: [building_id], references: [id])
+  students Student[]
+
+  @@unique([building_id, room_no])
+  @@index([building_id])
+  @@index([floor])
+  @@map("DormRoom")
+}
+
+// DB-011 LeaveRecord
+model LeaveRecord {
+  id                   BigInt      @id @default(autoincrement())
+  leave_no             String      @unique @db.VarChar(30)
+  student_id           BigInt
+  student_name         String      @db.VarChar(50)
+  class_id             BigInt
+  class_name           String      @db.VarChar(50)
+  boarding_type        BoardingType
+  dorm_room_id         BigInt?
+  bed_no               String?     @db.VarChar(20)
+  leave_type           String      @db.VarChar(30)
+  leave_reason         String      @db.Text
+  remark               String?     @db.Text
+  status               LeaveStatus @default(PENDING)
+  current_node         String      @db.VarChar(30)
+  apply_teacher_id     BigInt
+  apply_teacher_name   String      @db.VarChar(50)
+  approve_teacher_id   BigInt?
+  approve_teacher_name String?     @db.VarChar(50)
+  approve_remark       String?     @db.Text
+  approved_at          DateTime?
+  left_at              DateTime?
+  return_at            DateTime?
+  finished_at          DateTime?
+  cancel_reason        String?     @db.Text
+  is_boarding_notice   Boolean     @default(false)
+  timeline_count       Int         @default(0)
+  created_at           DateTime    @default(now())
+  updated_at           DateTime    @updatedAt
+  deleted_at           DateTime?
+
+  student         Student   @relation(fields: [student_id], references: [id])
+  apply_teacher   Teacher   @relation("ApplyTeacher", fields: [apply_teacher_id], references: [id])
+  approve_teacher Teacher?  @relation("ApproveTeacher", fields: [approve_teacher_id], references: [id])
+  timelines       Timeline[]
+
+  @@index([student_id])
+  @@index([status])
+  @@index([class_id])
+  @@index([created_at])
+  @@index([apply_teacher_id])
+  @@map("LeaveRecord")
+}
+
+// DB-012 Timeline
+model Timeline {
+  id                    BigInt    @id @default(autoincrement())
+  timeline_no           String    @unique @db.VarChar(30)
+  student_id            BigInt
+  leave_record_id       BigInt?
+  event_type            EventType
+  event_title           String    @db.VarChar(100)
+  event_description     String?   @db.Text
+  operator_teacher_id   BigInt?
+  operator_teacher_name String?   @db.VarChar(50)
+  operator_role         String?   @db.VarChar(50)
+  target_role           String?   @db.VarChar(50)
+  before_status         String?   @db.VarChar(30)
+  after_status          String?   @db.VarChar(30)
+  event_source          String    @db.VarChar(30)
+  source_id             BigInt?
+  is_system             Boolean   @default(false)
+  latitude              Decimal?  @db.Decimal(10, 6)
+  longitude             Decimal?  @db.Decimal(10, 6)
+  device                String?   @db.VarChar(50)
+  ip_address            String?   @db.VarChar(50)
+  remark                String?   @db.Text
+  created_at            DateTime  @default(now())
+
+  student      Student      @relation(fields: [student_id], references: [id])
+  leave_record LeaveRecord? @relation(fields: [leave_record_id], references: [id])
+  teacher      Teacher?     @relation(fields: [operator_teacher_id], references: [id])
+
+  @@index([student_id])
+  @@index([leave_record_id])
+  @@index([created_at])
+  @@index([event_type])
+  @@index([operator_teacher_id])
+  @@map("Timeline")
+}
+
+// DB-017 Todo
+model Todo {
+  id            BigInt     @id @default(autoincrement())
+  todo_no       String     @unique @db.VarChar(30)
+  title         String     @db.VarChar(200)
+  content       String?    @db.Text
+  teacher_id    BigInt
+  business_type String     @db.VarChar(30)
+  business_id   BigInt?
+  priority      String     @default("NORMAL") @db.VarChar(20)
+  status        TodoStatus @default(TODO)
+  deadline      DateTime?
+  finished_at   DateTime?
+  created_at    DateTime   @default(now())
+
+  teacher Teacher @relation(fields: [teacher_id], references: [id])
+
+  @@index([teacher_id])
+  @@index([status])
+  @@map("Todo")
+}
+
+// DB-013 Notice（通知表）
+// docs/08-Database.md DB-013
+// docs/07-BusinessFlow.md 第七章：通知发布流程
+// 支持全体/按角色/按标签/按组织发送，发布后不可修改内容，仅允许撤回
+model Notice {
+  id                   BigInt       @id @default(autoincrement())
+  notice_no            String       @unique @db.VarChar(30)
+  title                String       @db.VarChar(200)
+  content              String       @db.Text
+  notice_type          NoticeType
+  publisher_teacher_id BigInt
+  publisher_name       String       @db.VarChar(50)
+  publish_scope        String       @db.Text // JSON 格式发送范围
+  priority             String       @default("NORMAL") @db.VarChar(20)
+  need_confirm         Boolean      @default(false)
+  status               NoticeStatus @default(DRAFT)
+  publish_at           DateTime?
+  expired_at           DateTime?
+  created_at           DateTime     @default(now())
+  updated_at           DateTime     @updatedAt
+  deleted_at           DateTime?
+
+  publisher Teacher     @relation("NoticePublisher", fields: [publisher_teacher_id], references: [id])
+  reads     NoticeRead[]
+
+  @@index([publisher_teacher_id])
+  @@index([status])
+  @@index([created_at])
+  @@map("Notice")
+}
+
+// DB-014 NoticeRead（通知阅读表）
+// docs/08-Database.md DB-014
+// 发布时为每个目标教师批量创建，记录阅读和确认状态
+model NoticeRead {
+  id         BigInt    @id @default(autoincrement())
+  notice_id  BigInt
+  teacher_id BigInt
+  is_read    Boolean   @default(false)
+  read_at    DateTime?
+  confirm_at DateTime?
+  created_at DateTime  @default(now())
+
+  notice  Notice  @relation(fields: [notice_id], references: [id], onDelete: Cascade)
+  teacher Teacher @relation(fields: [teacher_id], references: [id], onDelete: Cascade)
+
+  @@unique([notice_id, teacher_id])
+  @@index([notice_id])
+  @@index([teacher_id])
+  @@index([is_read])
+  @@map("NoticeRead")
+}
+
+// ==================== Phase 3 权限模型 ====================
+
+// Permission 权限表
+model Permission {
+  id            BigInt   @id @default(autoincrement())
+  permission_code  String   @unique @db.VarChar(50)
+  permission_name  String   @db.VarChar(50)
+  resource      String   @db.VarChar(50)
+  action        String   @db.VarChar(50)
+  description   String?  @db.Text
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  roles RolePermission[]
+
+  @@map("Permission")
+}
+
+// RolePermission 角色权限关联表
+model RolePermission {
+  id            BigInt @id @default(autoincrement())
+  role_id       BigInt
+  permission_id BigInt
+
+  role       Role       @relation(fields: [role_id], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permission_id], references: [id], onDelete: Cascade)
+
+  @@unique([role_id, permission_id])
+  @@index([permission_id])
+  @@map("RolePermission")
+}
