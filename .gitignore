@@ -61,3 +61,14 @@ uploads/*
 
 # Test
 *.lcov
+# TypeScript
+*.tsbuildinfo
+
+# Cursor
+.cursor/*
+!.cursor/rules/
+
+# macOS
+.AppleDouble
+.LSOverride
+
