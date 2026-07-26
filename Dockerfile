@@ -15,6 +15,7 @@ COPY shared ./shared
 COPY backend ./backend
 
 RUN pnpm install --frozen-lockfile
+RUN pnpm --filter @smartgrade/shared build
 RUN pnpm --filter backend prisma:generate
 RUN pnpm --filter backend build
 
@@ -30,6 +31,7 @@ RUN npm install -g pnpm@10
 
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY shared ./shared
+COPY --from=builder /app/shared/dist ./shared/dist
 COPY --from=builder /app/backend/dist ./backend/dist
 COPY --from=builder /app/backend/prisma ./backend/prisma
 COPY --from=builder /app/backend/package.json ./backend/package.json

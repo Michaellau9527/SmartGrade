@@ -10,7 +10,9 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "composite": true
+    "outDir": "./dist",
+    "rootDir": "."
   },
-  "include": ["types", "constants", "utils", "index.ts"]
+  "include": ["types", "constants", "utils", "enums", "index.ts"],
+  "exclude": ["node_modules", "dist"]
 }
