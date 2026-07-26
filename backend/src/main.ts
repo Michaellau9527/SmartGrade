@@ -42,9 +42,10 @@ async function bootstrap() {
     exclude: ['health', 'health/(.*)'],
   });
 
-  // CORS (开发环境允许所有来源)
+  // CORS
+  const corsOrigin = process.env.CORS_ORIGIN || '*';
   app.enableCors({
-    origin: process.env.NODE_ENV === 'development' ? '*' : undefined,
+    origin: corsOrigin === '*' ? true : corsOrigin.split(','),
     credentials: true,
   });
 
@@ -75,7 +76,7 @@ async function bootstrap() {
 
   // 启动服务
   const port = process.env.PORT || 3000;
-  await app.listen(port);
+  await app.listen(port, '0.0.0.0');
 
   logger.log(`SmartGrade Backend running on: http://localhost:${port}`);
   logger.log(`API Docs: http://localhost:${port}/docs`);
