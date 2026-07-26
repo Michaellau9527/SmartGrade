@@ -14,7 +14,7 @@
  */
 
 import type { Prisma, Notice as PrismaNotice, NoticeRead as PrismaNoticeRead } from '@prisma/client';
-import type { AuthorizationContext } from '../authorization/types';
+import type { AuthorizationContext } from '../../authorization/types';
 import type { TxClient } from '../../repositories/base.repository';
 import { NoticeRepository } from '../../repositories/notice.repository';
 import { TimelineRepository, type CreateTimelineEventInput } from '../../repositories/timeline.repository';
@@ -73,7 +73,7 @@ export class NoticeCapabilityService {
           publisherId: actor.teacherId ?? actor.userId,
           publisherName: actor.teacherId ? '教师' : actor.userId,
           schoolId: organization.schoolId,
-        } as Prisma.NoticeCreateInput,
+        } as unknown as Prisma.NoticeCreateInput,
         tx,
       );
 
@@ -83,6 +83,7 @@ export class NoticeCapabilityService {
           eventType: 'NOTICE_CREATED' as any,
           eventSource: 'NOTICE' as any,
           sourceEventId: created.id,
+          studentId: 'system',
           operatorId: actor.teacherId ?? actor.userId,
           operatorName: actor.teacherId ? '教师' : actor.userId,
           operatorRole: actor.userType,
@@ -95,7 +96,7 @@ export class NoticeCapabilityService {
           occurredAt: new Date(),
           schoolId: organization.schoolId,
           noticeId: created.id,
-        } as CreateTimelineEventInput,
+        } as unknown as CreateTimelineEventInput,
         tx,
       );
 
@@ -128,6 +129,7 @@ export class NoticeCapabilityService {
           eventType: eventType as any,
           eventSource: 'NOTICE' as any,
           sourceEventId: id,
+          studentId: 'system',
           operatorId: actor.teacherId ?? actor.userId,
           operatorName: actor.teacherId ? '教师' : actor.userId,
           operatorRole: actor.userType,
@@ -140,7 +142,7 @@ export class NoticeCapabilityService {
           occurredAt: new Date(),
           schoolId: result.schoolId,
           noticeId: id,
-        } as CreateTimelineEventInput,
+        } as unknown as CreateTimelineEventInput,
         tx,
       );
 
@@ -149,7 +151,7 @@ export class NoticeCapabilityService {
 
     const readRecord = await noticeRepository.findById(id, true);
     const timelines = await timelineRepository.findByRelated('NOTICE' as any, id);
-    return this._toResponse(updated, readRecord?.reads?.[0] ?? null, timelines);
+    return this._toResponse(updated, (readRecord as any)?.reads?.[0] ?? null, timelines);
   }
 
   // ============================================================
@@ -174,6 +176,7 @@ export class NoticeCapabilityService {
           eventType: 'NOTICE_READ' as any,
           eventSource: 'NOTICE' as any,
           sourceEventId: id,
+          studentId: 'system',
           operatorId: readerId,
           operatorName: actor.teacherId ? '教师' : actor.userId,
           operatorRole: actor.userType,
@@ -185,14 +188,14 @@ export class NoticeCapabilityService {
           occurredAt: new Date(),
           schoolId: record.schoolId,
           noticeId: id,
-        } as CreateTimelineEventInput,
+        } as unknown as CreateTimelineEventInput,
         tx,
       );
     });
 
     const updated = await noticeRepository.findById(id, true);
     const timelines = await timelineRepository.findByRelated('NOTICE' as any, id);
-    return this._toResponse(updated!, updated?.reads?.[0] ?? null, timelines);
+    return this._toResponse(updated!, (updated as any)?.reads?.[0] ?? null, timelines);
   }
 
   // ============================================================
@@ -207,7 +210,7 @@ export class NoticeCapabilityService {
     if (!record) throw new NoticeNotFoundError(id);
 
     const readerId = actor.teacherId ?? actor.userId;
-    const existingRead = record.reads?.find((r: any) => r.teacherId === readerId);
+    const existingRead = (record as any).reads?.find((r: any) => r.teacherId === readerId);
 
     // DomainService 校验是否可以 Acknowledge
     if (!domainService.canAcknowledge(record.requireConfirm, !!existingRead?.confirmAt)) {
@@ -223,6 +226,7 @@ export class NoticeCapabilityService {
           eventType: 'NOTICE_ACKNOWLEDGED' as any,
           eventSource: 'NOTICE' as any,
           sourceEventId: id,
+          studentId: 'system',
           operatorId: readerId,
           operatorName: actor.teacherId ? '教师' : actor.userId,
           operatorRole: actor.userType,
@@ -234,14 +238,14 @@ export class NoticeCapabilityService {
           occurredAt: new Date(),
           schoolId: record.schoolId,
           noticeId: id,
-        } as CreateTimelineEventInput,
+        } as unknown as CreateTimelineEventInput,
         tx,
       );
     });
 
     const updated = await noticeRepository.findById(id, true);
     const timelines = await timelineRepository.findByRelated('NOTICE' as any, id);
-    return this._toResponse(updated!, updated?.reads?.[0] ?? null, timelines);
+    return this._toResponse(updated!, (updated as any)?.reads?.[0] ?? null, timelines);
   }
 
   // ============================================================
@@ -255,7 +259,7 @@ export class NoticeCapabilityService {
     if (!record) throw new NoticeNotFoundError(id);
 
     const readerId = ctx.actor.teacherId ?? ctx.actor.userId;
-    const readRecord = record.reads?.find((r: any) => r.teacherId === readerId);
+    const readRecord = (record as any).reads?.find((r: any) => r.teacherId === readerId);
 
     const timelines = await timelineRepository.findByRelated('NOTICE' as any, id);
 

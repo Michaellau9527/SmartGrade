@@ -35,14 +35,14 @@ export class AuthController {
   @Post('logout')
   @ApiBearerAuth()
   @ApiOperation({ summary: '退出登录' })
-  async logout(@CurrentUser('id') teacherId: number) {
+  async logout(@CurrentUser('id') teacherId: string) {
     return this.authService.logout(teacherId);
   }
 
   @Get('me')
   @ApiBearerAuth()
   @ApiOperation({ summary: '获取当前用户信息', description: '返回当前登录教师的完整信息、角色、标签、权限' })
-  async getCurrentUser(@CurrentUser('id') teacherId: number) {
+  async getCurrentUser(@CurrentUser('id') teacherId: string) {
     return this.authService.getCurrentUser(teacherId);
   }
 }

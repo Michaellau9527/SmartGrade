@@ -53,7 +53,7 @@ export class QueryStudentDto extends PaginationDto {
 export class CreateStudentDto {
   @ApiProperty({ description: '学号', example: 'S2024001' })
   @IsString()
-  student_no: string;
+  studentNo: string;
 
   @ApiProperty({ description: '姓名', example: '张三' })
   @IsString()
@@ -67,12 +67,12 @@ export class CreateStudentDto {
   @ApiProperty({ description: '班级ID', example: 1 })
   @IsInt()
   @Type(() => Number)
-  class_id: number;
+  classId: number;
 
   @ApiProperty({ description: '住宿类型', enum: ['DAY', 'BOARDING'], example: 'DAY' })
   @IsString()
   @IsIn(['DAY', 'BOARDING'])
-  boarding_type: string;
+  boardingType: string;
 
   @ApiPropertyOptional({ description: '宿舍房间ID' })
   @IsOptional()
@@ -83,7 +83,7 @@ export class CreateStudentDto {
   @ApiPropertyOptional({ description: '床位号' })
   @IsOptional()
   @IsString()
-  bed_no?: string;
+  bedNo?: string;
 
   @ApiPropertyOptional({ description: '联系电话' })
   @IsOptional()
@@ -122,7 +122,7 @@ export class UpdateStudentDto {
   @IsOptional()
   @IsString()
   @IsIn(['DAY', 'BOARDING'])
-  boarding_type?: string;
+  boardingType?: string;
 
   @ApiPropertyOptional({ description: '宿舍房间ID' })
   @IsOptional()
@@ -133,7 +133,7 @@ export class UpdateStudentDto {
   @ApiPropertyOptional({ description: '床位号' })
   @IsOptional()
   @IsString()
-  bed_no?: string;
+  bedNo?: string;
 
   @ApiPropertyOptional({ description: '联系电话' })
   @IsOptional()
@@ -162,7 +162,7 @@ export class SetDormitoryDto {
 
   @ApiProperty({ description: '床位号', example: 'A01' })
   @IsString()
-  bed_no: string;
+  bedNo: string;
 }
 
 /**

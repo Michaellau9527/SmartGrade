@@ -17,11 +17,11 @@ function createMockMethod(): jest.Mock {
 }
 
 function createMockTable(): any {
-  return new Proxy({}, {
+  return new Proxy({} as Record<string, any>, {
     get(target, prop) {
       if (typeof prop === 'symbol' || prop === 'then') return undefined;
-      if (!(prop in target)) target[prop] = createMockMethod();
-      return target[prop];
+      if (!(prop in target)) target[prop as string] = createMockMethod();
+      return target[prop as string];
     },
   });
 }

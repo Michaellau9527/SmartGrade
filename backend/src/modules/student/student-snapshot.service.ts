@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '@/common/prisma';
+import { StudentStatus } from '@prisma/client';
 
 /**
  * StudentSnapshotService - 学生快照服务
@@ -8,15 +9,15 @@ import { PrismaService } from '@/common/prisma';
  * 快照数据写入 LeaveRecord 的冗余字段，确保历史记录不受后续学生信息变更影响。
  *
  * docs/08-Database.md DB-011 LeaveRecord 字段说明：
- *   student_name   - 冗余字段，来自 Student.name
- *   class_id       - 冗余字段，来自 Student.class_id
- *   class_name     - 冗余字段，来自 Class.class_name
- *   boarding_type  - 冗余字段，来自 Student.boarding_type
- *   dorm_room_id   - 冗余字段，来自 Student.dorm_room_id
- *   bed_no         - 冗余字段，来自 Student.bed_no
+ *   studentName   - 冗余字段，来自 Student.name
+ *   classId       - 冗余字段，来自 Student.classId
+ *   className     - 冗余字段，来自 Class.name
+ *   boardingType  - 冗余字段，来自 Student.boardingType
+ *   dormId        - 冗余字段，来自 Student.dormId
+ *   bedNo         - 冗余字段，来自 Student.bedNo
  *
  * docs/07-BusinessFlow.md 第二章前置条件：
- *   学生状态必须为 IN_SCHOOL
+ *   学生状态必须为 ON_CAMPUS
  *   学生不能存在未完成请假
  */
 
@@ -27,19 +28,19 @@ import { PrismaService } from '@/common/prisma';
  */
 export interface StudentSnapshot {
   /** 学生ID */
-  student_id: bigint;
-  /** 学生姓名（冗余到 LeaveRecord.student_name） */
-  student_name: string;
-  /** 班级ID（冗余到 LeaveRecord.class_id） */
-  class_id: bigint;
-  /** 班级名称（冗余到 LeaveRecord.class_name） */
-  class_name: string;
-  /** 住宿类型（冗余到 LeaveRecord.boarding_type） */
-  boarding_type: string;
-  /** 宿舍房间ID（冗余到 LeaveRecord.dorm_room_id） */
-  dorm_room_id: bigint | null;
-  /** 床位号（冗余到 LeaveRecord.bed_no） */
-  bed_no: string | null;
+  studentId: string;
+  /** 学生姓名（冗余到 LeaveRecord.studentName） */
+  studentName: string;
+  /** 班级ID（冗余到 LeaveRecord.classId） */
+  classId: string;
+  /** 班级名称（冗余到 LeaveRecord.className） */
+  className: string;
+  /** 住宿类型（冗余到 LeaveRecord.boardingType） */
+  boardingType: string;
+  /** 宿舍房间ID（冗余到 LeaveRecord.dormId） */
+  dormId: string | null;
+  /** 床位号（冗余到 LeaveRecord.bedNo） */
+  bedNo: string | null;
 }
 
 /**
@@ -68,12 +69,12 @@ export class StudentSnapshotService {
    * @returns 学生快照数据
    * @throws NotFoundException 学生不存在
    */
-  async capture(studentId: number | bigint): Promise<StudentSnapshot> {
+  async capture(studentId: string | number): Promise<StudentSnapshot> {
     const student = await this.prisma.student.findUnique({
-      where: { id: BigInt(studentId), deleted_at: null },
+      where: { id: String(studentId), deletedAt: null },
       include: {
         class: {
-          select: { id: true, class_name: true },
+          select: { id: true, name: true },
         },
       },
     });
@@ -83,18 +84,18 @@ export class StudentSnapshotService {
     }
 
     this.logger.debug(
-      `捕获学生快照: ${student.student_no} ${student.name}, ` +
-        `班级: ${student.class.class_name}, 住宿: ${student.boarding_type}`,
+      `捕获学生快照: ${student.studentNo} ${student.name}, ` +
+        `班级: ${student.class.name}, 住宿: ${student.boardingType}`,
     );
 
     return {
-      student_id: student.id,
-      student_name: student.name,
-      class_id: student.class_id,
-      class_name: student.class.class_name,
-      boarding_type: student.boarding_type,
-      dorm_room_id: student.dorm_room_id,
-      bed_no: student.bed_no,
+      studentId: student.id,
+      studentName: student.name,
+      classId: student.classId,
+      className: student.class.name,
+      boardingType: student.boardingType,
+      dormId: student.dormId,
+      bedNo: student.bedNo,
     };
   }
 
@@ -102,16 +103,16 @@ export class StudentSnapshotService {
    * 验证学生是否可以发起请假
    *
    * docs/07-BusinessFlow.md 第二章前置条件：
-   * 1. 学生状态必须为 IN_SCHOOL（在校）
+   * 1. 学生状态必须为 ON_CAMPUS（在校）
    * 2. 学生不能存在未完成请假（PENDING / APPROVED / LEFT）
    *
    * @param studentId 学生ID
    * @returns 验证结果
    */
-  async validateForLeave(studentId: number | bigint): Promise<SnapshotValidationResult> {
+  async validateForLeave(studentId: string | number): Promise<SnapshotValidationResult> {
     const student = await this.prisma.student.findUnique({
-      where: { id: BigInt(studentId), deleted_at: null },
-      select: { id: true, name: true, status: true },
+      where: { id: String(studentId), deletedAt: null },
+      select: { id: true, name: true, currentStatus: true },
     });
 
     if (!student) {
@@ -119,27 +120,27 @@ export class StudentSnapshotService {
     }
 
     // 检查学生状态
-    if (student.status !== 'IN_SCHOOL') {
+    if (student.currentStatus !== 'ON_CAMPUS') {
       return {
         valid: false,
-        reason: `学生当前状态为 ${student.status}，仅在校学生可发起请假`,
+        reason: `学生当前状态为 ${student.currentStatus}，仅在校学生可发起请假`,
       };
     }
 
     // 检查是否存在未完成请假
     const activeLeave = await this.prisma.leaveRecord.findFirst({
       where: {
-        student_id: BigInt(studentId),
+        studentId: String(studentId),
         status: { in: ['PENDING', 'APPROVED', 'LEFT'] },
-        deleted_at: null,
+        deletedAt: null,
       },
-      select: { id: true, leave_no: true, status: true },
+      select: { id: true, leaveNo: true, status: true },
     });
 
     if (activeLeave) {
       return {
         valid: false,
-        reason: `学生存在未完成请假 (单号: ${activeLeave.leave_no}, 状态: ${activeLeave.status})`,
+        reason: `学生存在未完成请假 (单号: ${activeLeave.leaveNo}, 状态: ${activeLeave.status})`,
       };
     }
 
@@ -157,7 +158,7 @@ export class StudentSnapshotService {
    * @throws NotFoundException 学生不存在
    * @throws BadRequestException 不满足请假前置条件
    */
-  async captureForLeave(studentId: number | bigint): Promise<StudentSnapshot> {
+  async captureForLeave(studentId: string | number): Promise<StudentSnapshot> {
     const validation = await this.validateForLeave(studentId);
 
     if (!validation.valid) {

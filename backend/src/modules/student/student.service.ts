@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '@/common/prisma';
 import { DataScope, DataScopeType, CurrentUserPayload } from '@/common/types';
-import { Gender, BoardingType } from '@prisma/client';
+import { Gender, BoardingType, StudentStatus } from '@prisma/client';
 import {
   QueryStudentDto,
   CreateStudentDto,
@@ -16,9 +16,9 @@ import {
  * 根据 DataScope.type 自动构建 Prisma where 条件
  *
  * ALL: 无过滤（管理员、政教）
- * GRADE: WHERE class.grade_id = dataScope.gradeId（年级主任）
- * CLASS: WHERE class_id = dataScope.classId（班主任）
- * DORM: WHERE boarding_type = 'BOARDING'（宿管）
+ * GRADE: WHERE class.gradeId = dataScope.gradeId（年级主任）
+ * CLASS: WHERE classId = dataScope.classId（班主任）
+ * DORM: WHERE boardingType = 'BOARDING'（宿管）
  * SELF: 返回空列表（任课教师无授课关系）
  */
 @Injectable()
@@ -41,50 +41,50 @@ export class StudentService {
     if (query.keyword) {
       where.OR = [
         { name: { contains: query.keyword } },
-        { student_no: { contains: query.keyword } },
+        { studentNo: { contains: query.keyword } },
       ];
     }
     if (query.classId) {
-      where.class_id = query.classId;
+      where.classId = String(query.classId);
     }
     if (query.gradeId) {
       // 年级过滤需要通过 class 表关联
-      where.class = { ...where.class, grade_id: query.gradeId };
+      where.class = { ...where.class, gradeId: String(query.gradeId) };
     }
     if (query.boardingType) {
-      where.boarding_type = query.boardingType;
+      where.boardingType = query.boardingType as BoardingType;
     }
     if (query.status) {
-      where.status = query.status;
+      where.currentStatus = this.mapStatusToCurrentStatus(query.status);
     }
     if (query.gender) {
-      where.gender = query.gender;
+      where.gender = query.gender as Gender;
     }
 
     // 逻辑删除过滤
-    where.deleted_at = null;
+    where.deletedAt = null;
 
     const [list, total] = await Promise.all([
       this.prisma.student.findMany({
         where,
         skip: query.skip,
         take: query.take,
-        orderBy: { created_at: 'desc' },
+        orderBy: { createdAt: 'desc' },
         include: {
           class: {
             include: {
               grade: {
-                select: { id: true, grade_name: true, grade_code: true },
+                select: { id: true, name: true, code: true },
               },
-              head_teacher: {
-                select: { id: true, name: true, teacher_no: true },
+              headTeacher: {
+                select: { id: true, name: true, teacherNo: true },
               },
             },
           },
-          dorm_room: {
+          dorm: {
             include: {
               building: {
-                select: { id: true, building_name: true },
+                select: { id: true, name: true },
               },
             },
           },
@@ -107,24 +107,24 @@ export class StudentService {
    * 包含：基本信息、班级、年级、住宿、请假数量、时间轴数量
    * 数据权限：用户必须能查看该学生
    */
-  async findOne(id: number, user: CurrentUserPayload) {
+  async findOne(id: string, user: CurrentUserPayload) {
     const student = await this.prisma.student.findUnique({
-      where: { id, deleted_at: null },
+      where: { id, deletedAt: null },
       include: {
         class: {
           include: {
             grade: {
-              select: { id: true, grade_name: true, grade_code: true },
+              select: { id: true, name: true, code: true },
             },
-            head_teacher: {
-              select: { id: true, name: true, teacher_no: true, phone: true },
+            headTeacher: {
+              select: { id: true, name: true, teacherNo: true, phone: true },
             },
           },
         },
-        dorm_room: {
+        dorm: {
           include: {
             building: {
-              select: { id: true, building_name: true },
+              select: { id: true, name: true },
             },
           },
         },
@@ -136,15 +136,15 @@ export class StudentService {
     }
 
     // 数据权限校验：检查当前用户是否能查看该学生
-    this.checkDataScopeAccess(student.class_id, student.boarding_type, user.dataScope);
+    this.checkDataScopeAccess(student.classId, student.boardingType, user.dataScope);
 
     // 统计请假数量和时间轴数量
     const [leaveCount, timelineCount] = await Promise.all([
       this.prisma.leaveRecord.count({
-        where: { student_id: id, deleted_at: null },
+        where: { studentId: id, deletedAt: null },
       }),
-      this.prisma.timeline.count({
-        where: { student_id: id },
+      this.prisma.timelineEvent.count({
+        where: { studentId: id },
       }),
     ]);
 
@@ -163,48 +163,49 @@ export class StudentService {
   async create(dto: CreateStudentDto, user: CurrentUserPayload) {
     // 验证班级存在
     const cls = await this.prisma.class.findUnique({
-      where: { id: dto.class_id },
+      where: { id: String(dto.classId) },
     });
     if (!cls) {
       throw new BadRequestException('班级不存在');
     }
 
     // 验证宿舍（如果是住宿生）
-    if (dto.boarding_type === 'BOARDING' && dto.dorm_room_id) {
-      await this.validateDormitory(dto.dorm_room_id, dto.bed_no);
+    if (dto.boardingType === 'BOARDING' && dto.dorm_room_id) {
+      await this.validateDormitory(String(dto.dorm_room_id), dto.bedNo);
     }
 
     // 创建学生
     const student = await this.prisma.student.create({
       data: {
-        student_no: dto.student_no,
+        studentNo: dto.studentNo,
         name: dto.name,
         gender: dto.gender as Gender,
-        class_id: dto.class_id,
-        boarding_type: dto.boarding_type as BoardingType,
-        dorm_room_id: dto.dorm_room_id || null,
-        bed_no: dto.bed_no || null,
+        classId: String(dto.classId),
+        gradeId: cls.gradeId,
+        schoolId: cls.schoolId,
+        boardingType: dto.boardingType as BoardingType,
+        dormId: dto.dorm_room_id ? String(dto.dorm_room_id) : null,
+        bedNo: dto.bedNo || null,
         phone: dto.phone,
-        parent_name: dto.parent_name,
-        parent_phone: dto.parent_phone,
+        enrolledAt: new Date(),
       },
       include: {
         class: {
           include: {
             grade: {
-              select: { id: true, grade_name: true },
+              select: { id: true, name: true },
             },
           },
         },
-        dorm_room: {
+        dorm: {
           include: {
-            building: { select: { building_name: true } },
+            building: { select: { name: true } },
           },
         },
       },
     });
 
-    this.logger.log(`创建学生: ${dto.student_no} ${dto.name}, 操作人: ${user.name}`);
+    this.logger.log(`创建学生: ${dto.studentNo} ${dto.name}, 操作人: ${user.name}`);
 
     return student;
   }
@@ -212,9 +213,9 @@ export class StudentService {
   /**
    * 修改学生信息
    */
-  async update(id: number, dto: UpdateStudentDto, user: CurrentUserPayload) {
+  async update(id: string, dto: UpdateStudentDto, user: CurrentUserPayload) {
     const student = await this.prisma.student.findUnique({
-      where: { id, deleted_at: null },
+      where: { id, deletedAt: null },
       include: { class: true },
     });
 
@@ -223,19 +224,26 @@ export class StudentService {
     }
 
     // 数据权限校验
-    this.checkDataScopeAccess(student.class_id, student.boarding_type, user.dataScope);
+    this.checkDataScopeAccess(student.classId, student.boardingType, user.dataScope);
 
     // 如果修改住宿类型为 BOARDING，需要验证宿舍
-    if (dto.boarding_type === 'BOARDING' && dto.dorm_room_id) {
-      await this.validateDormitory(dto.dorm_room_id, dto.bed_no);
+    if (dto.boardingType === 'BOARDING' && dto.dorm_room_id) {
+      await this.validateDormitory(String(dto.dorm_room_id), dto.bedNo);
     }
 
     // 如果从住宿改为走读，清除宿舍信息
     const data: any = { ...dto };
-    if (dto.boarding_type === 'DAY') {
-      data.dorm_room_id = null;
-      data.bed_no = null;
+    if (dto.boardingType === 'DAY') {
+      data.dormId = null;
+      data.bedNo = null;
+    } else if (dto.dorm_room_id !== undefined) {
+      data.dormId = dto.dorm_room_id ? String(dto.dorm_room_id) : null;
     }
+
+    // 删除 DTO 中不存在于 Student 模型的字段
+    delete data.parent_name;
+    delete data.parent_phone;
+    delete data.dorm_room_id;
 
     const updated = await this.prisma.student.update({
       where: { id },
@@ -243,18 +251,18 @@ export class StudentService {
       include: {
         class: {
           include: {
-            grade: { select: { id: true, grade_name: true } },
+            grade: { select: { id: true, name: true } },
           },
         },
-        dorm_room: {
+        dorm: {
           include: {
-            building: { select: { building_name: true } },
+            building: { select: { name: true } },
           },
         },
       },
     });
 
-    this.logger.log(`修改学生: ${student.student_no}, 操作人: ${user.name}`);
+    this.logger.log(`修改学生: ${student.studentNo}, 操作人: ${user.name}`);
 
     return updated;
   }
@@ -262,9 +270,9 @@ export class StudentService {
   /**
    * 删除学生（逻辑删除）
    */
-  async remove(id: number, user: CurrentUserPayload) {
+  async remove(id: string, user: CurrentUserPayload) {
     const student = await this.prisma.student.findUnique({
-      where: { id, deleted_at: null },
+      where: { id, deletedAt: null },
       include: { class: true },
     });
 
@@ -273,14 +281,14 @@ export class StudentService {
     }
 
     // 数据权限校验
-    this.checkDataScopeAccess(student.class_id, student.boarding_type, user.dataScope);
+    this.checkDataScopeAccess(student.classId, student.boardingType, user.dataScope);
 
     await this.prisma.student.update({
       where: { id },
-      data: { deleted_at: new Date() },
+      data: { deletedAt: new Date() },
     });
 
-    this.logger.log(`删除学生: ${student.student_no}, 操作人: ${user.name}`);
+    this.logger.log(`删除学生: ${student.studentNo}, 操作人: ${user.name}`);
 
     return { success: true };
   }
@@ -290,9 +298,9 @@ export class StudentService {
    *
    * docs/09-API.md: POST /api/v1/students/{id}/dormitory
    */
-  async setDormitory(id: number, dto: SetDormitoryDto, user: CurrentUserPayload) {
+  async setDormitory(id: string, dto: SetDormitoryDto, user: CurrentUserPayload) {
     const student = await this.prisma.student.findUnique({
-      where: { id, deleted_at: null },
+      where: { id, deletedAt: null },
       include: { class: true },
     });
 
@@ -300,27 +308,27 @@ export class StudentService {
       throw new NotFoundException('学生不存在');
     }
 
-    this.checkDataScopeAccess(student.class_id, student.boarding_type, user.dataScope);
+    this.checkDataScopeAccess(student.classId, student.boardingType, user.dataScope);
 
-    await this.validateDormitory(dto.dorm_room_id, dto.bed_no);
+    await this.validateDormitory(String(dto.dorm_room_id), dto.bedNo);
 
     const updated = await this.prisma.student.update({
       where: { id },
       data: {
-        dorm_room_id: dto.dorm_room_id,
-        bed_no: dto.bed_no,
-        boarding_type: 'BOARDING' as BoardingType,
+        dormId: String(dto.dorm_room_id),
+        bedNo: dto.bedNo,
+        boardingType: 'BOARDING' as BoardingType,
       },
       include: {
-        dorm_room: {
+        dorm: {
           include: {
-            building: { select: { building_name: true } },
+            building: { select: { name: true } },
           },
         },
       },
     });
 
-    this.logger.log(`设置住宿: ${student.student_no} → 房间${dto.dorm_room_id} 床位${dto.bed_no}, 操作人: ${user.name}`);
+    this.logger.log(`设置住宿: ${student.studentNo} → 房间${dto.dorm_room_id} 床位${dto.bedNo}, 操作人: ${user.name}`);
 
     return updated;
   }
@@ -355,28 +363,28 @@ export class StudentService {
         break;
 
       case 'GRADE':
-        // 年级主任：WHERE class.grade_id = gradeId
-        baseFilter.class = { grade_id: dataScope.gradeId };
+        // 年级主任：WHERE class.gradeId = gradeId
+        baseFilter.class = { gradeId: dataScope.gradeId };
         break;
 
       case 'CLASS':
-        // 班主任：WHERE class_id = classId
-        baseFilter.class_id = dataScope.classId;
+        // 班主任：WHERE classId = classId
+        baseFilter.classId = dataScope.classId;
         break;
 
       case 'DORM':
         // 宿管：仅住宿生
-        baseFilter.boarding_type = 'BOARDING';
+        baseFilter.boardingType = 'BOARDING';
         break;
 
       case 'SELF':
         // 任课教师：无授课关系时返回空结果
-        // 预留扩展：未来 classIds 有值时使用 class_id: { in: classIds }
+        // 预留扩展：未来 classIds 有值时使用 classId: { in: classIds }
         if (dataScope.classIds && dataScope.classIds.length > 0) {
-          baseFilter.class_id = { in: dataScope.classIds };
+          baseFilter.classId = { in: dataScope.classIds };
         } else {
           // 无授课班级，返回不可能匹配的条件
-          baseFilter.id = 0;
+          baseFilter.id = '__nonexistent__';
         }
         break;
     }
@@ -391,7 +399,7 @@ export class StudentService {
    * 确保用户能访问该学生
    */
   private checkDataScopeAccess(
-    studentClassId: bigint,
+    studentClassId: string,
     studentBoardingType: string,
     dataScope: DataScope,
   ): void {
@@ -407,7 +415,7 @@ export class StudentService {
 
       case 'CLASS':
         // 班主任：学生属于该班级
-        if (dataScope.classId && Number(studentClassId) !== dataScope.classId) {
+        if (dataScope.classId && studentClassId !== String(dataScope.classId)) {
           throw new NotFoundException('无权访问该学生');
         }
         return;
@@ -431,7 +439,7 @@ export class StudentService {
   /**
    * 验证宿舍房间和床位
    */
-  private async validateDormitory(dormRoomId: number, bedNo?: string) {
+  private async validateDormitory(dormRoomId: string, bedNo?: string) {
     const room = await this.prisma.dormRoom.findUnique({
       where: { id: dormRoomId },
     });
@@ -444,10 +452,10 @@ export class StudentService {
     if (bedNo) {
       const occupied = await this.prisma.student.findFirst({
         where: {
-          dorm_room_id: dormRoomId,
-          bed_no: bedNo,
-          deleted_at: null,
-          status: { in: ['IN_SCHOOL', 'PENDING_LEAVE'] },
+          dormId: dormRoomId,
+          bedNo: bedNo,
+          deletedAt: null,
+          currentStatus: { in: ['ON_CAMPUS', 'OUT_OF_SCHOOL'] as StudentStatus[] },
         },
       });
 
@@ -455,5 +463,17 @@ export class StudentService {
         throw new BadRequestException(`床位 ${bedNo} 已被学生 ${occupied.name} 占用`);
       }
     }
+  }
+
+  /**
+   * 将旧的 status 字符串映射到 currentStatus 枚举
+   */
+  private mapStatusToCurrentStatus(status: string): StudentStatus | undefined {
+    const map: Record<string, StudentStatus> = {
+      'IN_SCHOOL': 'ON_CAMPUS' as StudentStatus,
+      'PENDING_LEAVE': 'OUT_OF_SCHOOL' as StudentStatus,
+      'LEFT_SCHOOL': 'OUT_OF_SCHOOL' as StudentStatus,
+    };
+    return map[status];
   }
 }

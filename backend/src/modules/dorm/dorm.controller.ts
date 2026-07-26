@@ -29,7 +29,7 @@ export class DormController {
   @RequirePermissions('dorm:read')
   @ApiOperation({ summary: '公寓房间列表' })
   async findRoomsByDormitory(@Param() params: IdParamDto, @Query() query: QueryDormDto) {
-    return this.dormService.findRooms({ ...query, dormitoryId: params.id } as QueryDormDto);
+    return this.dormService.findRooms({ ...query, dormitoryId: params.id } as unknown as QueryDormDto);
   }
 
   @Get('rooms/:id')
