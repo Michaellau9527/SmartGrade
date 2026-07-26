@@ -128,9 +128,9 @@ function buildCtx(overrides: Partial<AuthorizationContext> = {}): AuthorizationC
     authorization: {
       roleSet: new Set([RoleCode.ROLE_HEADMASTER]),
       permissionSet: new Set([
-        PermissionCode.NOTICE_CREATE,
+        PermissionCode.NOTICE_PUBLISH,
         PermissionCode.NOTICE_READ,
-        PermissionCode.NOTICE_UPDATE,
+        PermissionCode.NOTICE_DELETE,
       ]),
       organization: {
         schoolId: 'school_001',

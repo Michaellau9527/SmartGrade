@@ -9,7 +9,7 @@
  * 3. 双维度查询 —— 复用 StudentRepository.findByStatusAndLocation
  *
  * ⚠️ v1.3 强制规范：
- * - 本 Service **只读** Student.current_status / current_location
+ * - 本 Service **只读** Student.currentStatus / currentLocation
  * - 本 Service **不**提供 setCurrentStatus / setCurrentLocation 方法
  * - 状态变更必须通过 TimelineService.createEvent()
  */
@@ -18,6 +18,7 @@ import type { Student, StudentStatus, StudentLocation, BoardingType } from '@sma
 import { StudentStatusLocationResolver as ReadResolver } from '@smartgrade/shared/types/domain';
 import { studentRepository } from '../repositories/student.repository';
 import { teacherRepository } from '../repositories/teacher.repository';
+import type { Student as PrismaStudent } from '@prisma/client';
 
 export interface WorkbenchStudentView extends Student {
   /** 派生：是否实际在校 */
@@ -39,7 +40,7 @@ export class StudentStatusService {
   /**
    * 加载班主任所带班级的学生工作台视图
    *
-   * 测试 2 关键路径：teacher_id → teacher_class_relation → students
+   * 测试 2 关键路径：teacherId → teacher_class_relation → students
    *
    * @param teacherId 教师 ID
    * @param options.classId 限定班级（不传则取该教师所有当前关系班）
@@ -88,11 +89,7 @@ export class StudentStatusService {
         outOfSchool: views.filter((v) => v.current_status === ('OUT_OF_SCHOOL' as StudentStatus)).length,
         abnormal: views.filter((v) => v.abnormal).length,
         boardingShouldCheckIn: views.filter((v) =>
-          ReadResolver.shouldCheckInDorm(this.toDomainStudent({
-            currentStatus: v.current_status,
-            currentLocation: v.current_location,
-            boardingType: v.boarding_type,
-          }))
+          ReadResolver.shouldCheckInDorm(this.toDomainStudent(v))
         ).length,
       };
 
@@ -119,11 +116,7 @@ export class StudentStatusService {
     });
 
     return students
-      .filter((s) => ReadResolver.shouldCheckInDorm(this.toDomainStudent({
-        currentStatus: s.currentStatus,
-        currentLocation: s.currentLocation,
-        boardingType: s.boardingType,
-      })))
+      .filter((s) => ReadResolver.shouldCheckInDorm(this.toDomainStudentFromPrisma(s)))
       .map((s) => this.toWorkbenchView(s));
   }
 
@@ -144,13 +137,13 @@ export class StudentStatusService {
   /**
    * 内部：将 Prisma Student 转为 工作台视图（含派生字段）
    */
-  private toWorkbenchView(prismaStudent: Awaited<ReturnType<typeof studentRepository.findByClass>>[number]): WorkbenchStudentView {
-    const domain = this.toDomainStudent(prismaStudent);
+  private toWorkbenchView(prismaStudent: PrismaStudent): WorkbenchStudentView {
+    const domainStudent = this.toDomainStudentFromPrisma(prismaStudent);
     return {
-      ...(prismaStudent as unknown as Student),
-      actuallyInSchool: ReadResolver.isActuallyInSchool(domain),
-      abnormal: ReadResolver.isAbnormal(domain),
-      isBoarding: ReadResolver.isBoardingStudent(domain),
+      ...domainStudent,
+      actuallyInSchool: ReadResolver.isActuallyInSchool(domainStudent),
+      abnormal: ReadResolver.isAbnormal(domainStudent),
+      isBoarding: ReadResolver.isBoardingStudent(domainStudent),
       statusText: this.statusText(prismaStudent.currentStatus),
       locationText: this.locationText(prismaStudent.currentLocation),
     };
@@ -158,25 +151,40 @@ export class StudentStatusService {
 
   /**
    * 内部：Prisma Student → Domain Student（用于 Resolver）
+   * 将 camelCase 的 Prisma 模型转换为 snake_case 的 shared domain 模型
    */
-  private toDomainStudent(s: { currentStatus: string; currentLocation: string; boardingType: string }): Student {
+  private toDomainStudentFromPrisma(s: PrismaStudent): Student {
     return {
-      id: '',
-      student_no: '',
-      name: '',
-      gender: 'OTHER',
-      class_id: '',
-      grade_id: '',
-      school_id: '',
+      id: s.id,
+      student_no: s.studentNo,
+      name: s.name,
+      gender: s.gender as 'MALE' | 'FEMALE' | 'OTHER',
+      class_id: s.classId,
+      grade_id: s.gradeId,
+      school_id: s.schoolId,
       boarding_type: s.boardingType as BoardingType,
+      dorm_id: s.dormId ?? undefined,
+      bed_no: s.bedNo ?? undefined,
       current_status: s.currentStatus as StudentStatus,
       current_location: s.currentLocation as StudentLocation,
       parent_ids: [],
-      enrolled_at: '',
-      status_updated_at: '',
-      created_at: '',
-      updated_at: '',
+      phone: s.phone ?? undefined,
+      enrolled_at: s.enrolledAt.toISOString(),
+      graduated_at: s.graduatedAt?.toISOString(),
+      transferred_at: s.transferredAt?.toISOString(),
+      status_updated_at: s.statusUpdatedAt?.toISOString() ?? '',
+      created_at: s.createdAt.toISOString(),
+      updated_at: s.updatedAt.toISOString(),
+      deleted_at: s.deletedAt?.toISOString(),
     };
+  }
+
+  /**
+   * 内部：从 Domain Student（snake_case）转换
+   * 用于已经是 domain 格式的对象
+   */
+  private toDomainStudent(s: Student): Student {
+    return s;
   }
 
   private statusText(s: string): string {

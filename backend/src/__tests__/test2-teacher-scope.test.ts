@@ -2,7 +2,7 @@
  * 测试 2：班主任只能看到本班
  *
  * 验收要求：
- * 1. 班主任通过 teacher_id → teacher_class_relation 查班
+ * 1. 班主任通过 teacherId → teacher_class_relation 查班
  * 2. 只能取到 endDate IS NULL 的"当前有效"关系（v1.3 关键）
  * 3. 历史关系（endDate NOT NULL）不能出现在工作台
  *
@@ -17,7 +17,7 @@ import { setupPrismaMock, createMockPrisma, setMockPrisma, fakeStudent, getMockP
 
 setupPrismaMock();
 
-describe('测试 2: 班主任权限（teacher_id → teacher_class_relation → students）', () => {
+describe('测试 2: 班主任权限（teacherId → teacher_class_relation → students）', () => {
   beforeEach(() => {
     setMockPrisma(createMockPrisma());
   });

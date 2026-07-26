@@ -19,7 +19,7 @@
  */
 
 import type { Prisma, LeaveRecord as PrismaLeaveRecord } from '@prisma/client';
-import type { AuthorizationContext } from '../authorization/types';
+import type { AuthorizationContext } from '../../authorization/types';
 import type { TxClient } from '../../repositories/base.repository';
 import { LeaveRepository } from '../../repositories/leave.repository';
 import { TimelineRepository, type CreateTimelineEventInput } from '../../repositories/timeline.repository';
@@ -59,7 +59,8 @@ export class LeaveCapabilityService {
   // ============================================================
 
   async createLeave(req: CreateLeaveRequest, ctx: AuthorizationContext): Promise<LeaveResponse> {
-    const { actor, organization } = ctx;
+    const { actor, authorization } = ctx;
+    const organization = authorization.organization;
     const { leaveRepository, timelineRepository, studentRepository, domainService } = this.deps;
 
     // 1. 查学生信息（用于冗余字段）
@@ -80,7 +81,7 @@ export class LeaveCapabilityService {
           studentId: student.id,
           studentName: student.name,
           classId: student.classId,
-          className: student.className ?? '',
+          className: (student as any).class?.name ?? '',
           gradeId: student.gradeId,
           schoolId: student.schoolId,
           leaveType: req.leaveType as any,
@@ -94,7 +95,7 @@ export class LeaveCapabilityService {
           applicantId: actor.teacherId ?? actor.userId,
           applicantName: actor.teacherId ? '教师' : actor.userId, // 简化：后续从 Teacher 表查
           attachmentIds: [],
-        } as Prisma.LeaveRecordCreateInput,
+        } as unknown as Prisma.LeaveRecordCreateInput,
         tx,
       );
 
