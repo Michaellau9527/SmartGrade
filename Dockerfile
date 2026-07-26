@@ -35,7 +35,7 @@ COPY --from=builder /app/backend/prisma ./backend/prisma
 COPY --from=builder /app/backend/package.json ./backend/package.json
 
 RUN pnpm install --frozen-lockfile --prod
-RUN pnpm --filter backend prisma:generate
+RUN npm install -g prisma@5 && pnpm --filter backend exec prisma generate
 
 EXPOSE 3000
 
