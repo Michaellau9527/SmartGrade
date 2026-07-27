@@ -28,6 +28,7 @@ ENV NODE_ENV=production
 ENV PORT=3000
 
 RUN npm install -g pnpm@10
+RUN apk add --no-cache openssl
 
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY shared ./shared
