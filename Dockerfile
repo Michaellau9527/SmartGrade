@@ -42,4 +42,5 @@ RUN npm install -g prisma@5 && pnpm --filter backend exec prisma generate
 
 EXPOSE 3000
 
-CMD ["pnpm", "--filter", "backend", "start:prod"]
+# 启动时自动执行数据库迁移 + 启动服务
+CMD ["sh", "-c", "cd /app/backend && pnpm exec prisma migrate deploy 2>/dev/null || true && pnpm start:prod"]
