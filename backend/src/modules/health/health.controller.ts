@@ -1,6 +1,7 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { HealthService } from './health.service';
+import { Public } from '@/common/decorators';
 
 /**
  * HealthController - 健康检查接口
@@ -11,6 +12,7 @@ import { HealthService } from './health.service';
  * - 监控系统状态上报
  */
 @ApiTags('健康检查')
+@Public()
 @Controller('health')
 export class HealthController {
   constructor(private readonly healthService: HealthService) {}
