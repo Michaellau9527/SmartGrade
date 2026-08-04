@@ -7,6 +7,7 @@ import {
   StudentListItem,
   StudentStatus
 } from '../../api/student';
+import { mockLogin } from '../../api/auth';
 import { useUserStore } from '../../store/user';
 import './index.scss';
 
@@ -22,12 +23,52 @@ const STATUS_MAP: Record<StudentStatus, StatusMeta> = {
   TRANSFERRED: { label: '已转学', className: 'tag-transferred' }
 };
 
+/** 直接读 storage 里的 token */
+function readToken(): string {
+  try {
+    return Taro.getStorageSync('token') || '';
+  } catch {
+    return '';
+  }
+}
+
 export default function Student() {
   const [list, setList] = useState<StudentListItem[]>([]);
   const [keyword, setKeyword] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
-  const token = useUserStore((s) => s.token);
+  const [loginStatus, setLoginStatus] = useState<
+    'idle' | 'logging' | 'success' | 'failed'
+  >('idle');
+  const setUserInfo = useUserStore((s) => s.setUserInfo);
+
+  /** 先尝试读 storage 里已有的 token，没有就做一次 mock 登录 */
+  const ensureLogin = useCallback(async () => {
+    const existing = readToken();
+    if (existing) {
+      setLoginStatus('success');
+      return true;
+    }
+    setLoginStatus('logging');
+    try {
+      const result = await mockLogin('T001');
+      setUserInfo({
+        token: result.token,
+        teacherNo: result.teacher.teacherNo,
+        teacherName: result.teacher.name,
+        roles: result.roles ?? [],
+        permissions: result.permissions ?? []
+      });
+      setLoginStatus('success');
+      return true;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error('[Student] 登录失败:', msg);
+      setLoginStatus('failed');
+      setError(`登录失败：${msg}`);
+      return false;
+    }
+  }, [setUserInfo]);
 
   const fetchStudents = useCallback(async (kw?: string) => {
     setLoading(true);
@@ -42,6 +83,7 @@ export default function Student() {
       setList(res || []);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
+      console.error('[Student] 列表加载失败:', msg);
       setError(msg);
       setList([]);
     } finally {
@@ -49,17 +91,20 @@ export default function Student() {
     }
   }, []);
 
+  /** 页面挂载时：先登录，登录成功就拉数据 */
   useEffect(() => {
-    if (!token) {
-      return;
-    }
-    fetchStudents(keyword);
+    (async () => {
+      const ok = await ensureLogin();
+      if (ok) {
+        await fetchStudents(keyword);
+      }
+    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token]);
+  }, []);
 
   // 搜索防抖
   useEffect(() => {
-    if (!token) {
+    if (loginStatus !== 'success') {
       return;
     }
     const timer = setTimeout(() => {
@@ -67,10 +112,17 @@ export default function Student() {
     }, 300);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [keyword, token]);
+  }, [keyword, loginStatus]);
 
   Taro.usePullDownRefresh(() => {
     (async () => {
+      if (!readToken()) {
+        const ok = await ensureLogin();
+        if (!ok) {
+          Taro.stopPullDownRefresh();
+          return;
+        }
+      }
       await fetchStudents(keyword).finally(() => {
         Taro.stopPullDownRefresh();
       });
@@ -83,11 +135,21 @@ export default function Student() {
     });
   }, []);
 
-  // 未登录
-  if (!token) {
+  // 登录进行中
+  if (loginStatus === 'logging') {
     return (
       <View className='student'>
-        <View className='state-tip'>未登录</View>
+        <View className='state-tip'>登录中…</View>
+      </View>
+    );
+  }
+
+  // 登录失败
+  if (loginStatus === 'failed') {
+    return (
+      <View className='student'>
+        <View className='state-tip'>登录失败</View>
+        <View className='state-tip state-error'>{error}</View>
       </View>
     );
   }
