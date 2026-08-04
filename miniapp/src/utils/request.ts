@@ -14,12 +14,12 @@ export interface RequestOptions {
 }
 
 /**
- * API 基地址，由 Taro defineConstant 在编译期通过 webpack DefinePlugin
- * 注入为自由标识符 API_BASE_URL（字符串形如 "https://xxx/api/v1"，
- * 已包含 /api/v1 前缀）。直接引用该标识符即可在编译期被替换为字面量。
- * 类型声明见 src/global.d.ts。
+ * 后端 API 基地址。
+ * 微信云托管后端地址：直接写死，避免 Taro defineConstant 编译期注入失败。
+ * 后端已部署且可用：https://smartgrade-api-287135-10-1426534958.sh.run.tcloudbase.com/api/v1
  */
-const BASE_URL: string = typeof API_BASE_URL !== 'undefined' ? API_BASE_URL : '';
+const BASE_URL: string =
+  'https://smartgrade-api-287135-10-1426534958.sh.run.tcloudbase.com/api/v1';
 
 /**
  * 统一请求工具：
