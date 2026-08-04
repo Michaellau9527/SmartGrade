@@ -67,6 +67,7 @@
     "@pmmmwh/react-refresh-webpack-plugin": "^0.5.11",
     "@tarojs/cli": "3.6.25",
     "@tarojs/taro-loader": "3.6.25",
+    "@tarojs/webpack5-runner": "3.6.25",
     "@types/lodash-es": "^4.17.12",
     "@types/node": "^20.10.6",
     "@types/react": "^18.2.45",
