@@ -48,14 +48,14 @@ export const useUserStore = create<UserState>((set, get) => ({
     Taro.setStorageSync(TOKEN_KEY, data.token);
     Taro.setStorageSync(TEACHER_NO_KEY, data.teacherNo);
     Taro.setStorageSync(TEACHER_NAME_KEY, data.teacherName);
-    Taro.setStorageSync(ROLES_KEY, data.roles);
-    Taro.setStorageSync(PERMISSIONS_KEY, data.permissions);
+    Taro.setStorageSync(ROLES_KEY, data.roles ?? []);
+    Taro.setStorageSync(PERMISSIONS_KEY, data.permissions ?? []);
     set({
       token: data.token,
       teacherNo: data.teacherNo,
       teacherName: data.teacherName,
-      roles: data.roles,
-      permissions: data.permissions
+      roles: data.roles ?? [],
+      permissions: data.permissions ?? []
     });
   },
 

@@ -1,7 +1,6 @@
 export default defineAppConfig({
   pages: [
     'pages/workbench/index',
-    'pages/index/index',
     'pages/student/index',
     'pages/leave/index',
     'pages/notice/index',
@@ -21,21 +20,15 @@ export default defineAppConfig({
     list: [
       {
         pagePath: 'pages/workbench/index',
-        text: '工作台',
-        iconPath: 'assets/icons/workbench.jpg',
-        selectedIconPath: 'assets/icons/workbench-active.jpg'
+        text: '工作台'
       },
       {
         pagePath: 'pages/leave/index',
-        text: '请假',
-        iconPath: 'assets/icons/leave.jpg',
-        selectedIconPath: 'assets/icons/leave-active.jpg'
+        text: '请假'
       },
       {
         pagePath: 'pages/mine/index',
-        text: '我的',
-        iconPath: 'assets/icons/mine.jpg',
-        selectedIconPath: 'assets/icons/mine-active.jpg'
+        text: '我的'
       }
     ]
   }

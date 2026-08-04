@@ -84,8 +84,8 @@ export default function Workbench() {
         token: result.token,
         teacherNo: result.teacher.teacherNo,
         teacherName: result.teacher.name,
-        roles: result.roles,
-        permissions: result.permissions
+        roles: result.roles ?? [],
+        permissions: result.permissions ?? []
       });
       setLoginStatus('success');
       return true;
@@ -184,7 +184,11 @@ export default function Workbench() {
     );
   }
 
-  const { today, studentStatusSummary, todos, recentNotices, quickActions } = data;
+  const today = data.today;
+  const studentStatusSummary = data.studentStatusSummary;
+  const todos = data.todos ?? [];
+  const recentNotices = data.recentNotices ?? [];
+  const quickActions = data.quickActions ?? [];
 
   return (
     <View className='workbench'>
@@ -201,19 +205,19 @@ export default function Workbench() {
       {/* 学生状态卡片 */}
       <View className='card'>
         <View className='card-title'>
-          学生状态 · 共 {studentStatusSummary.totalStudents} 人
+          学生状态 · 共 {studentStatusSummary?.totalStudents ?? 0} 人
         </View>
         <View className='stat-grid'>
           <View className='stat-item'>
-            <View className='stat-num stat-num-primary'>{studentStatusSummary.onCampus}</View>
+            <View className='stat-num stat-num-primary'>{studentStatusSummary?.onCampus ?? 0}</View>
             <View className='stat-label'>在校</View>
           </View>
           <View className='stat-item'>
-            <View className='stat-num'>{studentStatusSummary.outOfSchool}</View>
+            <View className='stat-num'>{studentStatusSummary?.outOfSchool ?? 0}</View>
             <View className='stat-label'>离校</View>
           </View>
           <View className='stat-item'>
-            <View className='stat-num stat-num-warning'>{studentStatusSummary.studentsLeaving}</View>
+            <View className='stat-num stat-num-warning'>{studentStatusSummary?.studentsLeaving ?? 0}</View>
             <View className='stat-label'>未闭环</View>
           </View>
         </View>

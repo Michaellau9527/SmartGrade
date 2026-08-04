@@ -41,8 +41,8 @@ async function ensureLoggedIn(): Promise<void> {
       token: result.token,
       teacherNo: result.teacher.teacherNo,
       teacherName: result.teacher.name,
-      roles: result.roles,
-      permissions: result.permissions
+      roles: result.roles ?? [],
+      permissions: result.permissions ?? []
     });
   } catch (err) {
     console.error('[SmartGrade] mock 登录失败:', err);

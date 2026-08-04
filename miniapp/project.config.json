@@ -1,5 +1,5 @@
 {
-  "miniprogramRoot": "./",
+  "miniprogramRoot": "dist/",
   "projectname": "SmartGrade",
   "setting": {
     "urlCheck": false,
@@ -25,6 +25,6 @@
   },
   "compileType": "miniprogram",
   "libVersion": "3.17.0",
-  "appid": "touristappid",
+  "appid": "wxa5cadd32eecb6de1",
   "condition": {}
 }

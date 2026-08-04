@@ -58,8 +58,8 @@ export default function Notice() {
         token: result.token,
         teacherNo: result.teacher.teacherNo,
         teacherName: result.teacher.name,
-        roles: result.roles,
-        permissions: result.permissions
+        roles: result.roles ?? [],
+        permissions: result.permissions ?? []
       });
       setLoginStatus('success');
       return true;
