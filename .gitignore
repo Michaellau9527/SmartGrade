@@ -54,7 +54,8 @@ backend/dist/
 admin/dist/
 
 # Prisma
-backend/prisma/migrations/*_*
+# 注：生产部署的 migration 需要进仓库，被 `prisma migrate deploy` 消费
+# backend/prisma/migrations/*_* （已移除：禁止忽略 migrations 目录）
 
 # Uploads
 uploads/*
