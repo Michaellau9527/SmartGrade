@@ -21,21 +21,15 @@ export default defineAppConfig({
     list: [
       {
         pagePath: 'pages/workbench/index',
-        text: '工作台',
-        iconPath: 'assets/icons/workbench.png',
-        selectedIconPath: 'assets/icons/workbench-active.png'
+        text: '工作台'
       },
       {
         pagePath: 'pages/leave/index',
-        text: '请假',
-        iconPath: 'assets/icons/leave.png',
-        selectedIconPath: 'assets/icons/leave-active.png'
+        text: '请假'
       },
       {
         pagePath: 'pages/mine/index',
-        text: '我的',
-        iconPath: 'assets/icons/mine.png',
-        selectedIconPath: 'assets/icons/mine-active.png'
+        text: '我的'
       }
     ]
   }
