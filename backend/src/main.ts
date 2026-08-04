@@ -6,11 +6,48 @@ import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters';
 import { TransformInterceptor, LoggingInterceptor } from './common/interceptors';
+import { PrismaService } from './common/prisma/prisma.service';
+
+/**
+ * 打印 DATABASE_URL 脱敏后的摘要（绝不输出用户名/密码）
+ *   mysql://user:pass@host:port/db  ->  mysql://***:***@host:port/db
+ */
+function maskDatabaseUrl(url: string): string {
+  if (!url) return '(empty)';
+  try {
+    const u = new URL(url);
+    u.username = '***';
+    u.password = '***';
+    // query 里若有 ssl 等参数是安全的，保留
+    return u.toString();
+  } catch {
+    // 非标准 URL，简单隐藏冒号后至 @ 前的内容
+    return url.replace(/\/\/([^:@]+):([^@]*)@/g, '//***:***@');
+  }
+}
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
 
-  const app = await NestFactory.create(AppModule);
+  // ================= 启动阶段日志（一）基础环境 =================
+  const nodeEnv = process.env.NODE_ENV || 'development';
+  const port = Number(process.env.PORT) || 3000;
+  const rawDbUrl = process.env.DATABASE_URL || '';
+  const dbUrlPresent = !!rawDbUrl;
+  const maskedDbUrl = dbUrlPresent ? maskDatabaseUrl(rawDbUrl) : '(not set)';
+
+  logger.log(`============== SmartGrade Bootstrap ==============`);
+  logger.log(`NODE_ENV     : ${nodeEnv}`);
+  logger.log(`PORT         : ${port}`);
+  logger.log(`DATABASE_URL : ${dbUrlPresent ? 'SET' : 'NOT SET'} (${maskedDbUrl})`);
+  logger.log(`API_PREFIX   : ${process.env.API_PREFIX || '/api/v1'}`);
+  logger.log(`CORS_ORIGIN  : ${process.env.CORS_ORIGIN || '*'}`);
+  logger.log(`==================================================`);
+
+  // ================= 1. 创建 Nest 应用 =================
+  const app = await NestFactory.create(AppModule, {
+    bufferLogs: false,
+  });
 
   // 安全头
   app.use(helmet());
@@ -50,7 +87,7 @@ async function bootstrap() {
   });
 
   // Swagger 文档 (仅非生产环境)
-  if (process.env.NODE_ENV !== 'production') {
+  if (nodeEnv !== 'production') {
     const config = new DocumentBuilder()
       .setTitle('SmartGrade API')
       .setDescription('SmartGrade 智慧年级管理平台 API 文档<br/><br/>统一响应格式：<code>{"code": 0, "message": "success", "data": {}}</code>')
@@ -74,14 +111,27 @@ async function bootstrap() {
     SwaggerModule.setup('docs', app, document);
   }
 
-  // 启动服务
-  const port = process.env.PORT || 3000;
+  // ================= 启动阶段日志（二）Prisma 连接结果 =================
+  // PrismaService.onModuleInit 会在 app.listen 前（模块初始化阶段）执行
+  // 我们在这里再用 app.get 读取它暴露的 isConnected 状态，避免 DB 连接失败导致 Nest 起不来
+  const prisma = app.get(PrismaService);
+  logger.log(`PrismaService.onModuleInit 已完成，DB 连接状态: ${prisma.isConnected ? 'SUCCESS' : 'NOT CONNECTED（接口调用时会再尝试连接）'}`);
+
+  // ================= 2. 监听端口（无论 DB 状态如何都要先监听，保证 CloudBase 健康检查通过） =================
   await app.listen(port, '0.0.0.0');
 
-  logger.log(`SmartGrade Backend running on: http://localhost:${port}`);
-  logger.log(`API Docs: http://localhost:${port}/docs`);
-  logger.log(`Health: http://localhost:${port}/health`);
-  logger.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  // ================= 启动阶段日志（三）Nest 监听成功 =================
+  const baseUrl = `http://0.0.0.0:${port}`;
+  logger.log(`============== NestJS Listen Success ==============`);
+  logger.log(`SmartGrade Backend running on: ${baseUrl}`);
+  logger.log(`Health  : ${baseUrl}/health`);
+  logger.log(`API     : ${baseUrl}${apiPrefix}`);
+  if (nodeEnv !== 'production') {
+    logger.log(`Docs    : ${baseUrl}/docs`);
+  }
+  logger.log(`Environment : ${nodeEnv}`);
+  logger.log(`Prisma DB   : ${prisma.isConnected ? 'OK' : 'DEGRADED（请求时会再尝试连接）'}`);
+  logger.log(`===================================================`);
 }
 
 bootstrap();
