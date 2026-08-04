@@ -32,6 +32,10 @@ export default defineAppConfig({
         text: '请假'
       },
       {
+        pagePath: 'pages/notice/index',
+        text: '通知'
+      },
+      {
         pagePath: 'pages/mine/index',
         text: '我的'
       }
