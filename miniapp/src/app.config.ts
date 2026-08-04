@@ -21,7 +21,11 @@ export default defineAppConfig({
     list: [
       {
         pagePath: 'pages/workbench/index',
-        text: '工作台'
+        text: '首页'
+      },
+      {
+        pagePath: 'pages/student/index',
+        text: '学生'
       },
       {
         pagePath: 'pages/leave/index',
