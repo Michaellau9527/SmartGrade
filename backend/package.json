@@ -18,6 +18,9 @@
     "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "prisma:seed": "ts-node prisma/seed.ts",
+    "seed": "ts-node prisma/seed.ts",
+    "seed:full": "SEED_MODE=full ts-node prisma/seed.ts",
+    "seed:prod": "SEED_MODE=bootstrap ts-node prisma/seed.ts",
     "seed:reset": "prisma db push --force-reset && ts-node prisma/seed.ts",
     "clean": "rm -rf dist node_modules"
   },

@@ -1,4 +1,5 @@
-import { PrismaClient, Gender, BoardingType, SchoolType, GradeStage, GradeStatus, ClassStatus, TeacherStatus, TeacherClassRole } from '@prisma/client';
+import { PrismaClient, Gender, BoardingType, SchoolType, GradeStage, GradeStatus, ClassStatus, TeacherStatus, TeacherClassRole, UserType, UserStatus, IdentityProvider, IdentityStatus } from '@prisma/client';
+import * as bcryptjs from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
@@ -8,50 +9,35 @@ const prisma = new PrismaClient();
  * 初始化：
  * - 学校 + 年级 + 班级
  * - 6 个系统角色 + 32 个权限 + 关联
- * - 6 个测试教师 + 班级/年级关联
+ * - 默认管理员（admin / bcrypt 加密密码）+ 额外测试教师
  * - 宿舍楼 + 房间
  * - 5 个测试学生
  */
 
-async function main() {
-  console.log('🌱 开始 SmartGrade 种子数据初始化...\n');
+/**
+ * 运行模式：
+ *  SEED_MODE=full      -> 完整初始化（含测试学生/教师/组织数据），本地开发默认
+ *  SEED_MODE=bootstrap -> 最小化生产初始化：仅角色权限 + 默认管理员账号
+ *  未设置 SEED_MODE 时默认走 bootstrap 模式（生产安全默认值）
+ */
+const mode: 'full' | 'bootstrap' =
+  process.env.SEED_MODE === 'full' ? 'full' : 'bootstrap';
 
-  // ==================== 1. 组织：学校 + 年级 + 班级 ====================
-  console.log('📝 创建学校、年级、班级...');
+/** 管理员默认账号（用户名） */
+const ADMIN_USERNAME = process.env.SMARTGRADE_ADMIN_USERNAME || 'admin';
+/**
+ * 管理员默认密码：
+ *  - 生产部署请务必显式设置 SMARTGRADE_ADMIN_PASSWORD 环境变量
+ *  - 未设置时使用内建默认值（仅限首次初始化）
+ */
+const ADMIN_PASSWORD =
+  process.env.SMARTGRADE_ADMIN_PASSWORD || 'SmartGrade@2025';
+/** 管理员绑定的教师工号，用于小程序 teacherNo 登录 */
+const ADMIN_TEACHER_NO =
+  process.env.SMARTGRADE_ADMIN_TEACHER_NO || 'ADMIN';
 
-  const school = await prisma.school.upsert({
-    where: { code: 'SCH001' },
-    update: {},
-    create: {
-      code: 'SCH001',
-      name: '智慧示范中学',
-      shortName: '智慧中学',
-      type: SchoolType.HIGH_SCHOOL,
-      province: '广东省',
-      city: '深圳市',
-      district: '南山区',
-      address: '科技园路 1 号',
-    },
-  });
-  console.log(`  ✅ 学校: ${school.name} (${school.code})`);
-
-  const grade = await prisma.grade.upsert({
-    where: { schoolId_code: { schoolId: school.id, code: 'G2024' } },
-    update: {},
-    create: {
-      schoolId: school.id,
-      code: 'G2024',
-      name: '高一年级',
-      enrollmentYear: 2024,
-      graduationYear: 2027,
-      stage: GradeStage.GRADE_10,
-      status: GradeStatus.ACTIVE,
-    },
-  });
-  console.log(`  ✅ 年级: ${grade.name} (${grade.code})`);
-
-  // ==================== 2. 角色 + 权限 ====================
-  console.log('\n📝 创建角色...');
+async function seedRolesAndPermissions(adminRole: { id: bigint; roleCode: string }) {
+  console.log('📝 创建角色...');
 
   const ROLES = [
     { roleCode: 'ROLE_ADMIN', roleName: '系统管理员', description: '拥有全部权限' },
@@ -62,12 +48,14 @@ async function main() {
     { roleCode: 'ROLE_SUBJECT_TEACHER', roleName: '任课教师', description: '查看通知、查看文件、查看个人待办' },
   ];
 
+  const roleMap = new Map<string, bigint>();
   for (const r of ROLES) {
-    await prisma.role.upsert({
+    const saved = await prisma.role.upsert({
       where: { roleCode: r.roleCode },
       update: { roleName: r.roleName, description: r.description },
       create: r,
     });
+    roleMap.set(saved.roleCode, saved.id);
     console.log(`  ✅ ${r.roleCode} - ${r.roleName}`);
   }
 
@@ -185,21 +173,177 @@ async function main() {
   };
 
   for (const [roleCode, permCodes] of Object.entries(ROLE_PERMISSIONS)) {
-    const role = await prisma.role.findUnique({ where: { roleCode } });
-    if (!role) continue;
-    await prisma.rolePermission.deleteMany({ where: { roleId: role.id } });
+    const roleId = roleMap.get(roleCode);
+    if (!roleId) continue;
+    await prisma.rolePermission.deleteMany({ where: { roleId } });
     if (permCodes.length > 0) {
       const data = permCodes
         .map((c) => permMap.get(c))
         .filter((id): id is bigint => id !== undefined)
-        .map((permissionId) => ({ roleId: role.id, permissionId }));
+        .map((permissionId) => ({ roleId, permissionId }));
       await prisma.rolePermission.createMany({ data });
     }
     console.log(`  ✅ ${roleCode}: ${permCodes.length > 0 ? permCodes.length + ' 个权限' : '全部(管理员)'}`);
   }
+}
 
-  // ==================== 3. 教师 + 班级（先建教师再建班级，因为班级 FK 依赖教师） ====================
-  console.log('\n📝 创建测试教师账号...');
+/**
+ * 创建默认管理员（ROLE_ADMIN）
+ *  - Username: admin（可通过 SMARTGRADE_ADMIN_USERNAME 覆盖）
+ *  - Password: 环境变量 SMARTGRADE_ADMIN_PASSWORD，默认 SmartGrade@2025
+ *  - 同步创建 User / Teacher / UserIdentity 记录
+ *  - 密码使用 bcrypt hash，不在数据库或 seed 代码中保存明文
+ */
+async function seedDefaultAdmin() {
+  console.log('\n👤 初始化默认管理员账号...');
+
+  const passwordHash = await bcryptjs.hash(ADMIN_PASSWORD, 10);
+  const teacherNo = ADMIN_TEACHER_NO;
+
+  // 1. 管理员对应 Teacher 记录（工号唯一）
+  const teacher = await prisma.teacher.upsert({
+    where: { teacherNo },
+    update: { name: '系统管理员', gender: Gender.OTHER, status: TeacherStatus.ACTIVE },
+    create: {
+      teacherNo,
+      name: '系统管理员',
+      gender: Gender.OTHER,
+      status: TeacherStatus.ACTIVE,
+    },
+  });
+
+  // 2. 管理员 User 记录（username 唯一；关联 teacherId）
+  const user = await prisma.user.upsert({
+    where: { username: ADMIN_USERNAME },
+    update: {
+      passwordHash,
+      userType: UserType.SYSTEM_ADMIN,
+      teacherId: teacher.id,
+      status: UserStatus.ACTIVE,
+    },
+    create: {
+      username: ADMIN_USERNAME,
+      passwordHash,
+      userType: UserType.SYSTEM_ADMIN,
+      teacherId: teacher.id,
+      status: UserStatus.ACTIVE,
+    },
+  });
+
+  // 3. ACCOUNT 登录身份（便于使用 username/password 登录方式调用 ACCOUNT provider）
+  await prisma.userIdentity.upsert({
+    where: { provider_externalId: { provider: IdentityProvider.ACCOUNT, externalId: ADMIN_USERNAME } },
+    update: {
+      userId: user.id,
+      credentialHash: passwordHash,
+      verified: true,
+      status: IdentityStatus.ACTIVE,
+    },
+    create: {
+      userId: user.id,
+      provider: IdentityProvider.ACCOUNT,
+      externalId: ADMIN_USERNAME,
+      credentialHash: passwordHash,
+      verified: true,
+      status: IdentityStatus.ACTIVE,
+    },
+  });
+
+  // 4. 记录工号兜底用的 ACCOUNT 身份（teacherNo）
+  await prisma.userIdentity.upsert({
+    where: { provider_externalId: { provider: IdentityProvider.ACCOUNT, externalId: teacherNo } },
+    update: {
+      userId: user.id,
+      credentialHash: passwordHash,
+      verified: true,
+      status: IdentityStatus.ACTIVE,
+    },
+    create: {
+      userId: user.id,
+      provider: IdentityProvider.ACCOUNT,
+      externalId: teacherNo,
+      credentialHash: passwordHash,
+      verified: true,
+      status: IdentityStatus.ACTIVE,
+    },
+  });
+
+  // 5. 管理员角色分配：直接写入 role_permission 不涉及，这里使用 teacher_role 的原生查询
+  //    seed.ts 中用原生 upsert 替代 prisma 模型中缺失的 TeacherRole
+  const adminRole = await prisma.role.findUnique({ where: { roleCode: 'ROLE_ADMIN' } });
+  if (adminRole) {
+    await prisma.$executeRawUnsafe(`
+      INSERT INTO teacher_role (teacher_id, role_id, created_at, updated_at)
+      VALUES (?, ?, NOW(3), NOW(3))
+      ON DUPLICATE KEY UPDATE updated_at = NOW(3)
+    `, teacher.id, adminRole.id.toString());
+  }
+
+  console.log(`  ✅ Teacher  : ${teacherNo} / ${teacher.name}`);
+  console.log(`  ✅ Username : ${ADMIN_USERNAME}`);
+  console.log(`  ✅ Role     : ROLE_ADMIN (${adminRole ? 'assigned' : 'not found - skipped'})`);
+  console.log(`  ✅ Password : bcrypt hash length=${passwordHash.length}`);
+  console.log('');
+  console.log('  ⚠️  生产环境请设置 SMARTGRADE_ADMIN_PASSWORD 环境变量覆盖默认密码');
+}
+
+async function main() {
+  console.log('🌱 开始 SmartGrade 种子数据初始化...');
+  console.log(`   Mode: ${mode}`);
+
+  // 1. 角色 + 权限（全模式都执行）
+  const adminRole = await prisma.role.findUnique({
+    where: { roleCode: 'ROLE_ADMIN' },
+    select: { id: true, roleCode: true },
+  }) ?? { id: BigInt(0), roleCode: 'ROLE_ADMIN' };
+  await seedRolesAndPermissions(adminRole);
+
+  // 2. 默认管理员（全模式都执行，幂等 upsert）
+  await seedDefaultAdmin();
+
+  if (mode !== 'full') {
+    console.log('\n🎉 SmartGrade 生产初始化完成（bootstrap 模式）');
+    console.log(`  管理员账号: ${ADMIN_USERNAME} / teacherNo: ${ADMIN_TEACHER_NO}`);
+    console.log('  提示: 设置 SEED_MODE=full 可初始化示例学校/学生/教师等测试数据');
+    return;
+  }
+
+  // ==================== full 模式：示例组织 / 教师 / 学生数据 ====================
+
+  // ==================== 1. 组织：学校 + 年级 + 班级 ====================
+  const school = await prisma.school.upsert({
+    where: { code: 'SCH001' },
+    update: {},
+    create: {
+      code: 'SCH001',
+      name: '智慧示范中学',
+      shortName: '智慧中学',
+      type: SchoolType.HIGH_SCHOOL,
+      province: '广东省',
+      city: '深圳市',
+      district: '南山区',
+      address: '科技园路 1 号',
+    },
+  });
+  console.log(`  ✅ 学校: ${school.name} (${school.code})`);
+
+  const grade = await prisma.grade.upsert({
+    where: { schoolId_code: { schoolId: school.id, code: 'G2024' } },
+    update: {},
+    create: {
+      schoolId: school.id,
+      code: 'G2024',
+      name: '高一年级',
+      enrollmentYear: 2024,
+      graduationYear: 2027,
+      stage: GradeStage.GRADE_10,
+      status: GradeStatus.ACTIVE,
+    },
+  });
+  console.log(`  ✅ 年级: ${grade.name} (${grade.code})`);
+
+  // ==================== 2. 测试教师 + 班级 ====================
+  console.log('\n📝 创建测试教师账号 (T001~T006)...');
 
   const TEST_TEACHERS = [
     { teacherNo: 'T001', name: '管理员', gender: Gender.MALE, roleCode: 'ROLE_ADMIN' },
