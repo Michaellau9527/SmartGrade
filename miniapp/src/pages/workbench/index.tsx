@@ -1,5 +1,5 @@
 import { View, Text } from '@tarojs/components';
-import Taro from '@tarojs/taro';
+import Taro, { useDidShow } from '@tarojs/taro';
 import { useCallback, useEffect, useState } from 'react';
 import dayjs from 'dayjs';
 import {
@@ -8,6 +8,7 @@ import {
   TodoStatus,
   WorkbenchResponse
 } from '../../api/workbench';
+import { mockLogin } from '../../api/auth';
 import { useUserStore } from '../../store/user';
 import './index.scss';
 
@@ -46,45 +47,100 @@ function formatWeek(week: string): string {
   return WEEK_MAP[week] || week;
 }
 
+/** 直接读 storage 里的 token，绕过 zustand 订阅时机问题 */
+function readToken(): string {
+  try {
+    return Taro.getStorageSync('token') || '';
+  } catch {
+    return '';
+  }
+}
+
 export default function Workbench() {
   const [data, setData] = useState<WorkbenchResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
+  const [loginStatus, setLoginStatus] = useState<
+    'idle' | 'logging' | 'success' | 'failed'
+  >('idle');
+  const setUserInfo = useUserStore((s) => s.setUserInfo);
   const teacherName = useUserStore((s) => s.teacherName);
-  const token = useUserStore((s) => s.token);
+
+  /** 先尝试读 storage 里已有的 token，没有就做一次 mock 登录 */
+  const ensureLogin = useCallback(async () => {
+    const existing = readToken();
+    if (existing) {
+      console.log('[Workbench] 本地已有 token，跳过登录');
+      setLoginStatus('success');
+      return true;
+    }
+
+    setLoginStatus('logging');
+    try {
+      console.log('[Workbench] 开始 mock 登录: T001');
+      const result = await mockLogin('T001');
+      console.log('[Workbench] 登录成功:', result.teacher.name);
+      setUserInfo({
+        token: result.token,
+        teacherNo: result.teacher.teacherNo,
+        teacherName: result.teacher.name,
+        roles: result.roles,
+        permissions: result.permissions
+      });
+      setLoginStatus('success');
+      return true;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error('[Workbench] 登录失败:', msg);
+      setLoginStatus('failed');
+      setError(`登录失败：${msg}`);
+      return false;
+    }
+  }, [setUserInfo]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
       const res = await getWorkbench();
+      console.log('[Workbench] 工作台数据加载成功');
       setData(res);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
+      console.error('[Workbench] 工作台数据失败:', msg);
       setError(msg);
     } finally {
       setLoading(false);
     }
   }, []);
 
+  /** 页面挂载时：先登录，登录成功就拉数据 */
   useEffect(() => {
-    if (token) {
-      fetchData();
-    }
-  }, [token, fetchData]);
+    (async () => {
+      const ok = await ensureLogin();
+      if (ok) {
+        await fetchData();
+      }
+    })();
+  }, [ensureLogin, fetchData]);
 
   Taro.usePullDownRefresh(() => {
-    if (!token) {
-      Taro.stopPullDownRefresh();
-      return;
-    }
-    fetchData().finally(() => {
-      Taro.stopPullDownRefresh();
-    });
+    (async () => {
+      if (!readToken()) {
+        const ok = await ensureLogin();
+        if (!ok) {
+          Taro.stopPullDownRefresh();
+          return;
+        }
+      }
+      await fetchData().finally(() => {
+        Taro.stopPullDownRefresh();
+      });
+    })();
   });
 
-  // 未登录（mock 登录进行中）
-  if (!token) {
+  // 登录进行中
+  if (loginStatus === 'logging') {
     return (
       <View className='workbench'>
         <View className='state-tip'>登录中…</View>
@@ -92,7 +148,17 @@ export default function Workbench() {
     );
   }
 
-  // 首次加载中
+  // 登录失败
+  if (loginStatus === 'failed') {
+    return (
+      <View className='workbench'>
+        <View className='state-tip'>登录失败</View>
+        <View className='state-tip state-error'>{error}</View>
+      </View>
+    );
+  }
+
+  // 首次加载中（登录成功了，但还在拉数据）
   if (loading && !data) {
     return (
       <View className='workbench'>
@@ -101,7 +167,7 @@ export default function Workbench() {
     );
   }
 
-  // 首次加载失败且无缓存数据
+  // 加载失败且无缓存
   if (error && !data) {
     return (
       <View className='workbench'>
