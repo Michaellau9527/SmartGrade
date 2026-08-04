@@ -3,6 +3,24 @@ import { mockLogin } from './api/auth';
 import { useUserStore } from './store/user';
 import './app.scss';
 
+// Polyfill __global for WeChat DevTools Worker compatibility.
+// The DevTools Worker (WAWorker.js) references __global for error reporting;
+// when it's missing, the reporter itself crashes and masks the real error.
+if (typeof __global === 'undefined') {
+  const _g =
+    typeof globalThis !== 'undefined'
+      ? globalThis
+      : typeof global !== 'undefined'
+        ? global
+        : {};
+  Object.defineProperty(_g, '__global', {
+    value: _g,
+    writable: false,
+    enumerable: false,
+    configurable: true
+  });
+}
+
 interface AppProps {
   children?: ReactNode;
 }

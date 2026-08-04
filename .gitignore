@@ -45,6 +45,7 @@ coverage/
 miniapp/.temp/
 miniapp/.rn_temp/
 miniapp/.h5_temp/
+miniapp/.swc/
 
 # NestJS
 backend/dist/
