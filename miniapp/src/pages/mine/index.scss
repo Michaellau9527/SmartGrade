@@ -1,3 +1,126 @@
 .mine {
-  padding: 32px;
+  min-height: 100vh;
+  padding: 24px;
+  padding-bottom: 48px;
+  box-sizing: border-box;
+  background-color: #f5f5f5;
+}
+
+/* 顶部用户信息卡 */
+.user-card {
+  padding: 32px 24px;
+  margin-bottom: 24px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #1677ff 0%, #4096ff 100%);
+  color: #fff;
+
+  .user-name {
+    font-size: 40px;
+    font-weight: 600;
+    margin-bottom: 12px;
+  }
+
+  .user-no {
+    font-size: 24px;
+    opacity: 0.92;
+    margin-bottom: 20px;
+  }
+
+  .role-tags {
+    display: flex;
+    flex-wrap: wrap;
+    margin: -4px;
+  }
+
+  .role-tag {
+    display: inline-block;
+    margin: 4px;
+    padding: 4px 16px;
+    background: rgba(255, 255, 255, 0.22);
+    border-radius: 20px;
+    font-size: 22px;
+    line-height: 1.6;
+    color: #fff;
+  }
+}
+
+/* 卡片通用 */
+.card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 0 16px;
+  margin-bottom: 24px;
+}
+
+.empty {
+  padding: 24px 0;
+  text-align: center;
+  color: #999;
+  font-size: 26px;
+}
+
+/* 列表单元格 */
+.cell {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 28px 0;
+  border-bottom: 1px solid #f0f0f0;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  .cell-label {
+    font-size: 30px;
+    color: #333;
+  }
+
+  .cell-value {
+    font-size: 26px;
+    color: #999;
+  }
+
+  .cell-arrow {
+    font-size: 26px;
+    color: #999;
+  }
+}
+
+/* 权限展开区 */
+.permission-box {
+  padding: 12px 0 24px;
+}
+
+.permission-item {
+  display: flex;
+  align-items: flex-start;
+  padding: 10px 0;
+
+  .permission-dot {
+    color: #1677ff;
+    font-size: 28px;
+    line-height: 1.4;
+    margin-right: 8px;
+  }
+
+  .permission-text {
+    flex: 1;
+    font-size: 26px;
+    color: #666;
+    line-height: 1.6;
+    word-break: break-all;
+  }
+}
+
+/* 退出登录按钮 */
+.logout-btn {
+  margin-top: 16px;
+  padding: 28px 0;
+  text-align: center;
+  background: #fff;
+  border-radius: 12px;
+  font-size: 30px;
+  color: #ff4d4f;
+  border: 1px solid #ffccc7;
 }
