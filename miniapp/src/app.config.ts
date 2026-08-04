@@ -2,6 +2,7 @@ export default defineAppConfig({
   pages: [
     'pages/workbench/index',
     'pages/student/index',
+    'pages/student-detail/index',
     'pages/leave/index',
     'pages/notice/index',
     'pages/mine/index'
