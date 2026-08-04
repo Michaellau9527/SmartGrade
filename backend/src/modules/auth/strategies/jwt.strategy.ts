@@ -35,11 +35,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('用户不存在或已被禁用');
     }
 
-    // TODO: 角色功能待实现，teacherRole 表暂不可用
-    const roles: string[] = [];
+    // 从 teacher_role 表加载角色
+    const roles = await this.loadTeacherRoles(teacherId);
 
-    // TODO: 权限功能待实现
-    const permissions: string[] = [];
+    // 从角色关联加载权限
+    const permissions = await this.loadPermissionsByRoles(roles);
 
     const dataScope = await this.calculateDataScope(teacherId, roles);
 
@@ -96,5 +96,39 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     }
 
     return { type: 'SELF' };
+  }
+
+  private async loadTeacherRoles(teacherId: string): Promise<string[]> {
+    try {
+      const results = await this.prisma.$queryRawUnsafe<
+        Array<{ role_code: string }>
+      >(
+        `SELECT r.role_code FROM teacher_role tr
+         JOIN role r ON tr.role_id = r.id
+         WHERE tr.teacher_id = '${teacherId}'`,
+      );
+      return results.map((r) => r.role_code);
+    } catch {
+      return [];
+    }
+  }
+
+  private async loadPermissionsByRoles(roles: string[]): Promise<string[]> {
+    if (roles.length === 0) return [];
+    try {
+      const placeholders = roles.map(() => `?`).join(',');
+      const results = await this.prisma.$queryRawUnsafe<
+        Array<{ permission_code: string }>
+      >(
+        `SELECT DISTINCT p.permission_code FROM role_permission rp
+         JOIN permission p ON rp.permission_id = p.id
+         JOIN role r ON rp.role_id = r.id
+         WHERE r.role_code IN (${placeholders})`,
+        ...roles,
+      );
+      return results.map((r) => r.permission_code);
+    } catch {
+      return [];
+    }
   }
 }

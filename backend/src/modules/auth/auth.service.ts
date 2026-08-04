@@ -26,6 +26,9 @@ export class AuthService {
       throw new UnauthorizedException('账号已被禁用');
     }
 
+    const roles = await this.loadTeacherRoles(teacher.id);
+    const permissions = await this.loadPermissionsByRoles(roles);
+
     const tokens = await this.generateTokens(teacher);
 
     return {
@@ -37,9 +40,8 @@ export class AuthService {
         avatar: teacher.avatar,
         position: teacher.position,
       },
-      // TODO: 角色功能待实现，Teacher 模型暂无 roles 关联
-      roles: [],
-      // TODO: 标签功能待实现，Teacher 模型暂无 tags 关联
+      roles,
+      permissions,
       tags: [],
       ...tokens,
     };
@@ -78,8 +80,8 @@ export class AuthService {
       throw new UnauthorizedException('用户不存在');
     }
 
-    // TODO: 权限功能待实现，Teacher 模型暂无 roles 关联
-    const permissions: string[] = [];
+    const roles = await this.loadTeacherRoles(teacherId);
+    const permissions = await this.loadPermissionsByRoles(roles);
 
     return {
       id: teacher.id,
@@ -88,9 +90,7 @@ export class AuthService {
       gender: teacher.gender,
       avatar: teacher.avatar,
       position: teacher.position,
-      // TODO: 角色功能待实现，Teacher 模型暂无 roles 关联
-      roles: [],
-      // TODO: 标签功能待实现，Teacher 模型暂无 tags 关联
+      roles,
       tags: [],
       permissions,
     };
@@ -129,5 +129,39 @@ export class AuthService {
     });
 
     return [...new Set(rolePermissions.map((rp) => rp.permission.permissionCode))];
+  }
+
+  private async loadTeacherRoles(teacherId: string): Promise<string[]> {
+    try {
+      const results = await this.prisma.$queryRawUnsafe<
+        Array<{ role_code: string }>
+      >(
+        `SELECT r.role_code FROM teacher_role tr
+         JOIN role r ON tr.role_id = r.id
+         WHERE tr.teacher_id = '${teacherId}'`,
+      );
+      return results.map((r) => r.role_code);
+    } catch {
+      return [];
+    }
+  }
+
+  private async loadPermissionsByRoles(roles: string[]): Promise<string[]> {
+    if (roles.length === 0) return [];
+    try {
+      const placeholders = roles.map(() => `?`).join(',');
+      const results = await this.prisma.$queryRawUnsafe<
+        Array<{ permission_code: string }>
+      >(
+        `SELECT DISTINCT p.permission_code FROM role_permission rp
+         JOIN permission p ON rp.permission_id = p.id
+         JOIN role r ON rp.role_id = r.id
+         WHERE r.role_code IN (${placeholders})`,
+        ...roles,
+      );
+      return results.map((r) => r.permission_code);
+    } catch {
+      return [];
+    }
   }
 }
