@@ -30,6 +30,7 @@ import type {
   WorkbenchToday,
   StudentStatusSummary,
   WorkbenchTodo,
+  WorkbenchTodoSource,
   WorkbenchNotice,
   QuickAction,
 } from '@smartgrade/shared/types/workbench/WorkbenchResponse';
@@ -207,17 +208,20 @@ export class WorkbenchController {
       take: 10,
     });
 
-    return tasks.map((t) => ({
-      id: t.id,
-      title: t.title,
-      type: t.source === 'LEAVE' ? 'LEAVE_APPROVE'
-           : t.source === 'DORM' ? 'DORM_CHECK'
-           : t.source === 'INCIDENT' ? 'INCIDENT_HANDLE' : 'OTHER',
-      status: t.status as WorkbenchTodo['status'],
-      dueAt: t.dueAt ? t.dueAt.toISOString() : null,
-      sourceType: t.source ?? 'OTHER',
-      sourceId: t.sourceId ?? '',
-    }));
+    return tasks.map((t) => {
+      const source = t.source as unknown as string;
+      return {
+        id: t.id,
+        title: t.title,
+        type: source === 'LEAVE' ? 'LEAVE_APPROVE'
+             : source === 'DORM' ? 'DORM_CHECK'
+             : source === 'INCIDENT' ? 'INCIDENT_HANDLE' : 'OTHER',
+        status: t.status as WorkbenchTodo['status'],
+        dueAt: t.dueAt ? t.dueAt.toISOString() : null,
+        sourceType: t.source as unknown as WorkbenchTodoSource | null ?? 'OTHER',
+        sourceId: t.sourceId ?? '',
+      };
+    });
   }
 
   /** 查学校最近通知（PUBLISHED，已发布） */
