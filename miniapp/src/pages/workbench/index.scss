@@ -1,3 +1,191 @@
 .workbench {
-  padding: 32px;
+  min-height: 100vh;
+  padding: 24px;
+  padding-bottom: 48px;
+  box-sizing: border-box;
+  background-color: #f5f5f5;
+}
+
+.state-tip {
+  padding: 96px 24px;
+  text-align: center;
+  color: #999;
+  font-size: 28px;
+}
+
+/* 顶部问候栏 */
+.header {
+  padding: 32px 24px;
+  margin-bottom: 24px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #1677ff 0%, #4096ff 100%);
+  color: #fff;
+
+  .greeting {
+    font-size: 38px;
+    font-weight: 600;
+    margin-bottom: 12px;
+  }
+
+  .date-line {
+    font-size: 24px;
+    opacity: 0.92;
+    display: flex;
+    align-items: center;
+  }
+
+  .date {
+    margin-right: 12px;
+  }
+
+  .week {
+    margin-right: 12px;
+  }
+
+  .non-school-day {
+    padding: 2px 12px;
+    background: rgba(255, 255, 255, 0.22);
+    border-radius: 8px;
+    font-size: 20px;
+  }
+}
+
+/* 卡片通用 */
+.card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 24px;
+}
+
+.card-title {
+  font-size: 30px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 16px;
+}
+
+.empty {
+  padding: 32px 0;
+  text-align: center;
+  color: #999;
+  font-size: 26px;
+}
+
+/* 学生状态 */
+.stat-grid {
+  display: flex;
+  align-items: center;
+}
+
+.stat-item {
+  flex: 1;
+  text-align: center;
+  padding: 12px 0;
+}
+
+.stat-num {
+  font-size: 56px;
+  font-weight: 700;
+  color: #333;
+  line-height: 1.2;
+
+  &.stat-num-primary {
+    color: #1677ff;
+  }
+
+  &.stat-num-warning {
+    color: #fa8c16;
+  }
+}
+
+.stat-label {
+  margin-top: 8px;
+  font-size: 24px;
+  color: #666;
+}
+
+/* 待办 & 通知列表 */
+.todo-item,
+.notice-item {
+  padding: 16px 0;
+  border-bottom: 1px solid #f0f0f0;
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.todo-title,
+.notice-title {
+  font-size: 28px;
+  color: #333;
+  margin-bottom: 10px;
+  line-height: 1.4;
+}
+
+.todo-meta,
+.notice-meta {
+  display: flex;
+  align-items: center;
+}
+
+.todo-due,
+.notice-time {
+  font-size: 24px;
+  color: #999;
+  margin-right: 12px;
+}
+
+/* 标签 */
+.tag {
+  display: inline-block;
+  padding: 2px 12px;
+  border-radius: 8px;
+  font-size: 22px;
+  line-height: 1.6;
+
+  &.tag-pending {
+    background: #fff7e6;
+    color: #fa8c16;
+  }
+
+  &.tag-progress {
+    background: #e6f4ff;
+    color: #1677ff;
+  }
+
+  &.tag-completed {
+    background: #f6ffed;
+    color: #52c41a;
+  }
+
+  &.tag-overdue {
+    background: #fff1f0;
+    color: #ff4d4f;
+  }
+
+  &.tag-notice {
+    background: #f0f0f0;
+    color: #666;
+  }
+}
+
+/* 快捷入口宫格 */
+.action-grid {
+  display: flex;
+  flex-wrap: wrap;
+  margin: -4px;
+}
+
+.action-item {
+  width: calc(33.3333% - 8px);
+  margin: 4px;
+  box-sizing: border-box;
+  padding: 28px 8px;
+  text-align: center;
+  font-size: 26px;
+  color: #333;
+  background: #f7f9fc;
+  border-radius: 8px;
 }

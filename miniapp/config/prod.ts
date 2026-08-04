@@ -3,7 +3,7 @@ export default {
     NODE_ENV: '"production"'
   },
   defineConstant: {
-    API_BASE_URL: '"https://api.smartgrade.com/api/v1"'
+    API_BASE_URL: '"https://smartgrade-api-287135-10-1426534958.sh.run.tcloudbase.com/api/v1"'
   },
   mini: {},
   h5: {}
