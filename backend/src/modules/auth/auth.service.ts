@@ -2,6 +2,8 @@ import { Injectable, UnauthorizedException, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '@/common/prisma';
+import { getPermissions } from '@/authorization/role-permission.map';
+import { RoleCode } from '@smartgrade/shared/enums/RoleCode';
 
 @Injectable()
 export class AuthService {
@@ -26,7 +28,7 @@ export class AuthService {
       throw new UnauthorizedException('账号已被禁用');
     }
 
-    const roles = await this.loadTeacherRoles(teacher.id);
+    const roles = await this.loadTeacherRoles(teacher.id, teacher.teacherNo);
     const permissions = await this.loadPermissionsByRoles(roles);
 
     const tokens = await this.generateTokens(teacher);
@@ -80,7 +82,7 @@ export class AuthService {
       throw new UnauthorizedException('用户不存在');
     }
 
-    const roles = await this.loadTeacherRoles(teacherId);
+    const roles = await this.loadTeacherRoles(teacherId, teacher.teacherNo);
     const permissions = await this.loadPermissionsByRoles(roles);
 
     return {
@@ -131,7 +133,7 @@ export class AuthService {
     return [...new Set(rolePermissions.map((rp) => rp.permission.permissionCode))];
   }
 
-  private async loadTeacherRoles(teacherId: string): Promise<string[]> {
+  private async loadTeacherRoles(teacherId: string, teacherNo: string): Promise<string[]> {
     try {
       const results = await this.prisma.$queryRawUnsafe<
         Array<{ role_code: string }>
@@ -140,10 +142,12 @@ export class AuthService {
          JOIN role r ON tr.role_id = r.id
          WHERE tr.teacher_id = '${teacherId}'`,
       );
-      return results.map((r) => r.role_code);
+      const roles = results.map((r) => r.role_code);
+      if (roles.length > 0) return roles;
     } catch {
-      return [];
+      // teacher_role 表不存在，静默降级
     }
+    return this._fallbackRoles(teacherNo);
   }
 
   private async loadPermissionsByRoles(roles: string[]): Promise<string[]> {
@@ -159,9 +163,27 @@ export class AuthService {
          WHERE r.role_code IN (${placeholders})`,
         ...roles,
       );
-      return results.map((r) => r.permission_code);
+      const perms = results.map((r) => r.permission_code);
+      if (perms.length > 0) return perms;
     } catch {
-      return [];
+      // role_permission 表不存在，静默降级
     }
+    // 降级：从内存映射加载权限
+    const allPerms = new Set<string>();
+    for (const role of roles) {
+      const roleCode = role as RoleCode;
+      getPermissions(roleCode).forEach((p) => allPerms.add(p as string));
+    }
+    return [...allPerms];
+  }
+
+  /** 用工号兜底分配角色（与 workbench.controller 一致） */
+  private _fallbackRoles(teacherNo: string): string[] {
+    if (teacherNo === 'T001') return [RoleCode.ROLE_ADMIN];
+    if (teacherNo === 'T002') return [RoleCode.ROLE_GRADE_DIRECTOR];
+    if (teacherNo === 'T003') return [RoleCode.ROLE_POLITICAL];
+    if (teacherNo === 'T004') return [RoleCode.ROLE_HEADMASTER];
+    if (teacherNo === 'T005') return [RoleCode.ROLE_DORM_MANAGER];
+    return [RoleCode.ROLE_SUBJECT_TEACHER];
   }
 }

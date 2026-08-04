@@ -17,6 +17,7 @@ import {
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 
 import { LeaveCapabilityService } from './leave.capability-service';
+import { PrismaService } from '@/common/prisma';
 import type {
   CreateLeaveRequest, ApproveLeaveRequest, RejectLeaveRequest, CancelLeaveRequest,
 } from '@smartgrade/shared/types/leave/LeaveResponse';
@@ -28,7 +29,40 @@ import { PermissionCode } from '@smartgrade/shared/enums/PermissionCode';
 @ApiBearerAuth()
 @Controller('leaves')
 export class LeaveController {
-  constructor(private readonly leaveService: LeaveCapabilityService) {}
+  constructor(
+    private readonly leaveService: LeaveCapabilityService,
+    private readonly prisma: PrismaService,
+  ) {}
+
+  /** GET /leaves — 请假列表 */
+  @Get()
+  @ApiOperation({ summary: '请假列表', description: '获取请假列表（支持按状态筛选）' })
+  async list(@Query('status') status?: string) {
+    const where: Record<string, unknown> = { deletedAt: null };
+    if (status) {
+      where.status = status;
+    }
+    const records = await this.prisma.leaveRecord.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+    });
+    return records.map((r) => ({
+      id: r.id,
+      leaveNo: r.leaveNo,
+      status: r.status,
+      studentId: r.studentId,
+      studentName: r.studentName,
+      className: r.className,
+      leaveType: r.leaveType,
+      leaveReasonType: r.leaveReasonType,
+      reason: r.reason,
+      startAt: r.startAt.toISOString(),
+      endAt: r.endAt.toISOString(),
+      applicantName: r.applicantName,
+      createdAt: r.createdAt.toISOString(),
+    }));
+  }
 
   /** POST /leaves — 创建请假 */
   @Post()

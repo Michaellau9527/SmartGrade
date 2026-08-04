@@ -12,11 +12,12 @@
  */
 
 import {
-  Controller, Get, Post, Body, Param, HttpException, HttpStatus,
+  Controller, Get, Post, Body, Param, Query, HttpException, HttpStatus,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 
 import { NoticeCapabilityService } from './notice.capability-service';
+import { PrismaService } from '@/common/prisma';
 import type {
   CreateNoticeRequest, PublishNoticeRequest,
 } from '@smartgrade/shared/types/notice/NoticeResponse';
@@ -28,7 +29,41 @@ import { PermissionCode } from '@smartgrade/shared/enums/PermissionCode';
 @ApiBearerAuth()
 @Controller('notices')
 export class NoticeController {
-  constructor(private readonly noticeService: NoticeCapabilityService) {}
+  constructor(
+    private readonly noticeService: NoticeCapabilityService,
+    private readonly prisma: PrismaService,
+  ) {}
+
+  /** GET /notices — 通知列表 */
+  @Get()
+  @ApiOperation({ summary: '通知列表', description: '获取通知列表' })
+  async list(@Query('noticeType') noticeType?: string) {
+    const where: Record<string, unknown> = {
+      deletedAt: null,
+      status: { in: ['PUBLISHED', 'ARCHIVED'] },
+    };
+    if (noticeType) {
+      where.noticeType = noticeType;
+    }
+    const records = await this.prisma.notice.findMany({
+      where,
+      orderBy: { publishedAt: 'desc' },
+      take: 50,
+    });
+    return records.map((n) => ({
+      id: n.id,
+      noticeNo: n.noticeNo,
+      title: n.title,
+      noticeType: n.noticeType,
+      status: n.status,
+      publisherName: n.publisherName,
+      publishedAt: n.publishedAt ? n.publishedAt.toISOString() : null,
+      requireConfirm: n.requireConfirm,
+      isRead: false,
+      isAcknowledged: false,
+      createdAt: n.createdAt.toISOString(),
+    }));
+  }
 
   /** POST /notices — 创建通知草稿 */
   @Post()
