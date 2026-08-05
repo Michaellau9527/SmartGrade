@@ -1,0 +1,127 @@
+/* 教师身份卡：蓝白渐变 + 校徽暗纹 + 圆角 16 + 轻阴影 */
+.teacher-header {
+  position: relative;
+  margin: 0 0 24px 0;
+  padding: 32px 28px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #1677ff 0%, #4096ff 60%, #69b1ff 100%);
+  color: #fff;
+  box-shadow: 0 6px 16px rgba(22, 119, 255, 0.18);
+  overflow: hidden;
+}
+
+.teacher-header__inner {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+}
+
+.teacher-header__avatar {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.96);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 20px;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.teacher-header__avatar-img {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+}
+
+.teacher-header__avatar-text {
+  font-size: 36px;
+  font-weight: 600;
+  color: #1677ff;
+  line-height: 1;
+}
+
+.teacher-header__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.teacher-header__name-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.teacher-header__name {
+  font-size: 36px;
+  font-weight: 600;
+  margin-right: 12px;
+  line-height: 1.2;
+}
+
+.teacher-header__roles {
+  display: inline-flex;
+  flex-wrap: wrap;
+}
+
+.teacher-header__role-tag {
+  display: inline-block;
+  padding: 2px 12px;
+  margin-right: 8px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.22);
+  font-size: 22px;
+  line-height: 1.6;
+}
+
+.teacher-header__aff {
+  font-size: 24px;
+  opacity: 0.92;
+  line-height: 1.4;
+}
+
+.teacher-header__meta {
+  position: absolute;
+  right: 28px;
+  top: 32px;
+  text-align: right;
+  font-size: 22px;
+  opacity: 0.92;
+  line-height: 1.6;
+}
+
+.teacher-header__meta-date {
+  display: block;
+  font-size: 26px;
+  font-weight: 600;
+}
+
+.teacher-header__meta-week,
+.teacher-header__meta-sw {
+  display: block;
+}
+
+/* 校徽暗纹：两个低透明度圆形 + 校徽字 */
+.teacher-header__emblem {
+  position: absolute;
+  right: -40px;
+  top: -40px;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.10);
+  border: 2px solid rgba(255, 255, 255, 0.18);
+  z-index: 1;
+}
+
+.teacher-header__emblem--right {
+  top: auto;
+  right: 60px;
+  bottom: -60px;
+  width: 120px;
+  height: 120px;
+  background: rgba(255, 255, 255, 0.08);
+}

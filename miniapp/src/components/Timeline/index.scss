@@ -1,0 +1,155 @@
+/* 时间线 */
+.timeline {
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.timeline__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.timeline__title {
+  font-size: 30px;
+  font-weight: 600;
+  color: #1d2129;
+}
+
+.timeline__more {
+  display: flex;
+  align-items: center;
+  padding: 4px 8px;
+  margin: -4px -8px;
+}
+
+.timeline__more-text {
+  font-size: 24px;
+  color: #86909c;
+}
+
+.timeline__more-arrow {
+  margin-left: 2px;
+  font-size: 28px;
+  color: #c9cdd4;
+  line-height: 1;
+}
+
+.timeline__empty {
+  padding: 32px 0;
+  text-align: center;
+  color: #86909c;
+  font-size: 26px;
+}
+
+.timeline__list {
+  /* no-op */
+}
+
+.timeline__item {
+  display: flex;
+  align-items: flex-start;
+  padding: 8px 0 16px 0;
+}
+
+.timeline__item--hover {
+  opacity: 0.7;
+}
+
+.timeline__rail {
+  position: relative;
+  width: 24px;
+  flex-shrink: 0;
+  margin-right: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.timeline__dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  margin-top: 8px;
+  box-shadow: 0 0 0 4px #fff;
+  z-index: 2;
+}
+
+.timeline__line {
+  position: absolute;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2px;
+  bottom: -16px;
+  background: #e5e6eb;
+  z-index: 1;
+}
+
+.timeline__content {
+  flex: 1;
+  min-width: 0;
+  padding-top: 4px;
+}
+
+.timeline__head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
+.timeline__item-title {
+  font-size: 28px;
+  font-weight: 500;
+  color: #1d2129;
+  margin-right: 8px;
+  line-height: 1.4;
+}
+
+.timeline__tag {
+  display: inline-block;
+  padding: 0 10px;
+  border-radius: 6px;
+  font-size: 20px;
+  line-height: 1.7;
+}
+
+.timeline__tag--info {
+  background: #e6f4ff;
+  color: #1677ff;
+}
+
+.timeline__tag--success {
+  background: #f6ffed;
+  color: #52c41a;
+}
+
+.timeline__tag--warning {
+  background: #fff7e6;
+  color: #fa8c16;
+}
+
+.timeline__tag--danger {
+  background: #fff1f0;
+  color: #ff4d4f;
+}
+
+.timeline__desc {
+  display: block;
+  font-size: 24px;
+  color: #4e5969;
+  line-height: 1.5;
+  margin-bottom: 4px;
+}
+
+.timeline__time {
+  display: block;
+  font-size: 22px;
+  color: #86909c;
+  line-height: 1.4;
+}

@@ -1,0 +1,153 @@
+/* 通知 & 待办卡片 */
+.notice-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.notice-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.notice-card__title {
+  font-size: 30px;
+  font-weight: 600;
+  color: #1d2129;
+}
+
+.notice-card__more {
+  display: flex;
+  align-items: center;
+  padding: 4px 8px;
+  margin: -4px -8px;
+}
+
+.notice-card__more-text {
+  font-size: 24px;
+  color: #86909c;
+}
+
+.notice-card__more-arrow {
+  margin-left: 2px;
+  font-size: 28px;
+  color: #c9cdd4;
+  line-height: 1;
+}
+
+.notice-card__empty {
+  padding: 32px 0;
+  text-align: center;
+  color: #86909c;
+  font-size: 26px;
+}
+
+.notice-card__list {
+  margin: 0 -8px;
+}
+
+.notice-card__item {
+  display: flex;
+  align-items: center;
+  padding: 16px 8px;
+  border-bottom: 1px solid #f2f3f5;
+}
+
+.notice-card__item:last-child {
+  border-bottom: none;
+}
+
+.notice-card__item--hover {
+  background: #f7f8fa;
+}
+
+.notice-card__main {
+  flex: 1;
+  min-width: 0;
+  margin-right: 16px;
+}
+
+.notice-card__title-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.notice-card__dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ff4d4f;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+.notice-card__item-title {
+  font-size: 28px;
+  color: #1d2129;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.notice-card__item-desc {
+  display: block;
+  font-size: 24px;
+  color: #86909c;
+  line-height: 1.4;
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.notice-card__aside {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex-shrink: 0;
+}
+
+.notice-card__tag {
+  display: inline-block;
+  padding: 2px 12px;
+  border-radius: 6px;
+  font-size: 20px;
+  line-height: 1.6;
+}
+
+.notice-card__tag--primary {
+  background: #e6f4ff;
+  color: #1677ff;
+}
+
+.notice-card__tag--warning {
+  background: #fff7e6;
+  color: #fa8c16;
+}
+
+.notice-card__tag--danger {
+  background: #fff1f0;
+  color: #ff4d4f;
+}
+
+.notice-card__tag--success {
+  background: #f6ffed;
+  color: #52c41a;
+}
+
+.notice-card__tag--default {
+  background: #f2f3f5;
+  color: #4e5969;
+}
+
+.notice-card__time {
+  margin-top: 4px;
+  font-size: 20px;
+  color: #86909c;
+}

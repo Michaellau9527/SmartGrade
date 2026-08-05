@@ -1,191 +1,199 @@
+/* ============ 工作台容器 ============ */
 .workbench {
   min-height: 100vh;
-  padding: 24px;
-  padding-bottom: 48px;
+  padding: 20px 20px 48px 20px;
   box-sizing: border-box;
-  background-color: #f5f5f5;
+  background-color: #f2f4f7;
+}
+
+.workbench--state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding-top: 96px;
 }
 
 .state-tip {
-  padding: 96px 24px;
+  padding: 24px;
   text-align: center;
-  color: #999;
+  color: #86909c;
   font-size: 28px;
 }
 
-/* 顶部问候栏 */
-.header {
-  padding: 32px 24px;
-  margin-bottom: 24px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #1677ff 0%, #4096ff 100%);
-  color: #fff;
-
-  .greeting {
-    font-size: 38px;
-    font-weight: 600;
-    margin-bottom: 12px;
-  }
-
-  .date-line {
-    font-size: 24px;
-    opacity: 0.92;
-    display: flex;
-    align-items: center;
-  }
-
-  .date {
-    margin-right: 12px;
-  }
-
-  .week {
-    margin-right: 12px;
-  }
-
-  .non-school-day {
-    padding: 2px 12px;
-    background: rgba(255, 255, 255, 0.22);
-    border-radius: 8px;
-    font-size: 20px;
-  }
+.state-tip.state-error {
+  color: #ff4d4f;
 }
 
-/* 卡片通用 */
+.workbench__spacer {
+  height: 24px;
+}
+
+/* ============ 通用卡片（页面级"特殊卡片"使用） ============ */
 .card {
   background: #fff;
-  border-radius: 12px;
-  padding: 16px;
-  margin-bottom: 24px;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 .card-title {
   font-size: 30px;
   font-weight: 600;
-  color: #333;
+  color: #1d2129;
   margin-bottom: 16px;
 }
 
-.empty {
-  padding: 32px 0;
-  text-align: center;
-  color: #999;
-  font-size: 26px;
+/* ============ 课任教师：授课班级出勤 ============ */
+.subject-attendance__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 8px;
 }
 
-/* 学生状态 */
-.stat-grid {
+.subject-attendance__title {
+  margin-bottom: 0;
+}
+
+.subject-attendance__subtitle {
+  font-size: 24px;
+  color: #86909c;
+}
+
+.subject-attendance__row {
+  padding: 14px 0;
+  border-bottom: 1px solid #f2f3f5;
+}
+
+.subject-attendance__row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.subject-attendance__row:first-of-type {
+  padding-top: 8px;
+}
+
+.subject-attendance__head {
   display: flex;
   align-items: center;
-}
-
-.stat-item {
-  flex: 1;
-  text-align: center;
-  padding: 12px 0;
-}
-
-.stat-num {
-  font-size: 56px;
-  font-weight: 700;
-  color: #333;
-  line-height: 1.2;
-
-  &.stat-num-primary {
-    color: #1677ff;
-  }
-
-  &.stat-num-warning {
-    color: #fa8c16;
-  }
-}
-
-.stat-label {
-  margin-top: 8px;
-  font-size: 24px;
-  color: #666;
-}
-
-/* 待办 & 通知列表 */
-.todo-item,
-.notice-item {
-  padding: 16px 0;
-  border-bottom: 1px solid #f0f0f0;
-
-  &:last-child {
-    border-bottom: none;
-  }
-}
-
-.todo-title,
-.notice-title {
-  font-size: 28px;
-  color: #333;
+  justify-content: space-between;
   margin-bottom: 10px;
+}
+
+.subject-attendance__main {
+  flex: 1;
+  min-width: 0;
+}
+
+.subject-attendance__name {
+  display: block;
+  font-size: 28px;
+  color: #1d2129;
   line-height: 1.4;
 }
 
-.todo-meta,
-.notice-meta {
+.subject-attendance__grade {
+  display: block;
+  font-size: 22px;
+  color: #86909c;
+  margin-top: 2px;
+}
+
+.subject-attendance__nums {
+  display: flex;
+  align-items: baseline;
+  flex-shrink: 0;
+  margin-left: 16px;
+}
+
+.subject-attendance__actual {
+  font-size: 32px;
+  font-weight: 700;
+  color: #1d2129;
+  line-height: 1;
+}
+
+.subject-attendance__sep {
+  font-size: 24px;
+  color: #c9cdd4;
+  margin: 0 4px;
+}
+
+.subject-attendance__expected {
+  font-size: 24px;
+  color: #4e5969;
+  line-height: 1;
+}
+
+.subject-attendance__leave {
+  margin-left: 16px;
+  padding: 0 10px;
+  font-size: 20px;
+  color: #86909c;
+  background: #f2f3f5;
+  border-radius: 6px;
+  line-height: 1.7;
+}
+
+.subject-attendance__leave--has {
+  color: #fa8c16;
+  background: #fff7e6;
+}
+
+.subject-attendance__bar {
+  width: 100%;
+  height: 10px;
+  background: #f2f3f5;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.subject-attendance__bar-fill {
+  height: 100%;
+  border-radius: 5px;
+  transition: width 0.3s ease;
+}
+
+/* ============ 年级主任：任务完成情况 ============ */
+.grade-tasks__item {
+  padding: 12px 0;
+}
+
+.grade-tasks__item + .grade-tasks__item {
+  border-top: 1px solid #f2f3f5;
+}
+
+.grade-tasks__row {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
 }
 
-.todo-due,
-.notice-time {
-  font-size: 24px;
-  color: #999;
-  margin-right: 12px;
+.grade-tasks__name {
+  font-size: 28px;
+  color: #1d2129;
 }
 
-/* 标签 */
-.tag {
-  display: inline-block;
-  padding: 2px 12px;
-  border-radius: 8px;
-  font-size: 22px;
-  line-height: 1.6;
-
-  &.tag-pending {
-    background: #fff7e6;
-    color: #fa8c16;
-  }
-
-  &.tag-progress {
-    background: #e6f4ff;
-    color: #1677ff;
-  }
-
-  &.tag-completed {
-    background: #f6ffed;
-    color: #52c41a;
-  }
-
-  &.tag-overdue {
-    background: #fff1f0;
-    color: #ff4d4f;
-  }
-
-  &.tag-notice {
-    background: #f0f0f0;
-    color: #666;
-  }
-}
-
-/* 快捷入口宫格 */
-.action-grid {
-  display: flex;
-  flex-wrap: wrap;
-  margin: -4px;
-}
-
-.action-item {
-  width: calc(33.3333% - 8px);
-  margin: 4px;
-  box-sizing: border-box;
-  padding: 28px 8px;
-  text-align: center;
+.grade-tasks__percent {
   font-size: 26px;
-  color: #333;
-  background: #f7f9fc;
-  border-radius: 8px;
+  font-weight: 600;
+  color: #1d2129;
+}
+
+.grade-tasks__bar {
+  width: 100%;
+  height: 12px;
+  background: #f2f3f5;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.grade-tasks__bar-fill {
+  height: 100%;
+  border-radius: 6px;
+  transition: width 0.3s ease;
 }
