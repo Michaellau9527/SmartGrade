@@ -80,10 +80,7 @@ export default function Student() {
         params.keyword = trimmed;
       }
       const res = await getStudents(params);
-
-      console.log('[Student] getStudents返回:', res);
-      console.log('[Student] 是否数组:', Array.isArray(res));
-      
+      // 防御性兜底：API 层已适配为数组，但即便上游返回了分页对象也安全
       if (Array.isArray(res)) {
         setList(res);
       } else if (res && Array.isArray((res as any).list)) {
@@ -183,8 +180,46 @@ export default function Student() {
   }
 
   return (
-    <View className="student">
-      <Text>测试渲染成功</Text>
+    <View className='student'>
+      {/* 顶部搜索栏 */}
+      <View className='search-bar'>
+        <Input
+          className='search-input'
+          type='text'
+          placeholder='按姓名 / 学号搜索'
+          value={keyword}
+          onInput={(e) => setKeyword(e.detail.value)}
+        />
+      </View>
+
+      {/* 列表区域 */}
+      {list.length === 0 ? (
+        <View className='state-tip'>暂无学生数据</View>
+      ) : (
+        <View className='student-list'>
+          {list.map((item) => {
+            const status = STATUS_MAP[item.currentStatus];
+            return (
+              <View
+                key={item.id}
+                className='student-card'
+                onClick={() => handleItemClick(item)}
+              >
+                <View className='student-main'>
+                  <View className='student-name'>{item.name}</View>
+                  <View className='student-meta'>
+                    <Text className='student-no'>学号：{item.studentNo}</Text>
+                    <Text className='student-class'>
+                      {item.gradeName} · {item.className}
+                    </Text>
+                  </View>
+                </View>
+                <Text className={`tag ${status.className}`}>{status.label}</Text>
+              </View>
+            );
+          })}
+        </View>
+      )}
     </View>
   );
-  }
+}
