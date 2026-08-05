@@ -56,6 +56,16 @@ function readToken(): string {
   }
 }
 
+/** 快捷入口 code -> 跳转目标页面（小程序页面路径） */
+const QUICK_ACTION_TARGET: Record<string, string> = {
+  'leave.create': '/pages/leave/index',
+  'leave.approve': '/pages/leave/index',
+  'notice.publish': '/pages/notice/index',
+  'student.read': '/pages/student/index'
+  // 其他 code（task.assign / incident.create / dorm.check / statistics.read）
+  // 暂无对应页面，点击不跳转（Toast 提示）
+};
+
 export default function Workbench() {
   const [data, setData] = useState<WorkbenchResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
@@ -65,6 +75,19 @@ export default function Workbench() {
   >('idle');
   const setUserInfo = useUserStore((s) => s.setUserInfo);
   const teacherName = useUserStore((s) => s.teacherName);
+
+  /** 快捷入口点击：按 code 跳到对应页面，没有对应页就 toast 提示 */
+  const handleQuickAction = useCallback((code: string) => {
+    const target = QUICK_ACTION_TARGET[code];
+    if (target) {
+      Taro.switchTab({ url: target }).catch(() => {
+        // switchTab 失败（非 tabBar 页面）用 navigateTo 兜底
+        Taro.navigateTo({ url: target });
+      });
+    } else {
+      Taro.showToast({ title: '该功能即将上线', icon: 'none' });
+    }
+  }, []);
 
   /** 先尝试读 storage 里已有的 token，没有就做一次 mock 登录 */
   const ensureLogin = useCallback(async () => {
@@ -282,7 +305,13 @@ export default function Workbench() {
         ) : (
           <View className='action-grid'>
             {quickActions.map((action) => (
-              <View key={action.code} className='action-item'>
+              <View
+                key={action.code}
+                className='action-item'
+                hoverClass='action-item--hover'
+                hoverStayTime={50}
+                onClick={() => handleQuickAction(action.code)}
+              >
                 {action.label}
               </View>
             ))}
