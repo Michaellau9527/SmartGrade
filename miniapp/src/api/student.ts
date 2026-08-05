@@ -6,7 +6,7 @@ export type StudentStatus = 'ON_CAMPUS' | 'OUT_OF_SCHOOL' | 'GRADUATED' | 'TRANS
 /** 住宿类型 */
 export type BoardingType = 'DAY_STUDENT' | 'BOARDING';
 
-/** 学生列表项 */
+/** 学生列表项（前端统一字段） */
 export interface StudentListItem {
   id: string;
   studentNo: string;
@@ -19,7 +19,7 @@ export interface StudentListItem {
   currentLocation: string;
 }
 
-/** 学生详情 */
+/** 学生详情（前端统一字段） */
 export interface StudentDetail extends StudentListItem {
   phone: string | null;
   dormName: string | null;
@@ -37,40 +37,140 @@ export interface QueryStudentParams {
   pageSize?: number;
 }
 
-/** 后端分页响应结构（不可修改 backend，仅在前端适配） */
+/** 后端原始数据结构（嵌套） */
+interface RawClass {
+  id: string;
+  name: string;
+  code?: string;
+  grade?: { id: string; name: string; code?: string };
+  headTeacher?: { id: string; name: string; teacherNo: string; phone?: string | null };
+  headTeacherId?: string;
+  viceHeadTeacherId?: string | null;
+  studentCount?: number;
+  status?: string;
+}
+
+interface RawDorm {
+  id: string;
+  buildingId: string;
+  floor: number;
+  roomNo: string;
+  capacity?: number;
+  currentCount?: number;
+  status?: string;
+  building?: { id: string; name: string };
+}
+
+interface RawStudent {
+  id: string;
+  studentNo: string;
+  name: string;
+  gender: 'MALE' | 'FEMALE' | 'OTHER';
+  classId: string;
+  gradeId: string;
+  schoolId: string;
+  boardingType: BoardingType;
+  dormId: string | null;
+  bedNo: string | null;
+  currentStatus: StudentStatus;
+  currentLocation: string;
+  statusUpdatedAt?: string | null;
+  locationUpdatedAt?: string | null;
+  phone?: string | null;
+  enrolledAt?: string;
+  graduatedAt?: string | null;
+  transferredAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt?: string | null;
+  // 嵌套字段
+  class?: RawClass;
+  dorm?: RawDorm | null;
+  leaveCount?: number;
+  timelineCount?: number;
+}
+
+/** 后端分页响应结构 */
 interface StudentListResponse {
-  list: StudentListItem[];
+  list: RawStudent[];
   total: number;
   page: number;
   pageSize: number;
 }
 
 /**
+ * 后端原始数据 -> 前端统一结构
+ *
+ * 后端把"班级名/年级名"嵌在 class.name / class.grade.name，
+ * "宿舍名"由 dorm.building.name + dorm.roomNo 拼接而成。
+ * 这里统一拍平为顶层 className / gradeName / dormName，
+ * 页面层就不用关心后端嵌套结构。
+ */
+function mapStudent(raw: RawStudent): StudentListItem {
+  return {
+    id: raw.id,
+    studentNo: raw.studentNo,
+    name: raw.name,
+    gender: raw.gender,
+    className: raw.class?.name || '',
+    gradeName: raw.class?.grade?.name || '',
+    boardingType: raw.boardingType,
+    currentStatus: raw.currentStatus,
+    currentLocation: raw.currentLocation
+  };
+}
+
+function mapStudentDetail(raw: RawStudent): StudentDetail {
+  const base = mapStudent(raw);
+  // 宿舍名 = 楼栋名 + 房间号
+  let dormName: string | null = null;
+  if (raw.dorm) {
+    const buildingName = raw.dorm.building?.name || '';
+    const roomNo = raw.dorm.roomNo || '';
+    dormName = [buildingName, roomNo].filter(Boolean).join(' ') || null;
+  }
+  return {
+    ...base,
+    phone: raw.phone ?? null,
+    dormName,
+    bedNo: raw.bedNo ?? null,
+    enrolledAt: raw.enrolledAt || raw.createdAt
+  };
+}
+
+/**
  * 获取学生列表
  * 接口：GET /students
  *
- * 后端返回分页对象 { list, total, page, pageSize }，
- * 这里在 API 层做适配，只把 list 数组返回给页面，
- * 避免页面拿到对象后直接 .map() 报错。
+ * 后端返回 { list, total, page, pageSize }，
+ * 列表项里班级名/年级名是嵌套字段，这里适配为顶层字段后返回数组。
  */
 export async function getStudents(params?: QueryStudentParams): Promise<StudentListItem[]> {
   const res = await request<StudentListResponse>('/students', {
     method: 'GET',
     data: params as unknown as Record<string, unknown>
   });
-  // 兼容：后端可能返回分页对象，也可能直接返回数组（防御性处理）
+  // 防御性：直接返回数组
   if (Array.isArray(res)) {
-    return res;
+    return (res as RawStudent[]).map(mapStudent);
   }
-  return res?.list || [];
+  const list = res?.list || [];
+  return list.map(mapStudent);
 }
 
 /**
  * 获取学生详情
  * 接口：GET /students/:id
+ *
+ * 后端返回 RawStudent 嵌套结构，适配为扁平 StudentDetail。
  */
-export function getStudentDetail(id: string): Promise<StudentDetail> {
-  return request<StudentDetail>(`/students/${id}`, {
+export async function getStudentDetail(id: string): Promise<StudentDetail> {
+  const raw = await request<RawStudent>(`/students/${id}`, {
     method: 'GET'
   });
+  // 防御性：万一将来后端直接返回扁平结构
+  if (raw && (raw as any).className !== undefined) {
+    return raw as unknown as StudentDetail;
+  }
+  return mapStudentDetail(raw);
 }
