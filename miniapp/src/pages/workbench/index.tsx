@@ -12,7 +12,7 @@ import {
 import { mockLogin } from '../../api/auth';
 import { useUserStore } from '../../store/user';
 import TeacherHeader from '../../components/TeacherHeader';
-import DashboardCard, { StatItem } from '../../components/DashboardCard';
+import DashboardCard from '../../components/DashboardCard';
 import NoticeCard, { NoticeItem } from '../../components/NoticeCard';
 import QuickAction, { QuickActionItem } from '../../components/QuickAction';
 import Timeline, { TimelineItem } from '../../components/Timeline';
@@ -163,73 +163,35 @@ export default function Workbench() {
       .slice(0, 6);
   }, [data]);
 
-  /** 头部统计（学生状态） */
-  const headmasterStats: StatItem[] = useMemo(() => {
-    const s = data?.studentStatusSummary;
-    return [
-      { label: '学生总数', value: s?.totalStudents ?? 0, theme: 'primary' },
-      { label: '在校', value: s?.onCampus ?? 0, theme: 'success' },
-      { label: '请假', value: s?.studentsLeaving ?? 0, theme: 'warning' },
-      { label: '异常', value: s?.dormAbnormal ?? 0, theme: 'danger' }
-    ];
-  }, [data]);
-
-  const gradeStats: StatItem[] = useMemo(() => {
-    // 年级数据 mock，暂用学生状态数据 × 模拟放大
-    const s = data?.studentStatusSummary;
-    return [
-      { label: '年级学生', value: (s?.totalStudents ?? 0) * 6 || 240, theme: 'primary' },
-      { label: '在校', value: (s?.onCampus ?? 0) * 6 || 226, theme: 'success' },
-      { label: '请假', value: (s?.studentsLeaving ?? 0) * 4 || 8, theme: 'warning' },
-      { label: '异常', value: (s?.dormAbnormal ?? 0) * 3 || 6, theme: 'danger' }
-    ];
-  }, [data]);
-
-  const politicalStats: StatItem[] = useMemo(() => {
-    const s = data?.studentStatusSummary;
-    return [
-      { label: '在校学生', value: (s?.onCampus ?? 0) * 12 || 1180, theme: 'primary' },
-      { label: '请假中', value: (s?.studentsLeaving ?? 0) * 8 || 24, theme: 'warning' },
-      { label: '未闭环', value: (s?.dormAbnormal ?? 0) * 4 || 12, theme: 'danger' },
-      { label: '异常事件', value: 5, theme: 'default' }
-    ];
-  }, [data]);
-
-  const subjectStats: StatItem[] = useMemo(() => {
-    const s = data?.studentStatusSummary;
-    return [
-      { label: '任教班级', value: 3, theme: 'primary' },
-      { label: '学生总数', value: 127, theme: 'default' },
-      { label: '今日到勤', value: `${s?.onCampus ?? 124}/${127}`, theme: 'success' },
-      { label: '待批改', value: 18, theme: 'warning' }
-    ];
-  }, [data]);
-
-  /** 角色 -> 快捷入口（label + icon + theme + badge） */
+  /** 课任教师：授课班级出勤（mock，等后端接口接入） */
+  const subjectAttendance = useMemo(
+    () => SUBJECT_TEACHER_ATTENDANCE_MOCK,
+    []
+  );
   const headmasterActions: QuickActionItem[] = useMemo(
     () => [
-      { code: 'student.read', label: '学生管理', icon: '生', theme: 'primary' },
-      { code: 'leave.approve', label: '请假审批', icon: '假', theme: 'warning', badge: data?.studentStatusSummary.studentsLeaving || 0 },
-      { code: 'class.manage', label: '班级管理', icon: '班', theme: 'success' },
-      { code: 'notice.publish', label: '通知管理', icon: '通', theme: 'purple' },
-      { code: 'task.assign', label: '任务布置', icon: '务', theme: 'default' },
-      { code: 'statistics.read', label: '班级报表', icon: '表', theme: 'default' },
-      { code: 'incident.create', label: '事件上报', icon: '事', theme: 'danger' },
-      { code: 'dorm.check', label: '宿舍检查', icon: '宿', theme: 'warning' }
+      { code: 'student.read', label: '学生管理', icon: '👨‍🎓', theme: 'primary' },
+      { code: 'leave.approve', label: '请假审批', icon: '📝', theme: 'warning', badge: data?.studentStatusSummary.studentsLeaving || 0 },
+      { code: 'class.manage', label: '班级管理', icon: '🏫', theme: 'success' },
+      { code: 'notice.publish', label: '通知管理', icon: '📢', theme: 'purple' },
+      { code: 'task.assign', label: '任务布置', icon: '📋', theme: 'default' },
+      { code: 'statistics.read', label: '班级报表', icon: '📊', theme: 'default' },
+      { code: 'incident.create', label: '事件上报', icon: '⚠️', theme: 'danger' },
+      { code: 'dorm.check', label: '宿舍检查', icon: '🛏️', theme: 'warning' }
     ],
     [data]
   );
 
   const subjectActions: QuickActionItem[] = useMemo(
     () => [
-      { code: 'student.read', label: '学生花名册', icon: '册', theme: 'primary' },
-      { code: 'leave.approve', label: '请假审批', icon: '假', theme: 'warning' },
-      { code: 'task.assign', label: '布置作业', icon: '业', theme: 'success' },
-      { code: 'statistics.read', label: '成绩录入', icon: '录', theme: 'default' },
-      { code: 'notice.publish', label: '班级通知', icon: '通', theme: 'purple' },
-      { code: 'class.manage', label: '我的课表', icon: '表', theme: 'default' },
-      { code: 'dorm.check', label: '宿舍点名', icon: '宿', theme: 'warning' },
-      { code: 'incident.create', label: '上报事件', icon: '事', theme: 'danger' }
+      { code: 'student.read', label: '学生花名册', icon: '👨‍🎓', theme: 'primary' },
+      { code: 'leave.approve', label: '请假审批', icon: '📝', theme: 'warning' },
+      { code: 'task.assign', label: '布置作业', icon: '📒', theme: 'success' },
+      { code: 'statistics.read', label: '成绩录入', icon: '✏️', theme: 'default' },
+      { code: 'notice.publish', label: '班级通知', icon: '📢', theme: 'purple' },
+      { code: 'class.manage', label: '我的课表', icon: '🗓️', theme: 'default' },
+      { code: 'dorm.check', label: '宿舍点名', icon: '🛏️', theme: 'warning' },
+      { code: 'incident.create', label: '上报事件', icon: '⚠️', theme: 'danger' }
     ],
     []
   );
@@ -237,14 +199,14 @@ export default function Workbench() {
   const gradeActions: QuickActionItem[] = useMemo(
     () => [
       // 通知 / 任务中心仅保留 UI 入口，发布逻辑等后端权限系统完成后接入
-      { code: 'notice.center', label: '通知中心', icon: '通', theme: 'primary' },
-      { code: 'task.center', label: '任务中心', icon: '务', theme: 'warning', badge: 3 },
-      { code: 'leave.approve', label: '请假审批', icon: '假', theme: 'success' },
-      { code: 'student.read', label: '学生名册', icon: '生', theme: 'default' },
-      { code: 'statistics.read', label: '年级报表', icon: '报', theme: 'default' },
-      { code: 'incident.create', label: '事件记录', icon: '记', theme: 'danger' },
-      { code: 'class.manage', label: '班级管理', icon: '班', theme: 'purple' },
-      { code: 'dorm.check', label: '宿舍管理', icon: '宿', theme: 'warning' }
+      { code: 'notice.center', label: '通知中心', icon: '📢', theme: 'primary' },
+      { code: 'task.center', label: '任务中心', icon: '📋', theme: 'warning', badge: 3 },
+      { code: 'leave.approve', label: '请假审批', icon: '📝', theme: 'success' },
+      { code: 'student.read', label: '学生名册', icon: '👨‍🎓', theme: 'default' },
+      { code: 'statistics.read', label: '年级报表', icon: '📊', theme: 'default' },
+      { code: 'incident.create', label: '事件记录', icon: '⚠️', theme: 'danger' },
+      { code: 'class.manage', label: '班级管理', icon: '🏫', theme: 'purple' },
+      { code: 'dorm.check', label: '宿舍管理', icon: '🛏️', theme: 'warning' }
     ],
     []
   );
@@ -252,24 +214,24 @@ export default function Workbench() {
   const politicalActions: QuickActionItem[] = useMemo(
     () => [
       // 通知 / 任务中心仅保留 UI 入口，发布逻辑等后端权限系统完成后接入
-      { code: 'notice.center', label: '通知中心', icon: '通', theme: 'primary' },
-      { code: 'task.center', label: '任务中心', icon: '务', theme: 'warning', badge: 2 },
-      { code: 'incident.create', label: '异常上报', icon: '异', theme: 'danger', badge: 5 },
-      { code: 'leave.approve', label: '请假审批', icon: '假', theme: 'success' },
-      { code: 'student.read', label: '学生档案', icon: '档', theme: 'default' },
-      { code: 'statistics.read', label: '全校统计', icon: '统', theme: 'default' },
-      { code: 'dorm.check', label: '宿舍管理', icon: '宿', theme: 'purple' },
-      { code: 'class.manage', label: '班级管理', icon: '班', theme: 'warning' }
+      { code: 'notice.center', label: '通知中心', icon: '📢', theme: 'primary' },
+      { code: 'task.center', label: '任务中心', icon: '📋', theme: 'warning', badge: 2 },
+      { code: 'incident.create', label: '异常上报', icon: '⚠️', theme: 'danger', badge: 5 },
+      { code: 'leave.approve', label: '请假审批', icon: '📝', theme: 'success' },
+      { code: 'student.read', label: '学生档案', icon: '📁', theme: 'default' },
+      { code: 'statistics.read', label: '全校统计', icon: '📊', theme: 'default' },
+      { code: 'dorm.check', label: '宿舍管理', icon: '🛏️', theme: 'purple' },
+      { code: 'class.manage', label: '班级管理', icon: '🏫', theme: 'warning' }
     ],
     []
   );
 
   const defaultActions: QuickActionItem[] = useMemo(
     () => [
-      { code: 'student.read', label: '学生管理', icon: '生', theme: 'primary' },
-      { code: 'leave.create', label: '发起请假', icon: '假', theme: 'warning' },
-      { code: 'notice.publish', label: '通知管理', icon: '通', theme: 'success' },
-      { code: 'task.assign', label: '任务中心', icon: '务', theme: 'default' }
+      { code: 'student.read', label: '学生管理', icon: '👨‍🎓', theme: 'primary' },
+      { code: 'leave.create', label: '发起请假', icon: '📝', theme: 'warning' },
+      { code: 'notice.publish', label: '通知管理', icon: '📢', theme: 'success' },
+      { code: 'task.assign', label: '任务中心', icon: '📋', theme: 'default' }
     ],
     []
   );
@@ -301,12 +263,6 @@ export default function Workbench() {
 
   /** 异常提醒（政教） */
   const alertTimeline: TimelineItem[] = useMemo(() => POLITICAL_ALERT_MOCK, []);
-
-  /** 课任教师：授课班级出勤（mock，等后端接口接入） */
-  const subjectAttendance = useMemo(
-    () => SUBJECT_TEACHER_ATTENDANCE_MOCK,
-    []
-  );
 
   /** 登录 */
   const ensureLogin = useCallback(async () => {
@@ -437,11 +393,23 @@ export default function Workbench() {
       {layout === 'headmaster' && (
         <>
           <DashboardCard
-            title='今日班级数据'
-            subtitle={today.isSchoolDay ? '教学日' : '非教学日'}
+            title='今日班级'
+            subtitle={today.isSchoolDay ? '教学日 · 实时' : '非教学日'}
             moreText='班级详情'
             onMore={() => Taro.showToast({ title: '班级详情开发中', icon: 'none' })}
-            stats={headmasterStats}
+            accent='primary'
+            hero={{
+              value: data?.studentStatusSummary.totalStudents ?? 0,
+              label: '学生',
+              theme: 'primary',
+              suffix: '人',
+              badge: today.isSchoolDay ? '今日' : '周末'
+            }}
+            statusList={[
+              { label: '在校', value: data?.studentStatusSummary.onCampus ?? 0, color: 'green' },
+              { label: '请假', value: data?.studentStatusSummary.studentsLeaving ?? 0, color: 'yellow' },
+              { label: '异常', value: data?.studentStatusSummary.dormAbnormal ?? 0, color: 'red' }
+            ]}
           />
 
           <NoticeCard
@@ -469,10 +437,23 @@ export default function Workbench() {
       {layout === 'subjectTeacher' && (
         <>
           <DashboardCard
-            title='今日教学概览'
+            title='今日教学'
+            subtitle={`第 ${today.semesterWeek || 1} 周 · ${formatWeek(today.week)}`}
             moreText='详情'
             onMore={() => Taro.showToast({ title: '教学详情开发中', icon: 'none' })}
-            stats={subjectStats}
+            accent='success'
+            hero={{
+              value: subjectAttendance.reduce((sum, r) => sum + r.actual, 0),
+              label: '实到',
+              theme: 'success',
+              suffix: '人',
+              badge: '今日'
+            }}
+            statusList={[
+              { label: '应到', value: subjectAttendance.reduce((s, r) => s + r.expected, 0), color: 'blue' },
+              { label: '请假', value: subjectAttendance.reduce((s, r) => s + r.leave, 0), color: 'yellow' },
+              { label: '缺勤', value: subjectAttendance.reduce((s, r) => s + Math.max(r.expected - r.actual - r.leave, 0), 0), color: 'red' }
+            ]}
           />
 
           {/* 授课班级出勤：等后端接口接入，先用 mock */}
@@ -532,6 +513,7 @@ export default function Workbench() {
             title='教学快捷入口'
             items={quickActions}
             columns={4}
+            onItemClick={handleQuickAction}
           />
         </>
       )}
@@ -540,11 +522,23 @@ export default function Workbench() {
       {layout === 'gradeDirector' && (
         <>
           <DashboardCard
-            title='年级数据总览'
-            subtitle={`第 ${today.semesterWeek} 周`}
+            title='年级总览'
+            subtitle={`第 ${today.semesterWeek || 1} 周`}
             moreText='年级报表'
             onMore={() => Taro.showToast({ title: '年级报表开发中', icon: 'none' })}
-            stats={gradeStats}
+            accent='purple'
+            hero={{
+              value: (data?.studentStatusSummary.totalStudents ?? 0) * 6 || 240,
+              label: '学生',
+              theme: 'primary',
+              suffix: '人',
+              badge: '全年级'
+            }}
+            statusList={[
+              { label: '在校', value: (data?.studentStatusSummary.onCampus ?? 0) * 6 || 226, color: 'green' },
+              { label: '请假', value: (data?.studentStatusSummary.studentsLeaving ?? 0) * 4 || 8, color: 'yellow' },
+              { label: '异常', value: (data?.studentStatusSummary.dormAbnormal ?? 0) * 3 || 6, color: 'red' }
+            ]}
           />
 
           <NoticeCard
@@ -588,7 +582,19 @@ export default function Workbench() {
             subtitle={today.isSchoolDay ? '今日教学日' : '今日休息'}
             moreText='详情'
             onMore={() => Taro.showToast({ title: '全校详情开发中', icon: 'none' })}
-            stats={politicalStats}
+            accent='danger'
+            hero={{
+              value: (data?.studentStatusSummary.onCampus ?? 0) * 12 || 1180,
+              label: '在校',
+              theme: 'primary',
+              suffix: '人',
+              badge: '全校'
+            }}
+            statusList={[
+              { label: '请假中', value: (data?.studentStatusSummary.studentsLeaving ?? 0) * 8 || 24, color: 'yellow' },
+              { label: '未闭环', value: (data?.studentStatusSummary.dormAbnormal ?? 0) * 4 || 12, color: 'red' },
+              { label: '异常事件', value: 5, color: 'orange' }
+            ]}
           />
 
           <NoticeCard
@@ -618,10 +624,20 @@ export default function Workbench() {
         <>
           <DashboardCard
             title='今日概览'
-            stats={headmasterStats}
+            accent='primary'
+            hero={{
+              value: data?.studentStatusSummary.totalStudents ?? 0,
+              label: '学生',
+              theme: 'primary',
+              suffix: '人'
+            }}
+            statusList={[
+              { label: '在校', value: data?.studentStatusSummary.onCampus ?? 0, color: 'green' },
+              { label: '请假', value: data?.studentStatusSummary.studentsLeaving ?? 0, color: 'yellow' }
+            ]}
           />
           <NoticeCard items={noticeItems} />
-          <QuickAction title='快捷入口' items={quickActions} columns={4} />
+          <QuickAction title='快捷入口' items={quickActions} columns={4} onItemClick={handleQuickAction} />
         </>
       )}
 

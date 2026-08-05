@@ -1,23 +1,41 @@
-/* 快捷入口宫格 */
+/* 快捷入口：APP 风格圆形图标 */
 .quick-action {
+  position: relative;
   background: #fff;
-  border-radius: 16px;
-  padding: 24px;
-  margin-bottom: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  border-radius: 20px;
+  padding: 24px 20px 20px 20px;
+  margin: 0 16px 20px 16px;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.03),
+    0 6px 16px rgba(22, 119, 255, 0.05);
+  overflow: hidden;
+}
+
+.quick-action::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(180deg, #1677ff, #4096ff);
+  border-top-left-radius: 20px;
+  border-bottom-left-radius: 20px;
 }
 
 .quick-action__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 16px;
+  padding: 0 4px;
+  margin-bottom: 18px;
 }
 
 .quick-action__title {
   font-size: 30px;
   font-weight: 600;
   color: #1d2129;
+  letter-spacing: 0.5px;
 }
 
 .quick-action__more {
@@ -49,11 +67,11 @@
 .quick-action__grid {
   display: flex;
   flex-wrap: wrap;
-  margin: -8px;
+  margin: 0 -4px;
 }
 
 .quick-action__grid--3 .quick-action__item {
-  width: calc(33.3333%);
+  width: 33.3333%;
 }
 
 .quick-action__grid--4 .quick-action__item {
@@ -68,19 +86,20 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 8px 4px 12px 4px;
+  padding: 6px 4px 4px 4px;
   box-sizing: border-box;
 }
 
 .quick-action__item--hover {
-  opacity: 0.7;
+  opacity: 0.78;
+  transform: scale(0.96);
 }
 
 .quick-action__icon {
   position: relative;
-  width: 72px;
-  height: 72px;
-  border-radius: 16px;
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -88,25 +107,26 @@
 }
 
 .quick-action__icon-text {
-  font-size: 32px;
-  font-weight: 600;
+  font-size: 36px;
   line-height: 1;
+  font-weight: 500;
 }
 
 .quick-action__badge {
   position: absolute;
-  top: -6px;
-  right: -6px;
-  min-width: 28px;
-  height: 28px;
+  top: -2px;
+  right: -4px;
+  min-width: 30px;
+  height: 30px;
   padding: 0 8px;
-  border-radius: 14px;
+  border-radius: 15px;
   background: #ff4d4f;
   color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
+  box-shadow: 0 2px 6px rgba(255, 77, 79, 0.35);
 }
 
 .quick-action__badge-text {
@@ -117,7 +137,9 @@
 
 .quick-action__label {
   font-size: 24px;
-  color: #1d2129;
+  color: #4e5969;
   line-height: 1.3;
   text-align: center;
+  font-weight: 400;
+  letter-spacing: 0.3px;
 }

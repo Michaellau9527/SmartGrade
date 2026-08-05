@@ -1,25 +1,104 @@
-/* 教师身份卡：蓝白渐变 + 校徽暗纹 + 圆角 16 + 轻阴影 */
+/* ============ 教师身份卡 2.1 ============ */
 .teacher-header {
   position: relative;
-  margin: 0 0 24px 0;
-  padding: 32px 28px;
-  border-radius: 16px;
-  background: linear-gradient(135deg, #1677ff 0%, #4096ff 60%, #69b1ff 100%);
+  margin: 16px 16px 24px 16px;
+  padding: 32px 28px 24px 28px;
+  border-radius: 24px;
+  background:
+    radial-gradient(ellipse at 100% 0%, rgba(255, 255, 255, 0.20) 0%, transparent 60%),
+    linear-gradient(135deg, #0e5cff 0%, #1677ff 45%, #4096ff 100%);
   color: #fff;
-  box-shadow: 0 6px 16px rgba(22, 119, 255, 0.18);
+  box-shadow:
+    0 8px 24px rgba(22, 119, 255, 0.28),
+    0 2px 4px rgba(22, 119, 255, 0.12);
   overflow: hidden;
+  min-height: 200px;
+  box-sizing: border-box;
 }
 
-.teacher-header__inner {
-  position: relative;
+/* 第一层：校园建筑线稿 */
+.teacher-header__campus {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  color: rgba(255, 255, 255, 0.16);
+  z-index: 1;
+}
+
+.teacher-header__svg-host {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 100%;
+  width: 100%;
+}
+
+.teacher-header__svg {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* 第二层：校徽暗纹（双圆） */
+.teacher-header__emblem {
+  position: absolute;
+  right: -60px;
+  top: -60px;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.10);
+  border: 2px solid rgba(255, 255, 255, 0.20);
   z-index: 2;
+  pointer-events: none;
+}
+
+.teacher-header__emblem::after {
+  content: '校';
+  position: absolute;
+  inset: 0;
   display: flex;
   align-items: center;
+  justify-content: center;
+  font-size: 72px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.14);
+  letter-spacing: -4px;
 }
 
+.teacher-header__emblem--small {
+  top: auto;
+  right: 80px;
+  bottom: -50px;
+  width: 120px;
+  height: 120px;
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.teacher-header__emblem--small::after {
+  content: '徽';
+  font-size: 44px;
+}
+
+/* 第三层：内容 */
+.teacher-header__inner {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  padding-top: 4px;
+}
+
+/* 头像 */
 .teacher-header__avatar {
-  width: 88px;
-  height: 88px;
+  position: relative;
+  width: 80px;
+  height: 80px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.96);
   display: flex;
@@ -27,22 +106,31 @@
   justify-content: center;
   margin-right: 20px;
   flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.10);
 }
 
 .teacher-header__avatar-img {
-  width: 88px;
-  height: 88px;
+  width: 80px;
+  height: 80px;
   border-radius: 50%;
 }
 
 .teacher-header__avatar-text {
   font-size: 36px;
-  font-weight: 600;
+  font-weight: 700;
   color: #1677ff;
   line-height: 1;
 }
 
+.teacher-header__avatar-ring {
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  pointer-events: none;
+}
+
+/* 姓名 / 角色 */
 .teacher-header__info {
   flex: 1;
   min-width: 0;
@@ -57,9 +145,10 @@
 
 .teacher-header__name {
   font-size: 36px;
-  font-weight: 600;
+  font-weight: 700;
   margin-right: 12px;
   line-height: 1.2;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
 }
 
 .teacher-header__roles {
@@ -69,59 +158,97 @@
 
 .teacher-header__role-tag {
   display: inline-block;
-  padding: 2px 12px;
+  padding: 1px 12px;
   margin-right: 8px;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.22);
-  font-size: 22px;
-  line-height: 1.6;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.20);
+  font-size: 20px;
+  line-height: 1.7;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.teacher-header__aff-row {
+  display: flex;
+  align-items: center;
+  opacity: 0.92;
+}
+
+.teacher-header__aff-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.7);
+  margin-right: 8px;
+  flex-shrink: 0;
 }
 
 .teacher-header__aff {
   font-size: 24px;
-  opacity: 0.92;
   line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
+/* 右侧日期区 */
 .teacher-header__meta {
-  position: absolute;
-  right: 28px;
-  top: 32px;
+  position: relative;
+  z-index: 3;
   text-align: right;
-  font-size: 22px;
-  opacity: 0.92;
-  line-height: 1.6;
+  flex-shrink: 0;
+  margin-left: 16px;
+  align-self: flex-start;
+  margin-top: 4px;
 }
 
 .teacher-header__meta-date {
   display: block;
-  font-size: 26px;
-  font-weight: 600;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+
+.teacher-header__meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin-top: 4px;
+  font-size: 20px;
+  opacity: 0.86;
 }
 
 .teacher-header__meta-week,
 .teacher-header__meta-sw {
-  display: block;
+  line-height: 1.4;
 }
 
-/* 校徽暗纹：两个低透明度圆形 + 校徽字 */
-.teacher-header__emblem {
-  position: absolute;
-  right: -40px;
-  top: -40px;
-  width: 180px;
-  height: 180px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.10);
-  border: 2px solid rgba(255, 255, 255, 0.18);
-  z-index: 1;
+/* 底部 footer */
+.teacher-header__footer {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
 }
 
-.teacher-header__emblem--right {
-  top: auto;
-  right: 60px;
-  bottom: -60px;
-  width: 120px;
-  height: 120px;
-  background: rgba(255, 255, 255, 0.08);
+.teacher-header__footer-line {
+  width: 32px;
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.5);
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+
+.teacher-header__footer-text {
+  font-size: 22px;
+  opacity: 0.86;
+  line-height: 1.4;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

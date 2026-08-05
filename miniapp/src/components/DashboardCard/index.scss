@@ -1,27 +1,64 @@
-/* 数据看板卡片：白底 + 圆角 16 + 轻阴影 */
+/* ============ 数据看板卡片 2.1 ============ */
 .dashboard-card {
+  position: relative;
   background: #fff;
-  border-radius: 16px;
-  padding: 24px 24px 20px 24px;
-  margin-bottom: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  border-radius: 20px;
+  padding: 24px 24px 22px 24px;
+  margin: 0 16px 20px 16px;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.03),
+    0 6px 16px rgba(22, 119, 255, 0.05);
+  overflow: hidden;
 }
+
+/* 主题色（卡片顶部装饰） */
+.dashboard-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  border-top-left-radius: 20px;
+  border-bottom-left-radius: 20px;
+}
+
+.dashboard-card--primary::before { background: linear-gradient(180deg, #1677ff, #4096ff); }
+.dashboard-card--success::before { background: linear-gradient(180deg, #52c41a, #95de64); }
+.dashboard-card--warning::before { background: linear-gradient(180deg, #fa8c16, #ffc069); }
+.dashboard-card--danger::before  { background: linear-gradient(180deg, #ff4d4f, #ff7875); }
+.dashboard-card--purple::before  { background: linear-gradient(180deg, #722ed1, #b37feb); }
 
 .dashboard-card__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 16px;
+  margin-bottom: 18px;
 }
 
 .dashboard-card__title-wrap {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   flex: 1;
   min-width: 0;
 }
 
+.dashboard-card__title-bar {
+  width: 4px;
+  height: 18px;
+  border-radius: 2px;
+  margin-right: 10px;
+  flex-shrink: 0;
+}
+
+.dashboard-card__title-bar--primary { background: #1677ff; }
+.dashboard-card__title-bar--success { background: #52c41a; }
+.dashboard-card__title-bar--warning { background: #fa8c16; }
+.dashboard-card__title-bar--danger  { background: #ff4d4f; }
+.dashboard-card__title-bar--purple  { background: #722ed1; }
+
 .dashboard-card__title {
+  display: block;
   font-size: 30px;
   font-weight: 600;
   color: #1d2129;
@@ -29,9 +66,11 @@
 }
 
 .dashboard-card__subtitle {
-  margin-left: 12px;
+  display: block;
+  margin-top: 2px;
   font-size: 22px;
   color: #86909c;
+  line-height: 1.3;
 }
 
 .dashboard-card__more {
@@ -53,11 +92,140 @@
   line-height: 1;
 }
 
-/* 统计条 */
+/* hero + statusList 布局 */
+.dashboard-card__hero-wrap {
+  display: flex;
+  align-items: stretch;
+  gap: 24px;
+}
+
+.dashboard-card__hero {
+  flex-shrink: 0;
+  padding-right: 24px;
+  border-right: 1px solid #f2f3f5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 140px;
+}
+
+.dashboard-card__hero-num {
+  position: relative;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  margin-bottom: 6px;
+}
+
+.dashboard-card__hero-value {
+  font-size: 64px;
+  font-weight: 700;
+  line-height: 1;
+  font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+}
+
+.dashboard-card__hero-value--primary { color: #1677ff; }
+.dashboard-card__hero-value--success { color: #52c41a; }
+.dashboard-card__hero-value--warning { color: #fa8c16; }
+.dashboard-card__hero-value--danger  { color: #ff4d4f; }
+.dashboard-card__hero-value--default { color: #1d2129; }
+
+.dashboard-card__hero-suffix {
+  font-size: 24px;
+  color: #86909c;
+  margin-left: 4px;
+  line-height: 1;
+  font-weight: 500;
+}
+
+.dashboard-card__hero-badge {
+  position: absolute;
+  top: -8px;
+  right: -32px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #fff7e6;
+  border: 1px solid #ffd591;
+}
+
+.dashboard-card__hero-badge-text {
+  font-size: 18px;
+  color: #fa8c16;
+  line-height: 1.4;
+}
+
+.dashboard-card__hero-label {
+  font-size: 24px;
+  color: #4e5969;
+  line-height: 1.2;
+}
+
+.dashboard-card__status-list {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+}
+
+.dashboard-card__status-item {
+  display: flex;
+  align-items: center;
+}
+
+.dashboard-card__status-dot {
+  position: relative;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 10px;
+  flex-shrink: 0;
+}
+
+.dashboard-card__status-dot-inner {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.dashboard-card__status-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.dashboard-card__status-label {
+  font-size: 26px;
+  color: #1d2129;
+  line-height: 1.3;
+}
+
+.dashboard-card__status-sub {
+  display: block;
+  font-size: 20px;
+  color: #86909c;
+  margin-top: 2px;
+  line-height: 1.2;
+}
+
+.dashboard-card__status-value {
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1;
+  margin-left: 8px;
+  flex-shrink: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+}
+
+/* 旧 stats 模式（兼容） */
 .dashboard-card__stats {
   display: flex;
   align-items: stretch;
-  margin: 8px -4px 0 -4px;
+  margin: 0 -4px;
 }
 
 .dashboard-card__stat {
@@ -71,30 +239,9 @@
 
 .dashboard-card__stat-value {
   display: block;
-  font-size: 44px;
+  font-size: 40px;
   font-weight: 700;
   line-height: 1.2;
-  color: #1d2129;
-}
-
-.dashboard-card__stat-value--primary {
-  color: #1677ff;
-}
-
-.dashboard-card__stat-value--warning {
-  color: #fa8c16;
-}
-
-.dashboard-card__stat-value--danger {
-  color: #ff4d4f;
-}
-
-.dashboard-card__stat-value--success {
-  color: #52c41a;
-}
-
-.dashboard-card__stat-value--default {
-  color: #1d2129;
 }
 
 .dashboard-card__stat-label {
@@ -102,13 +249,6 @@
   margin-top: 6px;
   font-size: 22px;
   color: #4e5969;
-}
-
-.dashboard-card__stat-sub {
-  display: block;
-  margin-top: 2px;
-  font-size: 20px;
-  color: #86909c;
 }
 
 .dashboard-card__body {

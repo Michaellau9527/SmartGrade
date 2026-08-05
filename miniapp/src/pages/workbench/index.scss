@@ -1,9 +1,11 @@
 /* ============ 工作台容器 ============ */
 .workbench {
   min-height: 100vh;
-  padding: 20px 20px 48px 20px;
+  padding: 0 0 48px 0;
   box-sizing: border-box;
-  background-color: #f2f4f7;
+  background:
+    radial-gradient(ellipse at 50% -120px, rgba(22, 119, 255, 0.06) 0%, transparent 60%),
+    #f2f4f7;
 }
 
 .workbench--state {
@@ -26,16 +28,20 @@
 }
 
 .workbench__spacer {
-  height: 24px;
+  height: 32px;
 }
 
 /* ============ 通用卡片（页面级"特殊卡片"使用） ============ */
 .card {
+  position: relative;
   background: #fff;
-  border-radius: 16px;
+  border-radius: 20px;
   padding: 24px;
-  margin-bottom: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  margin: 0 16px 20px 16px;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.03),
+    0 6px 16px rgba(22, 119, 255, 0.05);
+  overflow: hidden;
 }
 
 .card-title {
@@ -43,6 +49,7 @@
   font-weight: 600;
   color: #1d2129;
   margin-bottom: 16px;
+  letter-spacing: 0.3px;
 }
 
 /* ============ 课任教师：授课班级出勤 ============ */
@@ -50,7 +57,7 @@
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 
 .subject-attendance__title {
@@ -63,24 +70,24 @@
 }
 
 .subject-attendance__row {
-  padding: 14px 0;
+  padding: 18px 0 16px 0;
   border-bottom: 1px solid #f2f3f5;
 }
 
 .subject-attendance__row:last-child {
   border-bottom: none;
-  padding-bottom: 0;
+  padding-bottom: 4px;
 }
 
 .subject-attendance__row:first-of-type {
-  padding-top: 8px;
+  padding-top: 12px;
 }
 
 .subject-attendance__head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 
 .subject-attendance__main {
@@ -93,13 +100,14 @@
   font-size: 28px;
   color: #1d2129;
   line-height: 1.4;
+  font-weight: 500;
 }
 
 .subject-attendance__grade {
   display: block;
   font-size: 22px;
   color: #86909c;
-  margin-top: 2px;
+  margin-top: 4px;
 }
 
 .subject-attendance__nums {
@@ -146,7 +154,7 @@
 .subject-attendance__bar {
   width: 100%;
   height: 10px;
-  background: #f2f3f5;
+  background: #f2f4f7;
   border-radius: 5px;
   overflow: hidden;
 }
@@ -159,7 +167,7 @@
 
 /* ============ 年级主任：任务完成情况 ============ */
 .grade-tasks__item {
-  padding: 12px 0;
+  padding: 14px 0;
 }
 
 .grade-tasks__item + .grade-tasks__item {
@@ -170,12 +178,13 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 
 .grade-tasks__name {
   font-size: 28px;
   color: #1d2129;
+  font-weight: 500;
 }
 
 .grade-tasks__percent {
@@ -187,7 +196,7 @@
 .grade-tasks__bar {
   width: 100%;
   height: 12px;
-  background: #f2f3f5;
+  background: #f2f4f7;
   border-radius: 6px;
   overflow: hidden;
 }
