@@ -80,7 +80,14 @@ export default function Student() {
         params.keyword = trimmed;
       }
       const res = await getStudents(params);
-      setList(res || []);
+      // 防御性兜底：API 层已适配为数组，但即便上游返回了分页对象也安全
+      if (Array.isArray(res)) {
+        setList(res);
+      } else if (res && Array.isArray((res as any).list)) {
+        setList((res as any).list as StudentListItem[]);
+      } else {
+        setList([]);
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error('[Student] 列表加载失败:', msg);
