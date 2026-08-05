@@ -30,12 +30,10 @@ interface LoginRequest {
  * @param teacherNo 工号
  * @returns 登录结果（已由 request 工具解包 data 部分）
  */
-export async function mockLogin(teacherNo: string): Promise<LoginResult> {
+export function mockLogin(teacherNo: string): Promise<LoginResult> {
   const payload: LoginRequest = { teacherNo };
-  const res = await request<LoginResult>('/auth/login', {
+  return request<LoginResult>('/auth/login', {
     method: 'POST',
     data: payload
   });
-  console.log('[auth login 返回]', res);
-  return res;
 }
