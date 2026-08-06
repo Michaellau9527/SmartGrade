@@ -68,11 +68,12 @@ const TODO_TAG_TEXT: Record<TodoStatus, string> = {
 
 /** code -> 跳转目标（不识别就 toast） */
 const QUICK_ACTION_TARGET: Record<string, string> = {
+  'student.read': '/pages/student/index',
+  'leave.apply': '/pages/leave/index',
   'leave.create': '/pages/leave/index',
+  'class.manage': '/pages/class/index',
   'leave.approve': '/pages/leave/index',
   'notice.publish': '/pages/notice/index',
-  'student.read': '/pages/student/index',
-  'class.manage': '/pages/student/index',
   'task.assign': '',
   'incident.create': '',
   'dorm.check': '',
@@ -172,16 +173,12 @@ export default function Workbench() {
     () => SUBJECT_TEACHER_ATTENDANCE_MOCK,
     []
   );
+  /** 班主任：精简为 3 个核心入口 */
   const headmasterActions: QuickActionItem[] = useMemo(
     () => [
       { code: 'student.read', label: '学生管理', icon: '👨‍🎓', theme: 'primary' },
-      { code: 'leave.approve', label: '请假审批', icon: '📝', theme: 'warning', badge: data?.studentStatusSummary.studentsLeaving || 0 },
-      { code: 'class.manage', label: '班级管理', icon: '🏫', theme: 'success' },
-      { code: 'notice.publish', label: '通知管理', icon: '📢', theme: 'purple' },
-      { code: 'task.assign', label: '任务布置', icon: '📋', theme: 'default' },
-      { code: 'statistics.read', label: '班级报表', icon: '📊', theme: 'default' },
-      { code: 'incident.create', label: '事件上报', icon: '⚠️', theme: 'danger' },
-      { code: 'dorm.check', label: '宿舍检查', icon: '🛏️', theme: 'warning' }
+      { code: 'leave.apply', label: '请假申请', icon: '📝', theme: 'warning', badge: data?.studentStatusSummary.studentsLeaving || 0 },
+      { code: 'class.manage', label: '班级管理', icon: '🏫', theme: 'success' }
     ],
     [data]
   );
@@ -444,7 +441,7 @@ export default function Workbench() {
             accent='primary'
             hero={{
               value: data?.studentStatusSummary.totalStudents ?? 0,
-              label: USE_HOMEROOM_MOCK ? '班级人数' : '学生',
+              label: '班级人数',
               theme: 'primary',
               suffix: '人',
               badge: today.isSchoolDay ? '今日' : '周末'
@@ -452,9 +449,7 @@ export default function Workbench() {
             statusList={[
               { label: '在校', value: data?.studentStatusSummary.onCampus ?? 0, color: 'green' },
               { label: '请假', value: data?.studentStatusSummary.studentsLeaving ?? 0, color: 'yellow' },
-              USE_HOMEROOM_MOCK
-                ? { label: '待审批', value: 1, color: 'red' }
-                : { label: '异常', value: data?.studentStatusSummary.dormAbnormal ?? 0, color: 'red' }
+              { label: '待审批', value: data?.studentStatusSummary.dormAbnormal ?? 0, color: 'red' }
             ]}
           />
 

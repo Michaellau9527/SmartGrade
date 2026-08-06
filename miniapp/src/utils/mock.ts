@@ -10,6 +10,10 @@ import type { WorkbenchResponse, WorkbenchTodo, WorkbenchNotice } from '../api/w
 // 接入 /auth/me 后改为 false 即可切回真实数据
 // ============================================================
 export const USE_HOMEROOM_MOCK = true;
+export const USE_STUDENT_MOCK = false;
+export const USE_LEAVE_MOCK = false;
+export const USE_NOTICE_MOCK = false;
+export const USE_MINE_MOCK = false;
 
 /** 班主任：班级动态 mock（等"班级动态"接口接入后再移除） */
 export const HEADMASTER_TIMELINE_MOCK: TimelineItem[] = [

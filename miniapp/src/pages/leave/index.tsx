@@ -1,16 +1,19 @@
-import { View, Text, ScrollView } from '@tarojs/components';
+import { View, Text, ScrollView, Picker, Input, Textarea } from '@tarojs/components';
 import Taro, { usePullDownRefresh } from '@tarojs/taro';
 import { useCallback, useEffect, useState } from 'react';
 import dayjs from 'dayjs';
 import {
   approveLeave,
+  createLeave,
   getLeaves,
   LeaveListItem,
   LeaveStatus,
   LeaveType,
+  LeaveReasonType,
   QueryLeaveParams,
   rejectLeave
 } from '../../api/leave';
+import { getStudents, StudentListItem } from '../../api/student';
 import { useUserStore } from '../../store/user';
 import './index.scss';
 
@@ -60,6 +63,89 @@ export default function Leave() {
   const [activeTab, setActiveTab] = useState<TabKey>('ALL');
   const [actioningIds, setActioningIds] = useState<Set<string>>(new Set());
   const teacherName = useUserStore((s) => s.teacherName);
+
+  // ===== 新建请假 =====
+  const [showCreate, setShowCreate] = useState(false);
+  const [students, setStudents] = useState<StudentListItem[]>([]);
+  const [formSubmitting, setFormSubmitting] = useState(false);
+  const [form, setForm] = useState<{
+    studentId: string;
+    studentIndex: number;
+    leaveType: LeaveType;
+    leaveTypeIndex: number;
+    leaveReasonType: LeaveReasonType;
+    reason: string;
+    startDate: string;
+    startTime: string;
+    endDate: string;
+    endTime: string;
+  }>({
+    studentId: '',
+    studentIndex: -1,
+    leaveType: 'SICK',
+    leaveTypeIndex: 0,
+    leaveReasonType: 'ILLNESS',
+    reason: '',
+    startDate: dayjs().format('YYYY-MM-DD'),
+    startTime: '08:00',
+    endDate: dayjs().format('YYYY-MM-DD'),
+    endTime: '18:00'
+  });
+
+  const LEAVE_TYPE_OPTIONS: { value: LeaveType; label: string }[] = [
+    { value: 'SICK', label: '病假' },
+    { value: 'PERSONAL', label: '事假' },
+    { value: 'OTHER', label: '其他' }
+  ];
+
+  const openCreate = useCallback(async () => {
+    setShowCreate(true);
+    if (students.length === 0) {
+      try {
+        const list = await getStudents();
+        setStudents(list.filter((s) => s.currentStatus === 'ON_CAMPUS'));
+      } catch {
+        Taro.showToast({ title: '加载学生列表失败', icon: 'none' });
+      }
+    }
+  }, [students.length]);
+
+  const handleCreateSubmit = useCallback(async () => {
+    if (!form.studentId) {
+      Taro.showToast({ title: '请选择学生', icon: 'none' });
+      return;
+    }
+    if (!form.reason.trim()) {
+      Taro.showToast({ title: '请填写请假原因', icon: 'none' });
+      return;
+    }
+    setFormSubmitting(true);
+    try {
+      await createLeave({
+        studentId: form.studentId,
+        leaveType: form.leaveType,
+        leaveReasonType: form.leaveReasonType,
+        reason: form.reason.trim(),
+        startAt: `${form.startDate}T${form.startTime}:00`,
+        endAt: `${form.endDate}T${form.endTime}:00`
+      });
+      Taro.showToast({ title: '请假提交成功', icon: 'success' });
+      setShowCreate(false);
+      setForm({
+        studentId: '', studentIndex: -1,
+        leaveType: 'SICK', leaveTypeIndex: 0,
+        leaveReasonType: 'ILLNESS', reason: '',
+        startDate: dayjs().format('YYYY-MM-DD'), startTime: '08:00',
+        endDate: dayjs().format('YYYY-MM-DD'), endTime: '18:00'
+      });
+      await fetchList(activeTab);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      Taro.showToast({ title: `提交失败：${msg}`, icon: 'none' });
+    } finally {
+      setFormSubmitting(false);
+    }
+  }, [form, activeTab, fetchList]);
 
   const fetchList = useCallback(async (status: TabKey) => {
     setLoading(true);
@@ -185,6 +271,10 @@ export default function Leave() {
       <View className='header'>
         <View className='header-title'>请假管理</View>
         <View className='header-sub'>{teacherName || '老师'}，请及时处理待审批申请</View>
+        <View className='header-action' onClick={openCreate}>
+          <Text className='header-action__icon'>+</Text>
+          <Text className='header-action__label'>新建请假</Text>
+        </View>
       </View>
 
       {/* 状态筛选 Tab */}
@@ -266,6 +356,128 @@ export default function Leave() {
               </View>
             );
           })}
+        </View>
+      {/* 新建请假表单 Modal */}
+      {showCreate && (
+        <View className='create-overlay'>
+          <View className='create-sheet'>
+            <View className='create-header'>
+              <Text className='create-title'>新建请假</Text>
+              <View className='create-close' onClick={() => setShowCreate(false)}>✕</View>
+            </View>
+
+            <ScrollView className='create-body' scrollY>
+              {/* 选择学生 */}
+              <View className='form-item'>
+                <Text className='form-label'>学生</Text>
+                <Picker
+                  mode='selector'
+                  range={students.map((s) => `${s.name}（${s.studentNo}）`)}
+                  value={form.studentIndex}
+                  onChange={(e) => {
+                    const idx = Number(e.detail.value);
+                    setForm((prev) => ({
+                      ...prev,
+                      studentIndex: idx,
+                      studentId: students[idx]?.id || ''
+                    }));
+                  }}
+                >
+                  <View className='form-picker'>
+                    {form.studentIndex >= 0
+                      ? students[form.studentIndex]?.name || '请选择'
+                      : '请选择学生'}
+                  </View>
+                </Picker>
+              </View>
+
+              {/* 请假类型 */}
+              <View className='form-item'>
+                <Text className='form-label'>请假类型</Text>
+                <Picker
+                  mode='selector'
+                  range={LEAVE_TYPE_OPTIONS.map((o) => o.label)}
+                  value={form.leaveTypeIndex}
+                  onChange={(e) => {
+                    const idx = Number(e.detail.value);
+                    setForm((prev) => ({
+                      ...prev,
+                      leaveTypeIndex: idx,
+                      leaveType: LEAVE_TYPE_OPTIONS[idx].value,
+                      leaveReasonType: (['ILLNESS', 'PERSONAL', 'OTHER'] as LeaveReasonType[])[idx]
+                    }));
+                  }}
+                >
+                  <View className='form-picker'>{LEAVE_TYPE_OPTIONS[form.leaveTypeIndex]?.label}</View>
+                </Picker>
+              </View>
+
+              {/* 开始时间 */}
+              <View className='form-item'>
+                <Text className='form-label'>开始时间</Text>
+                <View className='form-row'>
+                  <Picker
+                    mode='date'
+                    value={form.startDate}
+                    onChange={(e) => setForm((p) => ({ ...p, startDate: e.detail.value }))}
+                  >
+                    <View className='form-picker form-picker--half'>{form.startDate}</View>
+                  </Picker>
+                  <Picker
+                    mode='time'
+                    value={form.startTime}
+                    onChange={(e) => setForm((p) => ({ ...p, startTime: e.detail.value }))}
+                  >
+                    <View className='form-picker form-picker--half'>{form.startTime}</View>
+                  </Picker>
+                </View>
+              </View>
+
+              {/* 结束时间 */}
+              <View className='form-item'>
+                <Text className='form-label'>结束时间</Text>
+                <View className='form-row'>
+                  <Picker
+                    mode='date'
+                    value={form.endDate}
+                    onChange={(e) => setForm((p) => ({ ...p, endDate: e.detail.value }))}
+                  >
+                    <View className='form-picker form-picker--half'>{form.endDate}</View>
+                  </Picker>
+                  <Picker
+                    mode='time'
+                    value={form.endTime}
+                    onChange={(e) => setForm((p) => ({ ...p, endTime: e.detail.value }))}
+                  >
+                    <View className='form-picker form-picker--half'>{form.endTime}</View>
+                  </Picker>
+                </View>
+              </View>
+
+              {/* 请假原因 */}
+              <View className='form-item'>
+                <Text className='form-label'>请假原因</Text>
+                <Textarea
+                  className='form-textarea'
+                  placeholder='请输入请假原因'
+                  value={form.reason}
+                  onInput={(e) => setForm((p) => ({ ...p, reason: e.detail.value }))}
+                  maxlength={200}
+                  autoHeight
+                />
+              </View>
+            </ScrollView>
+
+            <View className='create-footer'>
+              <View className='create-btn cancel' onClick={() => setShowCreate(false)}>取消</View>
+              <View
+                className={`create-btn submit ${formSubmitting ? 'disabled' : ''}`}
+                onClick={() => { if (!formSubmitting) handleCreateSubmit(); }}
+              >
+                {formSubmitting ? '提交中…' : '提交申请'}
+              </View>
+            </View>
+          </View>
         </View>
       )}
     </View>

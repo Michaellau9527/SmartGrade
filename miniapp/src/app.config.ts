@@ -5,7 +5,8 @@ export default defineAppConfig({
     'pages/student-detail/index',
     'pages/leave/index',
     'pages/notice/index',
-    'pages/mine/index'
+    'pages/mine/index',
+    'pages/class/index'
   ],
   window: {
     backgroundTextStyle: 'light',

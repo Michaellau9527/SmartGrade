@@ -94,12 +94,20 @@ export function approveLeave(id: string, approveRemark?: string): Promise<LeaveD
 }
 
 /**
- * 驳回
- * 接口：POST /leaves/:id/reject
+ * 创建请假（班主任替学生提交）
+ * 接口：POST /leaves
  */
-export function rejectLeave(id: string, rejectReason: string): Promise<LeaveDetail> {
-  return request<LeaveDetail>(`/leaves/${id}/reject`, {
+export function createLeave(data: {
+  studentId: string;
+  leaveType: LeaveType;
+  leaveReasonType: LeaveReasonType;
+  reason: string;
+  startAt: string;
+  endAt: string;
+  expectedReturnTime?: string;
+}): Promise<LeaveDetail> {
+  return request<LeaveDetail>('/leaves', {
     method: 'POST',
-    data: { rejectReason }
+    data
   });
 }
