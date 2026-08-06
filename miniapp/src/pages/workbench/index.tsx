@@ -25,7 +25,11 @@ import {
   HEADMASTER_TIMELINE_MOCK,
   GRADE_TASK_PROGRESS_MOCK,
   POLITICAL_ALERT_MOCK,
-  SUBJECT_TEACHER_ATTENDANCE_MOCK
+  SUBJECT_TEACHER_ATTENDANCE_MOCK,
+  USE_HOMEROOM_MOCK,
+  MOCK_HOMEROOM_USER,
+  MOCK_HOMEROOM_WORKBENCH,
+  getWelcomeGreeting
 } from '../../utils/mock';
 import './index.scss';
 
@@ -266,6 +270,19 @@ export default function Workbench() {
 
   /** 登录 */
   const ensureLogin = useCallback(async () => {
+    // Mock 模式：直接用本地数据，不走后端
+    if (USE_HOMEROOM_MOCK) {
+      console.log('[Workbench] Mock 模式，跳过登录API');
+      setUserInfo({
+        token: MOCK_HOMEROOM_USER.token,
+        teacherNo: MOCK_HOMEROOM_USER.teacherNo,
+        teacherName: MOCK_HOMEROOM_USER.teacherName,
+        roles: MOCK_HOMEROOM_USER.roles,
+        permissions: MOCK_HOMEROOM_USER.permissions
+      });
+      setLoginStatus('success');
+      return true;
+    }
     const existing = readToken();
     if (existing) {
       console.log('[Workbench] 本地已有 token，跳过登录');
@@ -296,6 +313,14 @@ export default function Workbench() {
   }, [setUserInfo]);
 
   const fetchData = useCallback(async () => {
+    // Mock 模式：直接用本地数据
+    if (USE_HOMEROOM_MOCK) {
+      console.log('[Workbench] Mock 模式，使用本地工作台数据');
+      await new Promise((r) => setTimeout(r, 300)); // 模拟加载动画
+      setData(MOCK_HOMEROOM_WORKBENCH);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setError('');
     try {
@@ -379,9 +404,10 @@ export default function Workbench() {
     <View className='workbench'>
       {/* 顶部教师身份卡 */}
       <TeacherHeader
-        name={teacherName}
+        name={USE_HOMEROOM_MOCK ? `${teacherName}老师` : teacherName}
         roles={roleLabels}
         affiliation={affiliation}
+        footer={USE_HOMEROOM_MOCK ? getWelcomeGreeting() + ' · 班级管理工作台' : undefined}
         meta={{
           date: today.date,
           week: formatWeek(today.week),
@@ -400,7 +426,7 @@ export default function Workbench() {
             accent='primary'
             hero={{
               value: data?.studentStatusSummary.totalStudents ?? 0,
-              label: '学生',
+              label: USE_HOMEROOM_MOCK ? '班级人数' : '学生',
               theme: 'primary',
               suffix: '人',
               badge: today.isSchoolDay ? '今日' : '周末'
@@ -408,7 +434,9 @@ export default function Workbench() {
             statusList={[
               { label: '在校', value: data?.studentStatusSummary.onCampus ?? 0, color: 'green' },
               { label: '请假', value: data?.studentStatusSummary.studentsLeaving ?? 0, color: 'yellow' },
-              { label: '异常', value: data?.studentStatusSummary.dormAbnormal ?? 0, color: 'red' }
+              USE_HOMEROOM_MOCK
+                ? { label: '待审批', value: 1, color: 'red' }
+                : { label: '异常', value: data?.studentStatusSummary.dormAbnormal ?? 0, color: 'red' }
             ]}
           />
 

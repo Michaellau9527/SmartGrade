@@ -79,7 +79,7 @@ export function resolveAffiliation(
   teacherNo: string
 ): string {
   if (!roles || roles.length === 0) return teacherNo || '';
-  if (roles.includes('ROLE_HEADMASTER')) return '高一年级 · 三年二班';
+  if (roles.includes('ROLE_HEADMASTER')) return '高一（11）班';
   if (roles.includes('ROLE_GRADE_DIRECTOR')) return '高一年级 · 主任办公室';
   if (roles.includes('ROLE_POLITICAL')) return '政教处';
   if (roles.includes('ROLE_SUBJECT_TEACHER')) return '数学组 · 三年二班 / 三年三班';

@@ -3,6 +3,13 @@
  * 真实数据接入后仅保留"班级动态"等装饰性 mock
  */
 import type { TimelineItem } from '../components/Timeline';
+import type { WorkbenchResponse, WorkbenchTodo, WorkbenchNotice } from '../api/workbench';
+
+// ============================================================
+// Mock 模式开关：true = 使用本地 mock 数据，不调用后端
+// 接入 /auth/me 后改为 false 即可切回真实数据
+// ============================================================
+export const USE_HOMEROOM_MOCK = true;
 
 /** 班主任：班级动态 mock（等"班级动态"接口接入后再移除） */
 export const HEADMASTER_TIMELINE_MOCK: TimelineItem[] = [
@@ -104,3 +111,124 @@ function dayjsNow(minutesAgo: number): string {
   const d = new Date(Date.now() + minutesAgo * 60 * 1000);
   return d.toISOString();
 }
+
+// ============================================================
+// 班主任工作台 Mock 数据（USE_HOMEROOM_MOCK = true 时生效）
+// 等 /auth/me 和 /workbench 接口稳定后，删除此段即可
+// ============================================================
+
+/** 班主任 mock 用户信息 */
+export const MOCK_HOMEROOM_USER = {
+  token: 'mock-token-homeroom-2024',
+  teacherNo: 'T001',
+  teacherName: '刘忠昊',
+  roles: ['ROLE_HEADMASTER'] as string[],
+  permissions: [
+    'student:read',
+    'student:write',
+    'leave:approve',
+    'notice:publish',
+    'class:manage',
+    'statistics:read'
+  ] as string[]
+};
+
+/** 根据当前时间生成欢迎语 */
+export function getWelcomeGreeting(): string {
+  const h = new Date().getHours();
+  if (h < 9) return '早上好，刘老师';
+  if (h < 12) return '上午好，刘老师';
+  if (h < 14) return '中午好，刘老师';
+  if (h < 18) return '下午好，刘老师';
+  return '晚上好，刘老师';
+}
+
+/** 班主任工作台 mock 待办 */
+const MOCK_HOMEROOM_TODOS: WorkbenchTodo[] = [
+  {
+    id: 'mock-todo-1',
+    title: '张三提交请假申请 — 身体不适，申请明天病假 1 天',
+    type: 'LEAVE_APPROVE',
+    status: 'PENDING',
+    dueAt: new Date(Date.now() + 4 * 3600 * 1000).toISOString(),
+    sourceType: 'LEAVE',
+    sourceId: 'leave-001'
+  },
+  {
+    id: 'mock-todo-2',
+    title: '完成本周班级量化考核表',
+    type: 'TASK_COMPLETE',
+    status: 'IN_PROGRESS',
+    dueAt: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
+    sourceType: 'TASK',
+    sourceId: 'task-001'
+  },
+  {
+    id: 'mock-todo-3',
+    title: '宿舍 305 卫生检查不合格 — 需整改',
+    type: 'DORM_CHECK',
+    status: 'PENDING',
+    dueAt: new Date(Date.now() + 8 * 3600 * 1000).toISOString(),
+    sourceType: 'DORM',
+    sourceId: 'dorm-001'
+  }
+];
+
+/** 班主任工作台 mock 通知 */
+const MOCK_HOMEROOM_NOTICES: WorkbenchNotice[] = [
+  {
+    id: 'mock-notice-1',
+    title: '【紧急】今天下午 4:00 年级组召开期中考试部署会议',
+    noticeType: 'URGENT',
+    publishedAt: new Date(Date.now() - 1 * 3600 * 1000).toISOString(),
+    isRead: false
+  },
+  {
+    id: 'mock-notice-2',
+    title: '关于五一假期安排及安全教育通知',
+    noticeType: 'HOLIDAY',
+    publishedAt: new Date(Date.now() - 5 * 3600 * 1000).toISOString(),
+    isRead: false
+  },
+  {
+    id: 'mock-notice-3',
+    title: '本周教研活动改为周五下午第二节',
+    noticeType: 'TEACHING',
+    publishedAt: new Date(Date.now() - 12 * 3600 * 1000).toISOString(),
+    isRead: true
+  },
+  {
+    id: 'mock-notice-4',
+    title: '高一年级组例行班会通知',
+    noticeType: 'NOTICE',
+    publishedAt: new Date(Date.now() - 24 * 3600 * 1000).toISOString(),
+    isRead: true
+  }
+];
+
+/** 班主任工作台完整 mock 响应 */
+export const MOCK_HOMEROOM_WORKBENCH: WorkbenchResponse = {
+  today: {
+    date: (() => {
+      const now = new Date();
+      return `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日`;
+    })(),
+    week: (() => {
+      const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      return days[new Date().getDay()];
+    })(),
+    semesterWeek: 12,
+    isSchoolDay: true
+  },
+  todos: MOCK_HOMEROOM_TODOS,
+  studentStatusSummary: {
+    totalStudents: 48,
+    onCampus: 46,
+    outOfSchool: 2,
+    studentsLeaving: 2,
+    overdueReturn: 0,
+    dormAbnormal: 1
+  },
+  recentNotices: MOCK_HOMEROOM_NOTICES,
+  quickActions: []
+};
