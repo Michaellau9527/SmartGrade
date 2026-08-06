@@ -270,18 +270,36 @@ export default function Workbench() {
 
   /** 登录 */
   const ensureLogin = useCallback(async () => {
-    // Mock 模式：直接用本地数据，不走后端
+    // Mock 模式：先走真实登录拿 JWT，再用 mock 数据覆盖显示信息
+    // 关键：token 必须是真实 JWT，否则其他页面（学生/通知/请假）会 401
     if (USE_HOMEROOM_MOCK) {
-      console.log('[Workbench] Mock 模式，跳过登录API');
-      setUserInfo({
-        token: MOCK_HOMEROOM_USER.token,
-        teacherNo: MOCK_HOMEROOM_USER.teacherNo,
-        teacherName: MOCK_HOMEROOM_USER.teacherName,
-        roles: MOCK_HOMEROOM_USER.roles,
-        permissions: MOCK_HOMEROOM_USER.permissions
-      });
-      setLoginStatus('success');
-      return true;
+      setLoginStatus('logging');
+      try {
+        const result = await mockLogin('T001');
+        // token 用后端真实 JWT，显示名/角色用 mock
+        setUserInfo({
+          token: result.token,
+          teacherNo: MOCK_HOMEROOM_USER.teacherNo,
+          teacherName: MOCK_HOMEROOM_USER.teacherName,
+          roles: MOCK_HOMEROOM_USER.roles,
+          permissions: MOCK_HOMEROOM_USER.permissions
+        });
+        setLoginStatus('success');
+        return true;
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error('[Workbench] Mock 模式登录失败，降级到假 token:', msg);
+        // 降级：用假 token，首页可用但其他页面 401
+        setUserInfo({
+          token: MOCK_HOMEROOM_USER.token,
+          teacherNo: MOCK_HOMEROOM_USER.teacherNo,
+          teacherName: MOCK_HOMEROOM_USER.teacherName,
+          roles: MOCK_HOMEROOM_USER.roles,
+          permissions: MOCK_HOMEROOM_USER.permissions
+        });
+        setLoginStatus('success');
+        return true;
+      }
     }
     const existing = readToken();
     if (existing) {
