@@ -31,8 +31,6 @@ RUN pnpm install --frozen-lockfile
 RUN pnpm --filter @smartgrade/shared build
 RUN pnpm --filter backend prisma:generate
 RUN pnpm --filter backend build
-# 预编译 seed.ts 为可在生产环境（无需 ts-node）执行的 JS
-RUN pnpm --filter backend exec tsc -p tsconfig.json --outDir ./dist --rootDir ./ prisma/seed.ts 2>/dev/null || (cd /app/backend && npx ts-node --transpile-only -e "require('fs').copyFileSync('prisma/seed.ts','dist/prisma/seed.ts.bak')")
 
 # ---- 运行阶段 ----
 FROM node:20-alpine AS runner
