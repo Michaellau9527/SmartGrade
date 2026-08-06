@@ -1,0 +1,171 @@
+.import-page {
+  min-height: 100vh;
+  background: #f5f5f5;
+  padding-bottom: 160px;
+}
+
+/* 步骤条 */
+.steps {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px;
+  background: #fff;
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.step-dot {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #f0f0f0;
+  color: #999;
+  font-size: 24px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.step--active .step-dot {
+  background: #1677ff;
+  color: #fff;
+}
+
+.step--done .step-dot {
+  background: #52c41a;
+  color: #fff;
+}
+
+.step-label {
+  font-size: 22px;
+  color: #999;
+}
+
+.step--active .step-label {
+  color: #1677ff;
+  font-weight: 600;
+}
+
+.step-line {
+  width: 80px;
+  height: 2px;
+  background: #f0f0f0;
+  margin: 0 12px 24px;
+}
+
+/* 内容区 */
+.import-content {
+  padding: 32px 24px;
+}
+
+.import-title {
+  font-size: 36px;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 16px;
+}
+
+.import-desc {
+  font-size: 26px;
+  color: #999;
+  line-height: 1.6;
+  margin-bottom: 32px;
+}
+
+/* 字段表格 */
+.field-table {
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 24px;
+}
+
+.field-header {
+  display: flex;
+  padding: 20px 24px;
+  background: #f7f8fa;
+  font-size: 24px;
+  font-weight: 600;
+  color: #666;
+}
+
+.field-row {
+  display: flex;
+  padding: 18px 24px;
+  border-bottom: 1px solid #f5f5f5;
+  font-size: 26px;
+  color: #333;
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.field-col {
+  &--name { flex: 2; }
+  &--req { flex: 1; text-align: center; }
+  &--ex { flex: 0 0 200px; text-align: right; color: #999; font-size: 24px; }
+}
+
+/* 注意事项 */
+.notice-box {
+  background: #fff7e6;
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.notice-title {
+  font-size: 26px;
+  font-weight: 600;
+  color: #fa8c16;
+  margin-bottom: 12px;
+}
+
+.notice-item {
+  font-size: 24px;
+  color: #666;
+  line-height: 1.8;
+}
+
+/* 底部操作 */
+.import-actions {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  gap: 20px;
+  padding: 20px 24px;
+  padding-bottom: 48px;
+  background: #fff;
+  border-top: 1px solid #f0f0f0;
+  box-shadow: 0 -2px 8px rgba(0,0,0,0.04);
+  z-index: 10;
+}
+
+.import-btn {
+  flex: 1;
+  text-align: center;
+  padding: 22px 0;
+  border-radius: 12px;
+  font-size: 28px;
+  font-weight: 600;
+
+  &.outline {
+    color: #1677ff;
+    border: 2px solid #1677ff;
+    background: #fff;
+  }
+
+  &.filled {
+    color: #fff;
+    background: #1677ff;
+  }
+}

@@ -111,3 +111,23 @@ export function createLeave(data: {
     data
   });
 }
+
+/**
+ * 确认离校
+ * 接口：POST /leaves/:id/confirm-left
+ */
+export function confirmLeft(id: string): Promise<LeaveDetail> {
+  return request<LeaveDetail>(`/leaves/${id}/confirm-left`, {
+    method: 'POST'
+  });
+}
+
+/**
+ * 确认返校
+ * 接口：POST /leaves/:id/confirm-returned
+ */
+export function confirmReturned(id: string): Promise<LeaveDetail> {
+  return request<LeaveDetail>(`/leaves/${id}/confirm-returned`, {
+    method: 'POST'
+  });
+}

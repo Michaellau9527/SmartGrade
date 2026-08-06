@@ -3,6 +3,8 @@ export default defineAppConfig({
     'pages/workbench/index',
     'pages/student/index',
     'pages/student-detail/index',
+    'pages/student-create/index',
+    'pages/student-import/index',
     'pages/leave/index',
     'pages/notice/index',
     'pages/mine/index',

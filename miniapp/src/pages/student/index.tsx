@@ -1,13 +1,12 @@
-import { View, Text, Input } from '@tarojs/components';
+import { View, Text, Input, ScrollView } from '@tarojs/components';
 import Taro from '@tarojs/taro';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useMemo } from 'react';
 import {
   getStudents,
   QueryStudentParams,
   StudentListItem,
   StudentStatus
 } from '../../api/student';
-import { mockLogin } from '../../api/auth';
 import { useUserStore } from '../../store/user';
 import './index.scss';
 
@@ -23,64 +22,48 @@ const STATUS_MAP: Record<StudentStatus, StatusMeta> = {
   TRANSFERRED: { label: '已转学', className: 'tag-transferred' }
 };
 
-/** 直接读 storage 里的 token */
-function readToken(): string {
-  try {
-    return Taro.getStorageSync('token') || '';
-  } catch {
-    return '';
-  }
+const GENDER_LABEL: Record<string, string> = {
+  MALE: '男',
+  FEMALE: '女',
+  OTHER: '其他'
+};
+
+/** Tab 定义 */
+type TabKey = 'ALL' | 'DAY_STUDENT' | 'BOARDING';
+
+interface TabItem {
+  key: TabKey;
+  label: string;
 }
+
+const TABS: TabItem[] = [
+  { key: 'ALL', label: '全部' },
+  { key: 'DAY_STUDENT', label: '走读' },
+  { key: 'BOARDING', label: '住宿' }
+  // TODO: 请假 Tab — 需后端加 /students?onLeave=true 端点后开启
+];
 
 export default function Student() {
   const [list, setList] = useState<StudentListItem[]>([]);
   const [keyword, setKeyword] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
-  const [loginStatus, setLoginStatus] = useState<
-    'idle' | 'logging' | 'success' | 'failed'
-  >('idle');
-  const setUserInfo = useUserStore((s) => s.setUserInfo);
+  const [activeTab, setActiveTab] = useState<TabKey>('ALL');
+  const [showMenu, setShowMenu] = useState(false);
 
-  /** 先尝试读 storage 里已有的 token，没有就做一次 mock 登录 */
-  const ensureLogin = useCallback(async () => {
-    const existing = readToken();
-    if (existing) {
-      setLoginStatus('success');
-      return true;
-    }
-    setLoginStatus('logging');
-    try {
-      const result = await mockLogin('T001');
-      setUserInfo({
-        token: result.token,
-        teacherNo: result.teacher.teacherNo,
-        teacherName: result.teacher.name,
-        roles: result.roles ?? [],
-        permissions: result.permissions ?? []
-      });
-      setLoginStatus('success');
-      return true;
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      console.error('[Student] 登录失败:', msg);
-      setLoginStatus('failed');
-      setError(`登录失败：${msg}`);
-      return false;
-    }
-  }, [setUserInfo]);
+  const teacherName = useUserStore((s) => s.teacherName);
 
-  const fetchStudents = useCallback(async (kw?: string) => {
+  const fetchStudents = useCallback(async (kw?: string, tab?: TabKey) => {
     setLoading(true);
     setError('');
     try {
       const params: QueryStudentParams = {};
       const trimmed = (kw ?? '').trim();
-      if (trimmed) {
-        params.keyword = trimmed;
-      }
+      if (trimmed) params.keyword = trimmed;
+      const currentTab = tab ?? activeTab;
+      if (currentTab === 'DAY_STUDENT') params.boardingType = 'DAY_STUDENT' as any;
+      if (currentTab === 'BOARDING') params.boardingType = 'BOARDING' as any;
       const res = await getStudents(params);
-      // 防御性兜底：API 层已适配为数组，但即便上游返回了分页对象也安全
       if (Array.isArray(res)) {
         setList(res);
       } else if (res && Array.isArray((res as any).list)) {
@@ -96,44 +79,33 @@ export default function Student() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [activeTab]);
 
-  /** 页面挂载时：先登录，登录成功就拉数据 */
   useEffect(() => {
-    (async () => {
-      const ok = await ensureLogin();
-      if (ok) {
-        await fetchStudents(keyword);
-      }
-    })();
+    fetchStudents(keyword);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 搜索防抖
+  /** Tab 切换 */
+  const handleTabChange = useCallback((key: TabKey) => {
+    setActiveTab(key);
+    setKeyword('');
+    fetchStudents('', key);
+  }, [fetchStudents]);
+
+  /** 搜索防抖 */
   useEffect(() => {
-    if (loginStatus !== 'success') {
-      return;
-    }
     const timer = setTimeout(() => {
-      fetchStudents(keyword);
+      fetchStudents(keyword, activeTab);
     }, 300);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [keyword, loginStatus]);
+  }, [keyword]);
 
   Taro.usePullDownRefresh(() => {
-    (async () => {
-      if (!readToken()) {
-        const ok = await ensureLogin();
-        if (!ok) {
-          Taro.stopPullDownRefresh();
-          return;
-        }
-      }
-      await fetchStudents(keyword).finally(() => {
-        Taro.stopPullDownRefresh();
-      });
-    })();
+    fetchStudents(keyword, activeTab).finally(() => {
+      Taro.stopPullDownRefresh();
+    });
   });
 
   const handleItemClick = useCallback((item: StudentListItem) => {
@@ -142,27 +114,28 @@ export default function Student() {
     });
   }, []);
 
-  // 登录进行中
-  if (loginStatus === 'logging') {
-    return (
-      <View className='student'>
-        <View className='state-tip'>登录中…</View>
-      </View>
-    );
-  }
+  /** 跳转新增学生 */
+  const handleCreate = useCallback(() => {
+    setShowMenu(false);
+    Taro.navigateTo({ url: '/pages/student-create/index' });
+  }, []);
 
-  // 登录失败
-  if (loginStatus === 'failed') {
-    return (
-      <View className='student'>
-        <View className='state-tip'>登录失败</View>
-        <View className='state-tip state-error'>{error}</View>
-      </View>
-    );
-  }
+  /** 跳转 Excel 导入 */
+  const handleImport = useCallback(() => {
+    setShowMenu(false);
+    Taro.navigateTo({ url: '/pages/student-import/index' });
+  }, []);
 
-  // 首次加载中
-  if (loading && list.length === 0 && !error) {
+  /** 统计摘要 */
+  const stats = useMemo(() => {
+    const total = list.length;
+    const boarding = list.filter((s) => s.boardingType === 'BOARDING').length;
+    const day = list.filter((s) => s.boardingType === 'DAY_STUDENT').length;
+    return { total, boarding, day };
+  }, [list]);
+
+  // 加载中
+  if (loading && list.length === 0) {
     return (
       <View className='student'>
         <View className='state-tip'>加载中…</View>
@@ -170,7 +143,7 @@ export default function Student() {
     );
   }
 
-  // 加载失败且无缓存
+  // 加载失败
   if (error && list.length === 0) {
     return (
       <View className='student'>
@@ -181,40 +154,96 @@ export default function Student() {
 
   return (
     <View className='student'>
-      {/* 顶部搜索栏 */}
-      <View className='search-bar'>
-        <Input
-          className='search-input'
-          type='text'
-          placeholder='按姓名 / 学号搜索'
-          value={keyword}
-          onInput={(e) => setKeyword(e.detail.value)}
-        />
+      {/* 顶部统计卡 */}
+      {stats.total > 0 && (
+        <View className='stat-card'>
+          <View className='stat-item'>
+            <Text className='stat-num'>{stats.total}</Text>
+            <Text className='stat-label'>全部</Text>
+          </View>
+          <View className='stat-divider' />
+          <View className='stat-item'>
+            <Text className='stat-num'>{stats.boarding}</Text>
+            <Text className='stat-label'>住宿</Text>
+          </View>
+          <View className='stat-divider' />
+          <View className='stat-item'>
+            <Text className='stat-num'>{stats.day}</Text>
+            <Text className='stat-label'>走读</Text>
+          </View>
+        </View>
+      )}
+
+      {/* 分类 Tab */}
+      <ScrollView className='tab-scroll' scrollX>
+        <View className='tab-row'>
+          {TABS.map((tab) => (
+            <View
+              key={tab.key}
+              className={`tab-chip ${tab.key === activeTab ? 'tab-active' : ''}`}
+              onClick={() => handleTabChange(tab.key)}
+            >
+              {tab.label}
+            </View>
+          ))}
+        </View>
+      </ScrollView>
+
+      {/* 搜索 + 操作 */}
+      <View className='action-row'>
+        <View className='search-box'>
+          <Input
+            className='search-input'
+            type='text'
+            placeholder='搜索姓名 / 学号'
+            value={keyword}
+            onInput={(e) => setKeyword(e.detail.value)}
+          />
+        </View>
+        <View className='add-menu-wrapper'>
+          <View className='add-btn' onClick={() => setShowMenu(!showMenu)}>+</View>
+          {showMenu && (
+            <View className='dropdown-menu'>
+              <View className='dropdown-item' onClick={handleCreate}>新增学生</View>
+              <View className='dropdown-item' onClick={handleImport}>Excel导入</View>
+            </View>
+          )}
+        </View>
       </View>
 
-      {/* 列表区域 */}
+      {/* 列表 */}
       {list.length === 0 ? (
         <View className='state-tip'>暂无学生数据</View>
       ) : (
         <View className='student-list'>
           {list.map((item) => {
             const status = STATUS_MAP[item.currentStatus];
+            const isBoarding = item.boardingType === 'BOARDING';
             return (
               <View
                 key={item.id}
                 className='student-card'
                 onClick={() => handleItemClick(item)}
               >
-                <View className='student-main'>
-                  <View className='student-name'>{item.name}</View>
-                  <View className='student-meta'>
-                    <Text className='student-no'>学号：{item.studentNo}</Text>
-                    <Text className='student-class'>
-                      {item.gradeName} · {item.className}
-                    </Text>
+                <View className='card-left'>
+                  <View className='card-name'>{item.name}</View>
+                  <View className='card-meta'>
+                    <Text className='card-gender'>{GENDER_LABEL[item.gender] || item.gender}</Text>
+                    <Text className='card-sep'>·</Text>
+                    <Text className='card-no'>{item.studentNo}</Text>
                   </View>
                 </View>
-                <Text className={`tag ${status.className}`}>{status.label}</Text>
+                <View className='card-right'>
+                  <View className='card-tags'>
+                    <Text className={`mini-tag ${isBoarding ? 'mini-tag--boarding' : 'mini-tag--day'}`}>
+                      {isBoarding ? '住宿' : '走读'}
+                    </Text>
+                    <Text className={`mini-tag ${status.className.replace('tag-', 'mini-tag--')}`}>
+                      {status.label}
+                    </Text>
+                  </View>
+                  <Text className='card-arrow'>查看 &gt;</Text>
+                </View>
               </View>
             );
           })}

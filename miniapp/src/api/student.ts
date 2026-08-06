@@ -174,3 +174,58 @@ export async function getStudentDetail(id: string): Promise<StudentDetail> {
   }
   return mapStudentDetail(raw);
 }
+
+/**
+ * 创建学生
+ * 接口：POST /students
+ */
+export function createStudent(data: {
+  studentNo: string;
+  name: string;
+  gender: string;
+  classId: string;
+  boardingType: string;
+  dorm_room_id?: string;
+  bedNo?: string;
+  phone?: string;
+  parent_name?: string;
+  parent_phone?: string;
+}): Promise<StudentDetail> {
+  return request<RawStudent>('/students', {
+    method: 'POST',
+    data: data as unknown as Record<string, unknown>
+  }).then(mapStudentDetail);
+}
+
+/**
+ * 更新学生
+ * 接口：PUT /students/:id
+ */
+export function updateStudent(
+  id: string,
+  data: {
+    name?: string;
+    gender?: string;
+    boardingType?: string;
+    dorm_room_id?: string;
+    bedNo?: string;
+    phone?: string;
+    parent_name?: string;
+    parent_phone?: string;
+  }
+): Promise<StudentDetail> {
+  return request<RawStudent>(`/students/${id}`, {
+    method: 'PUT',
+    data: data as unknown as Record<string, unknown>
+  }).then(mapStudentDetail);
+}
+
+/**
+ * 删除学生（逻辑删除）
+ * 接口：DELETE /students/:id
+ */
+export function deleteStudent(id: string): Promise<void> {
+  return request<void>(`/students/${id}`, {
+    method: 'DELETE'
+  });
+}
