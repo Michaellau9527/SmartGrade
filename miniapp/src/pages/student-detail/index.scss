@@ -1,176 +1,155 @@
-.student-detail {
+.sd-page {
   min-height: 100vh;
   padding: 24px;
-  padding-bottom: 180px;
+  padding-bottom: 80px;
   box-sizing: border-box;
-  background-color: #f5f5f5;
+  background: #f5f5f5;
 }
 
-.state-tip {
-  padding: 96px 24px;
-  text-align: center;
-  color: #999;
-  font-size: 28px;
+.state-tip { padding: 96px 24px; text-align: center; color: #999; font-size: 28px; }
+.empty-sm { padding: 32px 0; text-align: center; color: #ccc; font-size: 26px; }
+
+/* ===== 身份卡 ===== */
+.id-card {
+  background: linear-gradient(135deg, #1677ff, #4096ff);
+  border-radius: 16px;
+  padding: 32px 28px;
+  margin-bottom: 20px;
+  color: #fff;
 }
 
-/* 操作按钮栏 */
-.detail-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 16px;
-  margin-bottom: 24px;
+.id-top {
+  display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;
 }
 
-.action-btn {
-  padding: 12px 28px;
-  border-radius: 8px;
-  font-size: 24px;
-  font-weight: 500;
+.id-name { font-size: 40px; font-weight: 700; }
 
-  &.edit { color: #1677ff; border: 1px solid #1677ff; background: #fff; }
-  &.delete { color: #ff4d4f; border: 1px solid #ffccc7; background: #fff1f0; }
+.id-status {
+  display: flex; align-items: center; gap: 8px; flex-shrink: 0;
 }
 
-/* 信息卡 */
-.info-card {
-  background: #fff;
-  border-radius: 12px;
-  padding: 32px 24px;
-  margin-bottom: 24px;
+.id-status-icon { font-size: 28px; }
+.id-status-text { font-size: 26px; opacity: 0.95; }
+
+.leave-pending { color: #ffe58f; }
+.leave-left { color: #ffd591; }
+
+.id-meta {
+  display: flex; align-items: center; font-size: 26px; opacity: 0.9;
 }
 
-.info-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 24px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid #f0f0f0;
-}
+.id-no { margin-right: 8px; }
+.id-sep { margin: 0 8px; opacity: 0.5; }
+.id-class { opacity: 0.85; }
 
-.info-name {
-  font-size: 38px;
-  font-weight: 600;
-  color: #333;
-}
-
+/* ===== 通用卡片 ===== */
 .card {
-  background: #fff;
-  border-radius: 12px;
-  padding: 24px;
-  margin-bottom: 24px;
+  background: #fff; border-radius: 14px; padding: 24px; margin-bottom: 20px;
+
+  &--danger {
+    border: 1px solid #ffccc7;
+  }
 }
 
 .card-title {
-  font-size: 28px;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 16px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #f0f0f0;
+  font-size: 28px; font-weight: 600; color: #333; margin-bottom: 18px;
+  padding-bottom: 14px; border-bottom: 1px solid #f0f0f0;
 }
 
-.info-row {
-  display: flex;
-  align-items: flex-start;
-  padding: 10px 0;
-  font-size: 26px;
-  line-height: 1.5;
+/* ===== 信息行 ===== */
+.ir {
+  display: flex; align-items: flex-start; padding: 8px 0; font-size: 26px; line-height: 1.5;
 }
 
-.row-label {
-  width: 160px;
-  flex-shrink: 0;
-  color: #999;
+.ir-l { width: 150px; color: #999; flex-shrink: 0; }
+.ir-v { flex: 1; color: #333; }
+
+/* ===== 快捷操作按钮 ===== */
+.actions { display: flex; flex-direction: column; gap: 14px; }
+
+.act-card {
+  display: flex; align-items: center; padding: 20px 18px;
+  background: #f7f8fa; border-radius: 12px;
+
+  &--primary {
+    background: linear-gradient(135deg, #e6f4ff, #f0f5ff);
+    border: 1px solid #bae0ff;
+  }
 }
 
-.row-value {
-  flex: 1;
-  color: #333;
-  word-break: break-all;
+.act-icon { font-size: 38px; margin-right: 18px; flex-shrink: 0; }
+
+.act-label { font-size: 28px; font-weight: 600; color: #333; display: block; }
+.act-sub { font-size: 22px; color: #999; margin-top: 2px; }
+
+.act-arrow {
+  margin-left: auto; font-size: 32px; color: #bbb; flex-shrink: 0;
 }
 
-.tag {
-  display: inline-block;
-  padding: 4px 16px;
-  border-radius: 20px;
-  font-size: 22px;
-  line-height: 1.6;
-  flex-shrink: 0;
-
-  &.tag-on-campus { background: #f6ffed; color: #52c41a; }
-  &.tag-out-of-school { background: #fff7e6; color: #fa8c16; }
-  &.tag-graduated { background: #f0f0f0; color: #999; }
-  &.tag-transferred { background: #f0f0f0; color: #999; }
-}
-
-/* ===== 编辑表单 ===== */
-.edit-form { padding-bottom: 100px; }
-
-.section {
-  background: #fff;
-  border-radius: 12px;
-  padding: 0 24px;
-  margin-bottom: 24px;
-}
-
-.section-title {
-  font-size: 28px;
-  font-weight: 600;
-  color: #333;
-  padding: 24px 0 16px;
-  margin-bottom: 8px;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.form-item {
-  padding: 20px 0;
-  border-bottom: 1px solid #f8f8f8;
+/* ===== 请假记录 ===== */
+.leave-item {
+  padding: 14px 0; border-bottom: 1px solid #f8f8f8;
   &:last-child { border-bottom: none; }
 }
 
-.form-label {
-  display: block;
-  font-size: 26px;
-  color: #666;
-  margin-bottom: 12px;
+.li-top {
+  display: flex; align-items: center; gap: 12px; margin-bottom: 6px; flex-wrap: wrap;
 }
 
+.li-date { font-size: 26px; font-weight: 600; color: #333; }
+.li-type { font-size: 24px; color: #1677ff; background: #e6f4ff; padding: 2px 10px; border-radius: 6px; }
+.li-method { font-size: 24px; color: #666; }
+.li-status {
+  font-size: 24px; padding: 2px 10px; border-radius: 6px;
+  &.li-pending { color: #fa8c16; background: #fff7e6; }
+  &.li-approved { color: #13c2c2; background: #e6fffb; }
+  &.li-left { color: #ff4d4f; background: #fff1f0; }
+  &.li-returned { color: #52c41a; background: #f6ffed; }
+  &.li-rejected { color: #999; background: #f0f0f0; }
+}
+
+.li-meta { font-size: 24px; color: #999; }
+
+/* ===== 危险操作 ===== */
+.danger-btn {
+  display: flex; align-items: center; gap: 16px; padding: 16px 0;
+  font-size: 28px; color: #ff4d4f; font-weight: 500;
+}
+
+.sd-spacer { height: 40px; }
+
+/* ===== 编辑模式 ===== */
+.edit-form { padding-bottom: 80px; }
+
+.section {
+  background: #fff; border-radius: 14px; padding: 0 24px; margin-bottom: 20px;
+  .section-title {
+    font-size: 28px; font-weight: 600; color: #333; padding: 24px 0 16px;
+    margin-bottom: 8px; border-bottom: 1px solid #f0f0f0;
+  }
+}
+
+.form-item {
+  padding: 18px 0; border-bottom: 1px solid #f8f8f8;
+  &:last-child { border-bottom: none; }
+}
+
+.form-label { display: block; font-size: 26px; color: #666; margin-bottom: 10px; }
 .form-input {
-  width: 100%;
-  height: 72px;
-  padding: 0 16px;
-  box-sizing: border-box;
-  background: #f7f8fa;
-  border-radius: 8px;
-  font-size: 28px;
-  color: #333;
+  width: 100%; height: 72px; padding: 0 16px; box-sizing: border-box;
+  background: #f7f8fa; border-radius: 8px; font-size: 28px; color: #333;
 }
-
 .form-picker {
-  padding: 18px 20px;
-  background: #f7f8fa;
-  border-radius: 8px;
-  font-size: 28px;
-  color: #333;
+  padding: 18px 20px; background: #f7f8fa; border-radius: 8px; font-size: 28px; color: #333;
 }
 
 .submit-bar {
-  display: flex;
-  gap: 20px;
-  padding: 20px 0;
-  padding-bottom: 48px;
-}
-
-.submit-btn {
-  flex: 1;
-  text-align: center;
-  padding: 22px 0;
-  border-radius: 12px;
-  font-size: 30px;
-  font-weight: 600;
-
-  &.cancel { color: #666; background: #f5f5f5; }
-  &.primary { color: #fff; background: #1677ff; }
-  &.disabled { opacity: 0.5; }
+  display: flex; gap: 16px;
+  .submit-btn {
+    flex: 1; text-align: center; padding: 20px 0; border-radius: 12px;
+    font-size: 28px; font-weight: 600;
+    &.cancel { color: #666; background: #f5f5f5; }
+    &.primary { color: #fff; background: #1677ff; }
+    &.disabled { opacity: 0.5; }
+  }
 }

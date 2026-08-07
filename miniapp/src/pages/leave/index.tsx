@@ -1,5 +1,5 @@
 import { View, Text, ScrollView, Picker, Textarea } from '@tarojs/components';
-import Taro, { usePullDownRefresh } from '@tarojs/taro';
+import Taro, { usePullDownRefresh, useRouter } from '@tarojs/taro';
 import { useCallback, useEffect, useState, useMemo } from 'react';
 import dayjs from 'dayjs';
 import {
@@ -65,6 +65,8 @@ const TABS: { key: TabKey; label: string }[] = [
 ];
 
 export default function Leave() {
+  const router = useRouter();
+  const presetStudentId = router.params.studentId || '';
   const [list, setList] = useState<LeaveListItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -145,6 +147,10 @@ export default function Leave() {
 
   useEffect(() => { fetchClassCount(); fetchList(); }, []);
   useEffect(() => { fetchList(activeTab); }, [activeTab]);
+  // 从学生详情跳转过来时自动打开请假弹窗
+  useEffect(() => {
+    if (presetStudentId) { openCreate(); }
+  }, [presetStudentId]);
 
   usePullDownRefresh(() => {
     Promise.all([fetchClassCount(), fetchList()]).finally(() =>
@@ -208,13 +214,29 @@ export default function Leave() {
     setForm((p) => ({
       ...p, date: today,
       leaveTimeIdx: t8Idx >= 0 ? t8Idx : 0,
-      leaveTime: t8Idx >= 0 ? '08:00' : TIME_OPTIONS[0]
+      leaveTime: t8Idx >= 0 ? '08:00' : TIME_OPTIONS[0],
+      studentId: '', studentIndex: -1
     }));
     if (students.length === 0) {
-      try { const s = await getStudents(); setStudents(s.filter((x) => x.currentStatus === 'ON_CAMPUS')); }
-      catch { Taro.showToast({ title: '加载学生失败', icon: 'none' }); }
+      try {
+        const s = await getStudents();
+        const onCampus = s.filter((x) => x.currentStatus === 'ON_CAMPUS');
+        setStudents(onCampus);
+        // 如果带了 studentId 参数，自动选中
+        if (presetStudentId) {
+          const idx = onCampus.findIndex((x) => x.id === presetStudentId);
+          if (idx >= 0) {
+            setForm((p) => ({ ...p, studentId: presetStudentId, studentIndex: idx }));
+          }
+        }
+      } catch { Taro.showToast({ title: '加载学生失败', icon: 'none' }); }
+    } else if (presetStudentId) {
+      const idx = students.findIndex((x) => x.id === presetStudentId);
+      if (idx >= 0) {
+        setForm((p) => ({ ...p, studentId: presetStudentId, studentIndex: idx }));
+      }
     }
-  }, [students.length]);
+  }, [students, presetStudentId]);
 
   /** 提交创建 */
   const handleCreateSubmit = useCallback(async () => {
