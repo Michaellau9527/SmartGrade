@@ -123,9 +123,10 @@ export default function StudentDetailPage() {
     }
   }, [studentId, detail]);
 
-  /** 跳转发起请假 */
+  /** 跳转发起请假 — 用 storage 传参（tabBar 不支持 URL 参数） */
   const handleApplyLeave = () => {
-    Taro.switchTab({ url: `/pages/leave/index?studentId=${studentId}` });
+    Taro.setStorageSync('presetLeaveStudentId', studentId);
+    Taro.switchTab({ url: '/pages/leave/index' });
   };
 
   if (loading) return <View className='sd-page'><View className='state-tip'>加载中…</View></View>;

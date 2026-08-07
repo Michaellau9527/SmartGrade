@@ -1,5 +1,5 @@
 import { View, Text, ScrollView, Picker, Textarea } from '@tarojs/components';
-import Taro, { usePullDownRefresh, useRouter } from '@tarojs/taro';
+import Taro, { usePullDownRefresh } from '@tarojs/taro';
 import { useCallback, useEffect, useState, useMemo } from 'react';
 import dayjs from 'dayjs';
 import {
@@ -65,8 +65,8 @@ const TABS: { key: TabKey; label: string }[] = [
 ];
 
 export default function Leave() {
-  const router = useRouter();
-  const presetStudentId = router.params.studentId || '';
+  // tabBar 不支持 URL 参数，改用 storage 传递
+  const presetStudentId = Taro.getStorageSync('presetLeaveStudentId') || '';
   const [list, setList] = useState<LeaveListItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -228,6 +228,7 @@ export default function Leave() {
           if (idx >= 0) {
             setForm((p) => ({ ...p, studentId: presetStudentId, studentIndex: idx }));
           }
+          Taro.removeStorageSync('presetLeaveStudentId');
         }
       } catch { Taro.showToast({ title: '加载学生失败', icon: 'none' }); }
     } else if (presetStudentId) {
@@ -235,6 +236,7 @@ export default function Leave() {
       if (idx >= 0) {
         setForm((p) => ({ ...p, studentId: presetStudentId, studentIndex: idx }));
       }
+      Taro.removeStorageSync('presetLeaveStudentId');
     }
   }, [students, presetStudentId]);
 
