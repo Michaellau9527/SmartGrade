@@ -3,18 +3,14 @@ import Taro from '@tarojs/taro';
 import { useCallback, useEffect, useState, useMemo } from 'react';
 import {
   getStudents,
-  QueryStudentParams,
   StudentListItem,
   StudentStatus
 } from '../../api/student';
+import { getLeaves } from '../../api/leave';
 import { useUserStore } from '../../store/user';
 import './index.scss';
 
-interface StatusMeta {
-  label: string;
-  className: string;
-}
-
+interface StatusMeta { label: string; className: string; }
 const STATUS_MAP: Record<StudentStatus, StatusMeta> = {
   ON_CAMPUS: { label: '在校', className: 'tag-on-campus' },
   OUT_OF_SCHOOL: { label: '离校', className: 'tag-out-of-school' },
@@ -22,134 +18,106 @@ const STATUS_MAP: Record<StudentStatus, StatusMeta> = {
   TRANSFERRED: { label: '已转学', className: 'tag-transferred' }
 };
 
-const GENDER_LABEL: Record<string, string> = {
-  MALE: '男',
-  FEMALE: '女',
-  OTHER: '其他'
-};
+const GENDER_LABEL: Record<string, string> = { MALE: '男', FEMALE: '女', OTHER: '其他' };
 
-/** Tab 定义 */
-type TabKey = 'ALL' | 'DAY_STUDENT' | 'BOARDING';
-
-interface TabItem {
-  key: TabKey;
-  label: string;
-}
-
-const TABS: TabItem[] = [
+type TabKey = 'ALL' | 'DAY_STUDENT' | 'BOARDING' | 'ON_LEAVE';
+const TABS: { key: TabKey; label: string }[] = [
   { key: 'ALL', label: '全部' },
   { key: 'DAY_STUDENT', label: '走读' },
-  { key: 'BOARDING', label: '住宿' }
-  // TODO: 请假 Tab — 需后端加 /students?onLeave=true 端点后开启
+  { key: 'BOARDING', label: '住宿' },
+  { key: 'ON_LEAVE', label: '请假' }
 ];
 
 export default function Student() {
-  const [list, setList] = useState<StudentListItem[]>([]);
-  const [keyword, setKeyword] = useState<string>('');
-  const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string>('');
+  const [allStudents, setAllStudents] = useState<StudentListItem[]>([]);
+  const [leaveStudentIds, setLeaveStudentIds] = useState<Set<string>>(new Set());
+  const [keyword, setKeyword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState<TabKey>('ALL');
   const [showMenu, setShowMenu] = useState(false);
 
-  const teacherName = useUserStore((s) => s.teacherName);
-
-  const fetchStudents = useCallback(async (kw?: string, tab?: TabKey) => {
+  /** 初次加载：学生列表 + 请假列表，均只请求一次 */
+  const fetchAll = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
-      const params: QueryStudentParams = {};
-      const trimmed = (kw ?? '').trim();
-      if (trimmed) params.keyword = trimmed;
-      const currentTab = tab ?? activeTab;
-      if (currentTab === 'DAY_STUDENT') params.boardingType = 'DAY_STUDENT' as any;
-      if (currentTab === 'BOARDING') params.boardingType = 'BOARDING' as any;
-      const res = await getStudents(params);
-      if (Array.isArray(res)) {
-        setList(res);
-      } else if (res && Array.isArray((res as any).list)) {
-        setList((res as any).list as StudentListItem[]);
-      } else {
-        setList([]);
-      }
+      // 并行拉学生 + 请假
+      const [students, leaves] = await Promise.all([
+        getStudents(),
+        (async () => {
+          try { return await getLeaves(); } catch { return []; }
+        })()
+      ]);
+      setAllStudents(students);
+
+      // 构建请假学生集合（PENDING / APPROVED / LEFT）
+      const leaveSet = new Set<string>();
+      leaves.forEach((l) => {
+        if (l.status === 'PENDING' || l.status === 'APPROVED' || l.status === 'LEFT') {
+          leaveSet.add(l.studentId);
+        }
+      });
+      setLeaveStudentIds(leaveSet);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error('[Student] 列表加载失败:', msg);
       setError(msg);
-      setList([]);
+      setAllStudents([]);
     } finally {
       setLoading(false);
     }
-  }, [activeTab]);
-
-  useEffect(() => {
-    fetchStudents(keyword);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /** Tab 切换 */
-  const handleTabChange = useCallback((key: TabKey) => {
-    setActiveTab(key);
-    setKeyword('');
-    fetchStudents('', key);
-  }, [fetchStudents]);
-
-  /** 搜索防抖 */
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      fetchStudents(keyword, activeTab);
-    }, 300);
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [keyword]);
+  useEffect(() => { fetchAll(); }, []);
 
   Taro.usePullDownRefresh(() => {
-    fetchStudents(keyword, activeTab).finally(() => {
-      Taro.stopPullDownRefresh();
-    });
+    fetchAll().finally(() => Taro.stopPullDownRefresh());
   });
 
+  /** 根据 Tab + 搜索词过滤 */
+  const filteredList = useMemo(() => {
+    let result = allStudents;
+    if (activeTab === 'DAY_STUDENT') result = result.filter((s) => s.boardingType === 'DAY_STUDENT');
+    if (activeTab === 'BOARDING') result = result.filter((s) => s.boardingType === 'BOARDING');
+    if (activeTab === 'ON_LEAVE') result = result.filter((s) => leaveStudentIds.has(s.id));
+    if (keyword.trim()) {
+      const kw = keyword.trim().toLowerCase();
+      result = result.filter((s) =>
+        s.name.toLowerCase().includes(kw) || s.studentNo.toLowerCase().includes(kw)
+      );
+    }
+    return result;
+  }, [allStudents, activeTab, keyword, leaveStudentIds]);
+
+  /** 统计摘要（基于全量学生） */
+  const stats = useMemo(() => {
+    const total = allStudents.length;
+    const boarding = allStudents.filter((s) => s.boardingType === 'BOARDING').length;
+    const day = allStudents.filter((s) => s.boardingType === 'DAY_STUDENT').length;
+    const onLeave = leaveStudentIds.size;
+    return { total, boarding, day, onLeave };
+  }, [allStudents, leaveStudentIds]);
+
   const handleItemClick = useCallback((item: StudentListItem) => {
-    Taro.navigateTo({
-      url: `/pages/student-detail/index?id=${item.id}`
-    });
+    Taro.navigateTo({ url: `/pages/student-detail/index?id=${item.id}` });
   }, []);
 
-  /** 跳转新增学生 */
   const handleCreate = useCallback(() => {
     setShowMenu(false);
     Taro.navigateTo({ url: '/pages/student-create/index' });
   }, []);
 
-  /** 跳转 Excel 导入 */
   const handleImport = useCallback(() => {
     setShowMenu(false);
     Taro.navigateTo({ url: '/pages/student-import/index' });
   }, []);
 
-  /** 统计摘要 */
-  const stats = useMemo(() => {
-    const total = list.length;
-    const boarding = list.filter((s) => s.boardingType === 'BOARDING').length;
-    const day = list.filter((s) => s.boardingType === 'DAY_STUDENT').length;
-    return { total, boarding, day };
-  }, [list]);
-
-  // 加载中
-  if (loading && list.length === 0) {
-    return (
-      <View className='student'>
-        <View className='state-tip'>加载中…</View>
-      </View>
-    );
+  if (loading && allStudents.length === 0) {
+    return <View className='student'><View className='state-tip'>加载中…</View></View>;
   }
-
-  // 加载失败
-  if (error && list.length === 0) {
-    return (
-      <View className='student'>
-        <View className='state-tip'>加载失败：{error}</View>
-      </View>
-    );
+  if (error && allStudents.length === 0) {
+    return <View className='student'><View className='state-tip'>加载失败：{error}</View></View>;
   }
 
   return (
@@ -171,6 +139,11 @@ export default function Student() {
             <Text className='stat-num'>{stats.day}</Text>
             <Text className='stat-label'>走读</Text>
           </View>
+          <View className='stat-divider' />
+          <View className='stat-item'>
+            <Text className='stat-num'>{stats.onLeave}</Text>
+            <Text className='stat-label'>请假</Text>
+          </View>
         </View>
       )}
 
@@ -181,7 +154,7 @@ export default function Student() {
             <View
               key={tab.key}
               className={`tab-chip ${tab.key === activeTab ? 'tab-active' : ''}`}
-              onClick={() => handleTabChange(tab.key)}
+              onClick={() => setActiveTab(tab.key)}
             >
               {tab.label}
             </View>
@@ -212,32 +185,36 @@ export default function Student() {
       </View>
 
       {/* 列表 */}
-      {list.length === 0 ? (
+      {filteredList.length === 0 ? (
         <View className='state-tip'>暂无学生数据</View>
       ) : (
         <View className='student-list'>
-          {list.map((item) => {
+          {filteredList.map((item) => {
             const status = STATUS_MAP[item.currentStatus];
             const isBoarding = item.boardingType === 'BOARDING';
+            const isOnLeave = leaveStudentIds.has(item.id);
             return (
-              <View
-                key={item.id}
-                className='student-card'
-                onClick={() => handleItemClick(item)}
-              >
+              <View key={item.id} className='student-card' onClick={() => handleItemClick(item)}>
                 <View className='card-left'>
                   <View className='card-name'>{item.name}</View>
                   <View className='card-meta'>
+                    <Text className='card-no'>学号 {item.studentNo}</Text>
+                  </View>
+                  <View className='card-meta card-meta--secondary'>
                     <Text className='card-gender'>{GENDER_LABEL[item.gender] || item.gender}</Text>
                     <Text className='card-sep'>·</Text>
-                    <Text className='card-no'>{item.studentNo}</Text>
+                    <Text className='card-boarding'>{isBoarding ? '住宿' : '走读'}</Text>
+                    {item.dormName && (
+                      <>
+                        <Text className='card-sep'>·</Text>
+                        <Text className='card-dorm'>{item.dormName}{item.bedNo ? ` ${item.bedNo}床` : ''}</Text>
+                      </>
+                    )}
                   </View>
                 </View>
                 <View className='card-right'>
                   <View className='card-tags'>
-                    <Text className={`mini-tag ${isBoarding ? 'mini-tag--boarding' : 'mini-tag--day'}`}>
-                      {isBoarding ? '住宿' : '走读'}
-                    </Text>
+                    {isOnLeave && <Text className='mini-tag mini-tag--leave'>请假中</Text>}
                     <Text className={`mini-tag ${status.className.replace('tag-', 'mini-tag--')}`}>
                       {status.label}
                     </Text>

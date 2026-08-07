@@ -179,6 +179,11 @@
   align-items: center;
   font-size: 24px;
   color: #999;
+
+  &--secondary {
+    margin-top: 4px;
+    font-size: 22px;
+  }
 }
 
 .card-gender {
@@ -186,12 +191,23 @@
 }
 
 .card-sep {
-  margin: 0 8px;
+  margin: 0 6px;
   color: #ddd;
 }
 
 .card-no {
+  color: #666;
+}
+
+.card-boarding {
   color: #999;
+}
+
+.card-dorm {
+  color: #bbb;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .card-right {
@@ -242,6 +258,11 @@
   &.mini-tag--transferred {
     background: #f0f0f0;
     color: #999;
+  }
+
+  &.mini-tag--leave {
+    background: #fff1f0;
+    color: #ff4d4f;
   }
 }
 

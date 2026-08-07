@@ -17,6 +17,9 @@ export interface StudentListItem {
   boardingType: BoardingType;
   currentStatus: StudentStatus;
   currentLocation: string;
+  /** 宿舍名 = 楼栋名 + 房间号（从后端嵌套解析） */
+  dormName: string | null;
+  bedNo: string | null;
 }
 
 /** 学生详情（前端统一字段） */
@@ -107,6 +110,13 @@ interface StudentListResponse {
  * 页面层就不用关心后端嵌套结构。
  */
 function mapStudent(raw: RawStudent): StudentListItem {
+  // 宿舍名 = 楼栋名 + 房间号
+  let dormName: string | null = null;
+  if (raw.dorm) {
+    const buildingName = raw.dorm.building?.name || '';
+    const roomNo = raw.dorm.roomNo || '';
+    dormName = [buildingName, roomNo].filter(Boolean).join(' ') || null;
+  }
   return {
     id: raw.id,
     studentNo: raw.studentNo,
@@ -116,24 +126,17 @@ function mapStudent(raw: RawStudent): StudentListItem {
     gradeName: raw.class?.grade?.name || '',
     boardingType: raw.boardingType,
     currentStatus: raw.currentStatus,
-    currentLocation: raw.currentLocation
+    currentLocation: raw.currentLocation,
+    dormName,
+    bedNo: raw.bedNo ?? null
   };
 }
 
 function mapStudentDetail(raw: RawStudent): StudentDetail {
   const base = mapStudent(raw);
-  // 宿舍名 = 楼栋名 + 房间号
-  let dormName: string | null = null;
-  if (raw.dorm) {
-    const buildingName = raw.dorm.building?.name || '';
-    const roomNo = raw.dorm.roomNo || '';
-    dormName = [buildingName, roomNo].filter(Boolean).join(' ') || null;
-  }
   return {
     ...base,
     phone: raw.phone ?? null,
-    dormName,
-    bedNo: raw.bedNo ?? null,
     enrolledAt: raw.enrolledAt || raw.createdAt
   };
 }
