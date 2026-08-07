@@ -232,3 +232,30 @@ export function deleteStudent(id: string): Promise<void> {
     method: 'DELETE'
   });
 }
+
+export interface ImportRow {
+  name: string;
+  studentNo: string;
+  gender: string;
+  boardingType: string;
+  classId: string;
+  phone?: string;
+  bedNo?: string;
+}
+
+export interface ImportResult {
+  success: number;
+  failed: number;
+  errors: { row: number; message: string }[];
+}
+
+/**
+ * 批量导入学生
+ * 接口：POST /students/batch
+ */
+export function batchImport(students: ImportRow[]): Promise<ImportResult> {
+  return request<ImportResult>('/students/batch', {
+    method: 'POST',
+    data: { students } as unknown as Record<string, unknown>
+  });
+}

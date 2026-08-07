@@ -119,14 +119,27 @@ export class StudentController {
   }
 
   /**
-   * Excel 导入学生（预留接口）
+   * 批量导入学生
    *
-   * 暂不实现文件解析，仅预留接口定义
+   * 前端解析 Excel 为 JSON 后调用此接口，逐行校验 + 批量插入
+   */
+  @Post('batch')
+  @RequirePermissions('student:create')
+  @ApiOperation({ summary: '批量导入学生', description: '前端解析 Excel 后传入学生数组，返回导入结果' })
+  async batchImport(
+    @Body() body: { students: CreateStudentDto[] },
+    @CurrentUser() user: any,
+  ) {
+    return this.studentService.batchImport(body.students, user);
+  }
+
+  /**
+   * Excel 文件导入（预留）
    */
   @Post('import')
   @RequirePermissions('student:create')
   @ApiConsumes('multipart/form-data')
-  @ApiOperation({ summary: 'Excel 导入学生', description: '预留接口，暂未实现' })
+  @ApiOperation({ summary: 'Excel 文件导入', description: '预留文件上传接口' })
   @UseInterceptors(FileInterceptor('file'))
   async importExcel(@UploadedFile() file: Express.Multer.File, @CurrentUser() user: any) {
     if (!file) {

@@ -4,168 +4,122 @@
   padding-bottom: 160px;
 }
 
-/* 步骤条 */
-.steps {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 32px 24px;
-  background: #fff;
+/* ===== 引导页 ===== */
+.import-hero {
+  text-align: center; padding: 48px 32px 32px;
+  .hero-icon { font-size: 64px; display: block; margin-bottom: 16px; }
+  .hero-title { font-size: 36px; font-weight: 700; color: #333; display: block; margin-bottom: 12px; }
+  .hero-desc { font-size: 26px; color: #999; line-height: 1.6; }
 }
 
-.step {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.step-dot {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: #f0f0f0;
-  color: #999;
-  font-size: 24px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 8px;
-}
-
-.step--active .step-dot {
-  background: #1677ff;
-  color: #fff;
-}
-
-.step--done .step-dot {
-  background: #52c41a;
-  color: #fff;
-}
-
-.step-label {
-  font-size: 22px;
-  color: #999;
-}
-
-.step--active .step-label {
-  color: #1677ff;
-  font-weight: 600;
-}
-
-.step-line {
-  width: 80px;
-  height: 2px;
-  background: #f0f0f0;
-  margin: 0 12px 24px;
-}
-
-/* 内容区 */
-.import-content {
-  padding: 32px 24px;
-}
-
-.import-title {
-  font-size: 36px;
-  font-weight: 700;
-  color: #333;
-  margin-bottom: 16px;
-}
-
-.import-desc {
-  font-size: 26px;
-  color: #999;
-  line-height: 1.6;
-  margin-bottom: 32px;
-}
-
-/* 字段表格 */
 .field-table {
-  background: #fff;
-  border-radius: 12px;
-  overflow: hidden;
-  margin-bottom: 24px;
+  background: #fff; border-radius: 14px; margin: 0 24px 24px; overflow: hidden;
 }
 
 .field-header {
-  display: flex;
-  padding: 20px 24px;
-  background: #f7f8fa;
-  font-size: 24px;
-  font-weight: 600;
-  color: #666;
+  display: flex; padding: 18px 24px; background: #f7f8fa;
+  font-size: 24px; font-weight: 600; color: #666;
 }
 
 .field-row {
-  display: flex;
-  padding: 18px 24px;
-  border-bottom: 1px solid #f5f5f5;
-  font-size: 26px;
-  color: #333;
-
-  &:last-child {
-    border-bottom: none;
-  }
+  display: flex; padding: 16px 24px; border-bottom: 1px solid #f5f5f5; font-size: 26px; color: #333;
+  &:last-child { border-bottom: none; }
 }
 
 .field-col {
   &--name { flex: 2; }
   &--req { flex: 1; text-align: center; }
-  &--ex { flex: 0 0 200px; text-align: right; color: #999; font-size: 24px; }
+  &--ex { flex: 0 0 220px; text-align: right; color: #999; font-size: 24px; }
 }
 
-/* 注意事项 */
 .notice-box {
-  background: #fff7e6;
-  border-radius: 12px;
-  padding: 24px;
+  background: #fff7e6; border-radius: 14px; margin: 0 24px 24px; padding: 24px;
+  .notice-title { font-size: 26px; font-weight: 600; color: #fa8c16; margin-bottom: 12px; }
+  .notice-item { font-size: 24px; color: #666; line-height: 1.8; }
 }
 
-.notice-title {
-  font-size: 26px;
-  font-weight: 600;
-  color: #fa8c16;
-  margin-bottom: 12px;
+/* ===== 预览页 ===== */
+.preview-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 24px 24px 16px;
 }
 
-.notice-item {
-  font-size: 24px;
-  color: #666;
-  line-height: 1.8;
+.preview-title { font-size: 32px; font-weight: 700; color: #333; }
+
+.preview-stats { display: flex; gap: 12px; }
+.ps-item {
+  padding: 6px 18px; border-radius: 20px; font-size: 24px;
+  &.ps-ok { background: #f6ffed; color: #52c41a; }
+  &.ps-err { background: #fff1f0; color: #ff4d4f; }
 }
 
-/* 底部操作 */
-.import-actions {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  display: flex;
-  gap: 20px;
-  padding: 20px 24px;
-  padding-bottom: 48px;
-  background: #fff;
-  border-top: 1px solid #f0f0f0;
-  box-shadow: 0 -2px 8px rgba(0,0,0,0.04);
-  z-index: 10;
+.preview-table {
+  margin: 0 24px; background: #fff; border-radius: 12px; max-height: 55vh;
 }
 
-.import-btn {
-  flex: 1;
-  text-align: center;
-  padding: 22px 0;
-  border-radius: 12px;
-  font-size: 28px;
-  font-weight: 600;
+.pt-row {
+  display: flex; border-bottom: 1px solid #f5f5f5; white-space: nowrap;
+  &--err { background: #fff7f7; }
+}
 
-  &.outline {
-    color: #1677ff;
-    border: 2px solid #1677ff;
-    background: #fff;
-  }
+.pt-head {
+  background: #f7f8fa; font-weight: 600; position: sticky; top: 0; z-index: 1;
+}
 
-  &.filled {
-    color: #fff;
-    background: #1677ff;
-  }
+.pt-cell {
+  padding: 14px 12px; font-size: 24px; color: #333;
+  &--idx { width: 50px; text-align: center; color: #999; }
+  &--name { width: 90px; }
+  &--no { width: 130px; }
+  &--gender { width: 70px; }
+  &--type { width: 90px; }
+  &--phone { width: 150px; }
+  &--bed { width: 70px; }
+  &--err { width: 160px; }
+}
+
+.pt-ok-text { color: #52c41a; font-weight: 700; }
+.pt-err-text { color: #ff4d4f; font-size: 22px; }
+
+/* ===== 结果页 ===== */
+.result-hero {
+  text-align: center; padding: 64px 32px 32px;
+  .result-icon { font-size: 72px; display: block; margin-bottom: 12px; }
+  .result-title { font-size: 36px; font-weight: 700; color: #333; }
+}
+
+.result-stats {
+  display: flex; gap: 20px; padding: 0 24px 24px;
+}
+
+.rs-card {
+  flex: 1; text-align: center; padding: 32px; border-radius: 14px;
+  .rs-num { font-size: 56px; font-weight: 700; display: block; }
+  .rs-label { font-size: 26px; color: #666; margin-top: 4px; }
+}
+
+.rs-success { background: #f6ffed; .rs-num { color: #52c41a; } }
+.rs-fail { background: #fff1f0; .rs-num { color: #ff4d4f; } }
+
+.result-errors {
+  margin: 0 24px; background: #fff; border-radius: 12px; padding: 24px;
+  .re-title { font-size: 28px; font-weight: 600; color: #333; margin-bottom: 16px; }
+  .re-item { display: flex; gap: 16px; padding: 10px 0; border-bottom: 1px solid #f8f8f8; }
+  .re-row { font-size: 24px; color: #ff4d4f; flex-shrink: 0; }
+  .re-msg { font-size: 24px; color: #666; }
+}
+
+/* ===== 底部操作 ===== */
+.bottom-actions {
+  position: fixed; bottom: 0; left: 0; right: 0; display: flex; gap: 16px;
+  padding: 20px 24px; padding-bottom: 48px; background: #fff;
+  border-top: 1px solid #f0f0f0; box-shadow: 0 -2px 8px rgba(0,0,0,0.04); z-index: 10;
+}
+
+.ba-btn {
+  flex: 1; text-align: center; padding: 22px 0; border-radius: 12px;
+  font-size: 28px; font-weight: 600;
+  &.outline { color: #1677ff; border: 2px solid #1677ff; background: #fff; }
+  &.filled { color: #fff; background: #1677ff; }
+  &.ba-disabled { opacity: 0.5; }
 }

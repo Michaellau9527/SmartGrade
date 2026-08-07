@@ -334,14 +334,68 @@ export class StudentService {
   }
 
   /**
-   * Excel 导入预留接口
+   * 批量导入学生
    *
-   * 暂不实现文件解析
+   * 逐行校验 → 批量 create → 返回成功/失败统计
+   */
+  async batchImport(
+    students: CreateStudentDto[],
+    user: CurrentUserPayload,
+  ): Promise<{ success: number; failed: number; errors: { row: number; message: string }[] }> {
+    const errors: { row: number; message: string }[] = [];
+    const valid: CreateStudentDto[] = [];
+
+    for (let i = 0; i < students.length; i++) {
+      const s = students[i];
+      const row = i + 1;
+      // 必填校验
+      if (!s.name || !s.name.trim()) { errors.push({ row, message: '姓名不能为空' }); continue; }
+      if (!s.studentNo || !s.studentNo.trim()) { errors.push({ row, message: '学号不能为空' }); continue; }
+      if (!s.gender || !['MALE', 'FEMALE'].includes(s.gender)) { errors.push({ row, message: `性别无效: ${s.gender}` }); continue; }
+      if (!s.boardingType || !['DAY', 'BOARDING'].includes(s.boardingType)) { errors.push({ row, message: `住宿类型无效: ${s.boardingType}` }); continue; }
+      if (!s.classId) { errors.push({ row, message: '班级ID不能为空' }); continue; }
+      // 学号重复检查
+      const exists = await this.prisma.student.findFirst({
+        where: { studentNo: s.studentNo, deletedAt: null },
+      });
+      if (exists) { errors.push({ row, message: `学号 ${s.studentNo} 已存在` }); continue; }
+      valid.push(s);
+    }
+
+    // 批量创建
+    if (valid.length > 0) {
+      // 查询班级信息（假设所有学生同班）
+      const cls = await this.prisma.class.findUnique({ where: { id: String(valid[0].classId) } });
+      if (!cls) return { success: 0, failed: students.length, errors: [{ row: 0, message: '班级不存在' }] };
+
+      const data = valid.map((s) => ({
+        studentNo: s.studentNo.trim(),
+        name: s.name.trim(),
+        gender: s.gender as Gender,
+        classId: String(s.classId),
+        gradeId: cls.gradeId,
+        schoolId: cls.schoolId,
+        boardingType: s.boardingType as BoardingType,
+        bedNo: s.bedNo || null,
+        phone: s.phone || null,
+        enrolledAt: new Date(),
+      }));
+
+      await this.prisma.student.createMany({ data, skipDuplicates: true });
+    }
+
+    this.logger.log(`批量导入: 成功${valid.length}, 失败${errors.length}`);
+
+    return { success: valid.length, failed: errors.length, errors };
+  }
+
+  /**
+   * Excel 文件导入（预留）
    */
   async importExcel(_file: any, _user: CurrentUserPayload) {
-    // TODO: Phase 5 实现 Excel 文件解析和学生批量导入
     return {
-      message: 'Excel 导入功能尚未实现，预计在 Phase 5 开发',
+      message: 'Excel 文件直传尚未实现，请使用 /students/batch 接口',
+    };
       imported: 0,
       failed: 0,
     };
