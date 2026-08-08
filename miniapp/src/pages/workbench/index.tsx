@@ -343,9 +343,7 @@ export default function Workbench() {
                 <Text className='overview-cell__num'>{totalStudents}</Text>
                 <Text className='overview-cell__label'>学生总数</Text>
               </View>
-              <View className='overview-cell__icon overview-cell__icon--blue'>
-                <Text>👥</Text>
-              </View>
+              <View className='overview-cell__icon overview-cell__icon--blue' />
             </View>
             <View
               className='overview-cell overview-cell--green'
@@ -355,9 +353,7 @@ export default function Workbench() {
                 <Text className='overview-cell__num'>{leaveCount}</Text>
                 <Text className='overview-cell__label'>请假人数</Text>
               </View>
-              <View className='overview-cell__icon overview-cell__icon--green'>
-                <Text>⏰</Text>
-              </View>
+              <View className='overview-cell__icon overview-cell__icon--green' />
             </View>
             <View
               className='overview-cell overview-cell--orange'
@@ -367,18 +363,14 @@ export default function Workbench() {
                 <Text className='overview-cell__num'>{pendingCount}</Text>
                 <Text className='overview-cell__label'>待审批</Text>
               </View>
-              <View className='overview-cell__icon overview-cell__icon--orange'>
-                <Text>📝</Text>
-              </View>
+              <View className='overview-cell__icon overview-cell__icon--orange' />
             </View>
             <View className='overview-cell overview-cell--red'>
               <View className='overview-cell__body'>
                 <Text className='overview-cell__num'>0</Text>
                 <Text className='overview-cell__label'>异常情况</Text>
               </View>
-              <View className='overview-cell__icon overview-cell__icon--red'>
-                <Text>⚠️</Text>
-              </View>
+              <View className='overview-cell__icon overview-cell__icon--red' />
             </View>
           </View>
         </View>
