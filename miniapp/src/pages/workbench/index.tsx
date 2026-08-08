@@ -10,6 +10,8 @@ import {
   TodoStatus
 } from '../../api/workbench';
 import { mockLogin } from '../../api/auth';
+import { getStudents } from '../../api/student';
+import { getLeaves, LeaveListItem } from '../../api/leave';
 import { useUserStore } from '../../store/user';
 import TeacherHeader from '../../components/TeacherHeader';
 import DashboardCard from '../../components/DashboardCard';
@@ -104,6 +106,10 @@ export default function Workbench() {
   const teacherName = useUserStore((s) => s.teacherName);
   const teacherNo = useUserStore((s) => s.teacherNo);
   const roles = useUserStore((s) => s.roles);
+
+  // 班主任面板实时数据（独立于 workbench API）
+  const [studentCount, setStudentCount] = useState(0);
+  const [leavesForStats, setLeavesForStats] = useState<LeaveListItem[]>([]);
 
   /** 角色解析：layout / 中文标签 / 所属 */
   const layout = useMemo(() => resolveLayout(roles), [roles]);
@@ -255,11 +261,7 @@ export default function Workbench() {
   /** 任务进度条（年级主任专用） */
   const gradeTaskProgress = useMemo(() => GRADE_TASK_PROGRESS_MOCK, []);
 
-  /** 班级动态（班主任） */
-  const classTimeline: TimelineItem[] = useMemo(
-    () => HEADMASTER_TIMELINE_MOCK,
-    []
-  );
+  /** 班级动态（班主任）—— 已由内联 hm-timeline 替代 */
 
   /** 异常提醒（政教） */
   const alertTimeline: TimelineItem[] = useMemo(() => POLITICAL_ALERT_MOCK, []);
@@ -350,14 +352,26 @@ export default function Workbench() {
     }
   }, []);
 
+  /** 拉取真实学生 + 请假数据（班主任面板用） */
+  const fetchHeadmasterStats = useCallback(async () => {
+    try {
+      const [students, leaves] = await Promise.allSettled([
+        getStudents(),
+        getLeaves()
+      ]);
+      if (students.status === 'fulfilled') setStudentCount(students.value.length);
+      if (leaves.status === 'fulfilled') setLeavesForStats(leaves.value);
+    } catch { /* 静默降级 */ }
+  }, []);
+
   useEffect(() => {
     (async () => {
       const ok = await ensureLogin();
       if (ok) {
-        await fetchData();
+        await Promise.all([fetchData(), fetchHeadmasterStats()]);
       }
     })();
-  }, [ensureLogin, fetchData]);
+  }, [ensureLogin, fetchData, fetchHeadmasterStats]);
 
   Taro.usePullDownRefresh(() => {
     (async () => {
@@ -416,68 +430,123 @@ export default function Workbench() {
 
   return (
     <View className='workbench'>
-      {/* 顶部教师身份卡 */}
-      <TeacherHeader
-        name={USE_HOMEROOM_MOCK ? `${teacherName}老师` : teacherName}
-        roles={roleLabels}
-        affiliation={affiliation}
-        welcomeQuote={USE_HOMEROOM_MOCK ? '用心教育，用爱陪伴每一个学生成长' : undefined}
-        meta={{
-          date: today.date,
-          week: formatWeek(today.week),
-          semesterWeek: today.semesterWeek
-        }}
-      />
-
       {/* ============ 班主任 ============ */}
       {layout === 'headmaster' && (
         <>
-          <DashboardCard
-            title='今日概览'
-            subtitle={today.isSchoolDay ? '教学日 · 实时' : '非教学日'}
-            mode='grid'
-            gridItems={[
-              {
-                value: data?.studentStatusSummary.totalStudents ?? 0,
-                label: '班级人数',
-                color: 'blue',
-                onTap: () => Taro.switchTab({ url: '/pages/student/index' })
-              },
-              {
-                value: data?.studentStatusSummary.studentsLeaving ?? 0,
-                label: '请假人数',
-                color: 'orange',
-                onTap: () => Taro.switchTab({ url: '/pages/leave/index' })
-              },
-              {
-                value: USE_HOMEROOM_MOCK ? 1 : (data?.studentStatusSummary.dormAbnormal ?? 0),
-                label: '待审批',
-                color: 'red',
-                onTap: () => Taro.switchTab({ url: '/pages/leave/index' })
-              },
-              {
-                value: 0,
-                label: '异常情况',
-                color: 'gray',
-                onTap: () => undefined
-              }
-            ]}
-            accent='primary'
-          />
+          {/* 顶部蓝色渐变 Header */}
+          <View className='hm-header'>
+            <Text className='hm-header__brand'>SmartGrade</Text>
+            <View className='hm-header__row'>
+              <View className='hm-header__avatar'>刘</View>
+              <View className='hm-header__info'>
+                <Text className='hm-header__greeting'>早上好，{teacherName || '刘老师'} 👋</Text>
+                <Text className='hm-header__role'>高一（11）班班主任</Text>
+              </View>
+            </View>
+            <Text className='hm-header__quote'>"用心教育，用爱陪伴每一个学生成长"</Text>
+          </View>
 
-          <NoticeCard
-            items={noticeItems}
-            moreText='全部'
-            onMore={() => Taro.switchTab({ url: '/pages/notice/index' }).catch(() => {})}
-          />
+          {/* 今日概览 */}
+          <View className='hm-card'>
+            <View className='hm-card__head'>
+              <Text className='hm-card__title'>今日概览</Text>
+              <Text className='hm-card__more' onClick={() => Taro.switchTab({ url: '/pages/student/index' })}>查看全部 ›</Text>
+            </View>
+            <View className='hm-grid'>
+              <View className='hm-grid__cell hm-grid__cell--blue' onClick={() => Taro.switchTab({ url: '/pages/student/index' })}>
+                <View className='hm-cell__icon hm-cell__icon--blue'>🐾</View>
+                <Text className='hm-cell__num'>{studentCount}</Text>
+                <Text className='hm-cell__label'>学生人数</Text>
+              </View>
+              <View className='hm-grid__cell hm-grid__cell--green' onClick={() => Taro.switchTab({ url: '/pages/leave/index' })}>
+                <View className='hm-cell__icon hm-cell__icon--green'>🏠</View>
+                <Text className='hm-cell__num'>{leavesForStats.filter(l => l.status === 'PENDING' || l.status === 'APPROVED' || l.status === 'LEFT').length}</Text>
+                <Text className='hm-cell__label'>请假人数</Text>
+              </View>
+              <View className='hm-grid__cell hm-grid__cell--orange' onClick={() => Taro.switchTab({ url: '/pages/leave/index' })}>
+                <View className='hm-cell__icon hm-cell__icon--orange'>📝</View>
+                <Text className='hm-cell__num'>{leavesForStats.filter(l => l.status === 'PENDING').length}</Text>
+                <Text className='hm-cell__label'>待审批</Text>
+              </View>
+              <View className='hm-grid__cell hm-grid__cell--red'>
+                <View className='hm-cell__icon hm-cell__icon--red'>⚠️</View>
+                <Text className='hm-cell__num'>0</Text>
+                <Text className='hm-cell__label'>异常情况</Text>
+              </View>
+            </View>
+          </View>
 
-          <Timeline
-            title='今日动态'
-            moreText='查看更多'
-            onMore={() => Taro.showToast({ title: '完整动态开发中', icon: 'none' })}
-            items={classTimeline}
-          />
+          {/* 通知 & 待办 */}
+          <View className='hm-card'>
+            <View className='hm-card__head'>
+              <Text className='hm-card__title'>通知 & 待办</Text>
+              <Text className='hm-card__more' onClick={() => Taro.switchTab({ url: '/pages/notice/index' })}>全部 ›</Text>
+            </View>
+            {noticeItems.slice(0, 3).map((item, i) => {
+              const colors = [
+                { bg: '#f0f7ff', icon: '🔔', border: '#bae0ff' },
+                { bg: '#fffcf0', icon: '📋', border: '#ffe7ba' },
+                { bg: '#fff4f4', icon: '⚠️', border: '#ffd6d6' }
+              ];
+              const c = colors[i % 3];
+              return (
+                <View key={item.id} className='hm-notice-item' style={{ backgroundColor: c.bg, borderColor: c.border }}>
+                  <View className='hm-notice-icon'>{c.icon}</View>
+                  <View className='hm-notice-body'>
+                    <Text className='hm-notice-title'>{item.title}</Text>
+                    <Text className='hm-notice-time'>{item.time ? (typeof item.time === 'string' ? item.time.slice(11, 16) : '') : ''}</Text>
+                  </View>
+                  <Text className='hm-notice-arrow'>›</Text>
+                </View>
+              );
+            })}
+          </View>
+
+          {/* 今日动态 */}
+          <View className='hm-card'>
+            <View className='hm-card__head'>
+              <Text className='hm-card__title'>今日动态</Text>
+              <Text className='hm-card__more'>查看更多 ›</Text>
+            </View>
+            <View className='hm-timeline'>
+              {(leavesForStats.length > 0 ? leavesForStats.slice(0, 3) : HEADMASTER_TIMELINE_MOCK.slice(0, 3)).map((item: any, i: number) => {
+                const dots = ['#52c41a', '#fa8c16', '#1677ff'];
+                const icons = ['🏠', '🕐', '✅'];
+                const leaveTypeMap: Record<string, string> = { SICK: '病假', PERSONAL: '事假', OTHER: '其他' };
+                const title = item.studentName
+                  ? `${item.studentName} ${item.status === 'LEFT' ? '已离校' : item.status === 'PENDING' ? '提交请假' : item.status === 'APPROVED' ? '请假已通过' : '请假记录'}`
+                  : item.title;
+                const desc = item.leaveType
+                  ? `${leaveTypeMap[item.leaveType] || item.leaveType} · ${item.startAt ? item.startAt.slice(5, 16) : ''}`
+                  : item.desc;
+                return (
+                  <View key={item.id || i} className='hm-tl-item'>
+                    <View className='hm-tl-dot' style={{ backgroundColor: dots[i % 3] }} />
+                    <View className='hm-tl-icon-box'>{icons[i % 3]}</View>
+                    <View className='hm-tl-body'>
+                      <Text className='hm-tl-title'>{title}</Text>
+                      <Text className='hm-tl-desc'>{desc}</Text>
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+          </View>
         </>
+      )}
+
+      {/* ============ 非班主任角色 Header ============ */}
+      {layout !== 'headmaster' && (
+        <TeacherHeader
+          name={teacherName}
+          roles={roleLabels}
+          affiliation={affiliation}
+          meta={{
+            date: today.date,
+            week: formatWeek(today.week),
+            semesterWeek: today.semesterWeek
+          }}
+        />
       )}
 
       {/* ============ 课任教师 ============ */}

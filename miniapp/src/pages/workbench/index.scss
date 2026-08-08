@@ -1,3 +1,268 @@
+/* ============ 班主任 · Stitch 首页视觉 ============ */
+
+/* 顶部蓝色渐变 Header */
+.hm-header {
+  background: linear-gradient(135deg, #4096ff 0%, #1677ff 100%);
+  border-radius: 0 0 24px 24px;
+  padding: 48px 24px 28px;
+  color: #fff;
+  margin-bottom: 20px;
+}
+
+.hm-header__brand {
+  font-size: 32px;
+  font-weight: 700;
+  display: block;
+  margin-bottom: 20px;
+  letter-spacing: 1px;
+}
+
+.hm-header__row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.hm-header__avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.hm-header__info {
+  flex: 1;
+}
+
+.hm-header__greeting {
+  font-size: 32px;
+  font-weight: 600;
+  display: block;
+}
+
+.hm-header__role {
+  font-size: 24px;
+  opacity: 0.8;
+  margin-top: 4px;
+}
+
+.hm-header__quote {
+  font-size: 22px;
+  font-style: italic;
+  opacity: 0.7;
+  margin-top: 8px;
+}
+
+/* 白色卡片通用 */
+.hm-card {
+  background: #fff;
+  border-radius: 20px;
+  margin: 0 16px 20px;
+  padding: 20px 24px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03), 0 6px 16px rgba(22, 119, 255, 0.04);
+}
+
+.hm-card__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.hm-card__title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.hm-card__more {
+  font-size: 22px;
+  color: #999;
+}
+
+/* 四宫格 */
+.hm-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.hm-grid__cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 18px 12px 16px;
+  border-radius: 14px;
+  border: 1px solid transparent;
+
+  &--blue { background: #f0f7ff; border-color: #bae0ff; }
+  &--green { background: #f6ffed; border-color: #d9f8be; }
+  &--orange { background: #fffcf0; border-color: #ffe7ba; }
+  &--red { background: #fff4f4; border-color: #ffd6d6; }
+}
+
+.hm-cell__icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  margin-bottom: 8px;
+
+  &--blue { background: #e6f4ff; }
+  &--green { background: #d9f8be; }
+  &--orange { background: #ffe7ba; }
+  &--red { background: #ffd6d6; }
+}
+
+.hm-cell__num {
+  font-size: 36px;
+  font-weight: 700;
+  color: #1e293b;
+  line-height: 1.1;
+}
+
+.hm-cell__label {
+  font-size: 22px;
+  color: #999;
+  margin-top: 4px;
+}
+
+/* 通知 & 待办列表项 */
+.hm-notice-item {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  border-radius: 14px;
+  border: 1px solid;
+  margin-bottom: 12px;
+
+  &:last-child { margin-bottom: 0; }
+}
+
+.hm-notice-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  flex-shrink: 0;
+  margin-right: 14px;
+}
+
+.hm-notice-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.hm-notice-title {
+  font-size: 26px;
+  color: #1e293b;
+  font-weight: 500;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hm-notice-time {
+  font-size: 22px;
+  color: #999;
+  margin-top: 4px;
+}
+
+.hm-notice-arrow {
+  font-size: 24px;
+  color: #bbb;
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+
+/* 今日动态时间轴 */
+.hm-timeline {
+  padding-left: 4px;
+}
+
+.hm-tl-item {
+  display: flex;
+  align-items: flex-start;
+  position: relative;
+  padding-bottom: 20px;
+  padding-left: 28px;
+
+  &:last-child { padding-bottom: 0; }
+
+  /* 竖线 */
+  &::before {
+    content: '';
+    position: absolute;
+    left: 7px;
+    top: 18px;
+    bottom: 0;
+    width: 2px;
+    background: #f0f0f0;
+  }
+
+  &:last-child::before { display: none; }
+}
+
+.hm-tl-dot {
+  position: absolute;
+  left: 0;
+  top: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 3px solid #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  flex-shrink: 0;
+}
+
+.hm-tl-icon-box {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #f7f8fa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+  margin-right: 12px;
+}
+
+.hm-tl-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.hm-tl-title {
+  font-size: 26px;
+  color: #1e293b;
+  font-weight: 500;
+  display: block;
+}
+
+.hm-tl-desc {
+  font-size: 22px;
+  color: #999;
+  margin-top: 4px;
+  display: block;
+}
+
 /* ============ 工作台容器 ============ */
 .workbench {
   min-height: 100vh;
