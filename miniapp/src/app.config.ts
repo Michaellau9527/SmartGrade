@@ -24,23 +24,33 @@ export default defineAppConfig({
     list: [
       {
         pagePath: 'pages/workbench/index',
-        text: '首页'
+        text: '首页',
+        iconPath: 'assets/tabbar/workbench.png',
+        selectedIconPath: 'assets/tabbar/workbench-active.png'
       },
       {
         pagePath: 'pages/student/index',
-        text: '学生'
+        text: '学生',
+        iconPath: 'assets/tabbar/student.png',
+        selectedIconPath: 'assets/tabbar/student-active.png'
       },
       {
         pagePath: 'pages/leave/index',
-        text: '请假'
+        text: '请假',
+        iconPath: 'assets/tabbar/leave.png',
+        selectedIconPath: 'assets/tabbar/leave-active.png'
       },
       {
         pagePath: 'pages/notice/index',
-        text: '通知'
+        text: '通知',
+        iconPath: 'assets/tabbar/notice.png',
+        selectedIconPath: 'assets/tabbar/notice-active.png'
       },
       {
         pagePath: 'pages/mine/index',
-        text: '我的'
+        text: '我的',
+        iconPath: 'assets/tabbar/mine.png',
+        selectedIconPath: 'assets/tabbar/mine-active.png'
       }
     ]
   }
