@@ -28,6 +28,17 @@ export interface HeroBlock {
   badge?: string;
 }
 
+export interface GridItem {
+  /** 数值 */
+  value: number | string;
+  /** 标签 */
+  label: string;
+  /** 颜色主题（blue/green/orange/red） */
+  color: StatusColor;
+  /** 点击跳转 */
+  onTap?: () => void;
+}
+
 export interface DashboardCardProps {
   /** 卡片标题 */
   title: string;
@@ -36,15 +47,19 @@ export interface DashboardCardProps {
   /** 右侧"更多" */
   moreText?: string;
   onMore?: () => void;
+  /** 模式：hero(默认) / grid(2×2彩色格) */
+  mode?: 'hero' | 'grid';
+  /** 2×2 网格项（mode='grid' 时生效） */
+  gridItems?: GridItem[];
   /** 核心数字区（hero 模式） */
   hero?: HeroBlock;
   /** 状态列表（hero 下方） */
   statusList?: StatusItem[];
-  /** 旧版兼容：4 个平均小方块（仅在 hero/statusList 都没传时才使用） */
+  /** 旧版兼容：4 个平均小方块 */
   stats?: StatusItem[];
   /** 自定义正文 */
   children?: React.ReactNode;
-  /** 主题色（影响 hero 数字 + 装饰条） */
+  /** 主题色 */
   accent?: 'primary' | 'success' | 'warning' | 'danger' | 'purple';
   /** 整体 className */
   className?: string;
@@ -84,9 +99,10 @@ const STATUS_BG_MAP: Record<StatusColor, string> = {
  * 模式 B：旧 4 个平均小方块（兼容）
  */
 export default function DashboardCard(props: DashboardCardProps) {
-  const { title, subtitle, moreText, onMore, hero, statusList, stats, children, accent = 'primary', className } = props;
+  const { title, subtitle, moreText, onMore, mode = 'hero', gridItems, hero, statusList, stats, children, accent = 'primary', className } = props;
 
-  const useHero = !!hero || (!!statusList && statusList.length > 0);
+  const useHero = mode === 'hero' && (!!hero || (!!statusList && statusList.length > 0));
+  const useGrid = mode === 'grid' && gridItems && gridItems.length > 0;
 
   return (
     <View className={`dashboard-card dashboard-card--${accent} ${className || ''}`}>
@@ -105,6 +121,36 @@ export default function DashboardCard(props: DashboardCardProps) {
           </View>
         ) : null}
       </View>
+
+      {useGrid && gridItems ? (
+        <View className='dashboard-card__grid'>
+          {gridItems.map((g, i) => {
+            const colors: Record<StatusColor, { bg: string; border: string; iconBg: string }> = {
+              blue: { bg: '#f0f7ff', border: '#bae0ff', iconBg: '#e6f4ff' },
+              green: { bg: '#f6ffed', border: '#d9f8be', iconBg: '#eaffd6' },
+              orange: { bg: '#fffcf0', border: '#ffe7ba', iconBg: '#fff7e6' },
+              red: { bg: '#fff4f4', border: '#ffd6d6', iconBg: '#fff1f0' },
+              yellow: { bg: '#fffef5', border: '#fff1b8', iconBg: '#fffbe6' },
+              purple: { bg: '#faf8ff', border: '#efdbff', iconBg: '#f9f0ff' },
+              gray: { bg: '#fbfbfb', border: '#f0f0f0', iconBg: '#f5f5f5' }
+            };
+            const c = colors[g.color] || colors.blue;
+            return (
+              <View key={i} className={`dashboard-card__grid-cell dashboard-card__grid-cell--${g.color}`}
+                onClick={g.onTap}
+              >
+                <View className='dg-icon' style={{ backgroundColor: c.iconBg }}>
+                  <Text className='dg-icon-text'>
+                    {g.color === 'blue' ? '👥' : g.color === 'green' ? '🏠' : g.color === 'orange' ? '📝' : '⚠️'}
+                  </Text>
+                </View>
+                <Text className='dg-value'>{g.value}</Text>
+                <Text className='dg-label'>{g.label}</Text>
+              </View>
+            );
+          })}
+        </View>
+      ) : null}
 
       {useHero ? (
         <View className='dashboard-card__hero-wrap'>

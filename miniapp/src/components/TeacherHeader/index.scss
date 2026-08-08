@@ -223,6 +223,17 @@
   line-height: 1.4;
 }
 
+/* 欢迎语（welcomeQuote） */
+.teacher-header__quote {
+  position: relative;
+  z-index: 3;
+  margin-top: 14px;
+  font-size: 22px;
+  color: rgba(255, 255, 255, 0.75);
+  font-style: italic;
+  line-height: 1.5;
+}
+
 /* 底部 footer */
 .teacher-header__footer {
   position: relative;

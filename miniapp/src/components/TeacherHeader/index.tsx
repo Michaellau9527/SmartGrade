@@ -16,7 +16,9 @@ export interface TeacherHeaderProps {
     week?: string;
     semesterWeek?: number;
   };
-  /** 底部副信息（如教学周、节气） */
+  /** 欢迎语（如"用心教育，用爱陪伴每一个学生成长"） */
+  welcomeQuote?: string;
+  /** 底部副信息（如教学周、节气）—— 与 welcomeQuote 互斥 */
   footer?: string;
   /** 整体点击事件 */
   onClick?: () => void;
@@ -37,7 +39,7 @@ function pickAvatarText(name: string): string {
  * 底部：装饰性 footer（可选）
  */
 export default function TeacherHeader(props: TeacherHeaderProps) {
-  const { name, roles, affiliation, avatarUrl, meta, footer, onClick } = props;
+  const { name, roles, affiliation, avatarUrl, meta, welcomeQuote, footer, onClick } = props;
   const avatarText = pickAvatarText(name);
 
   return (
@@ -153,6 +155,10 @@ export default function TeacherHeader(props: TeacherHeaderProps) {
           </View>
         ) : null}
       </View>
+
+      {welcomeQuote ? (
+        <View className='teacher-header__quote'>{welcomeQuote}</View>
+      ) : null}
 
       {footer ? (
         <View className='teacher-header__footer'>

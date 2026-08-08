@@ -28,8 +28,7 @@ import {
   SUBJECT_TEACHER_ATTENDANCE_MOCK,
   USE_HOMEROOM_MOCK,
   MOCK_HOMEROOM_USER,
-  MOCK_HOMEROOM_WORKBENCH,
-  getWelcomeGreeting
+  MOCK_HOMEROOM_WORKBENCH
 } from '../../utils/mock';
 import './index.scss';
 
@@ -422,7 +421,7 @@ export default function Workbench() {
         name={USE_HOMEROOM_MOCK ? `${teacherName}老师` : teacherName}
         roles={roleLabels}
         affiliation={affiliation}
-        footer={USE_HOMEROOM_MOCK ? getWelcomeGreeting() + ' · 班级管理工作台' : undefined}
+        welcomeQuote={USE_HOMEROOM_MOCK ? '用心教育，用爱陪伴每一个学生成长' : undefined}
         meta={{
           date: today.date,
           week: formatWeek(today.week),
@@ -434,23 +433,36 @@ export default function Workbench() {
       {layout === 'headmaster' && (
         <>
           <DashboardCard
-            title='今日班级'
+            title='今日概览'
             subtitle={today.isSchoolDay ? '教学日 · 实时' : '非教学日'}
-            moreText='班级详情'
-            onMore={() => Taro.showToast({ title: '班级详情开发中', icon: 'none' })}
-            accent='primary'
-            hero={{
-              value: data?.studentStatusSummary.totalStudents ?? 0,
-              label: '班级人数',
-              theme: 'primary',
-              suffix: '人',
-              badge: today.isSchoolDay ? '今日' : '周末'
-            }}
-            statusList={[
-              { label: '在校', value: data?.studentStatusSummary.onCampus ?? 0, color: 'green' },
-              { label: '请假', value: data?.studentStatusSummary.studentsLeaving ?? 0, color: 'yellow' },
-              { label: '待审批', value: data?.studentStatusSummary.dormAbnormal ?? 0, color: 'red' }
+            mode='grid'
+            gridItems={[
+              {
+                value: data?.studentStatusSummary.totalStudents ?? 0,
+                label: '班级人数',
+                color: 'blue',
+                onTap: () => Taro.switchTab({ url: '/pages/student/index' })
+              },
+              {
+                value: data?.studentStatusSummary.studentsLeaving ?? 0,
+                label: '请假人数',
+                color: 'orange',
+                onTap: () => Taro.switchTab({ url: '/pages/leave/index' })
+              },
+              {
+                value: USE_HOMEROOM_MOCK ? 1 : (data?.studentStatusSummary.dormAbnormal ?? 0),
+                label: '待审批',
+                color: 'red',
+                onTap: () => Taro.switchTab({ url: '/pages/leave/index' })
+              },
+              {
+                value: 0,
+                label: '异常情况',
+                color: 'gray',
+                onTap: () => undefined
+              }
             ]}
+            accent='primary'
           />
 
           <NoticeCard
@@ -459,14 +471,8 @@ export default function Workbench() {
             onMore={() => Taro.switchTab({ url: '/pages/notice/index' }).catch(() => {})}
           />
 
-          <QuickAction
-            title='快捷入口'
-            items={quickActions}
-            columns={4}
-          />
-
           <Timeline
-            title='班级动态'
+            title='今日动态'
             moreText='查看更多'
             onMore={() => Taro.showToast({ title: '完整动态开发中', icon: 'none' })}
             items={classTimeline}
