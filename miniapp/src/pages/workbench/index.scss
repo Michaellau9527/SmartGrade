@@ -242,17 +242,10 @@
   min-width: 0;
 }
 
-.notice-item__title {
+.notice-item__main {
   font-size: 28rpx;
   font-weight: 500;
   color: #1e293b;
-  display: block;
-}
-
-.notice-item__desc {
-  font-size: 24rpx;
-  color: #64748b;
-  margin-top: 6rpx;
   display: block;
   overflow: hidden;
   text-overflow: ellipsis;

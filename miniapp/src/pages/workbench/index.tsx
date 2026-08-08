@@ -313,7 +313,7 @@ export default function Workbench() {
             <Text className='hero-header__avatar-text'>{displayName.charAt(0)}</Text>
           </View>
           <View className='hero-header__info'>
-            <Text className='hero-header__greeting'>{greeting} 👋</Text>
+            <Text className='hero-header__greeting'>{greeting}</Text>
             <Text className='hero-header__role'>高一 (11) 班班主任</Text>
           </View>
         </View>
@@ -402,8 +402,7 @@ export default function Workbench() {
                   <Text>{item.icon}</Text>
                 </View>
                 <View className='notice-item__body'>
-                  <Text className='notice-item__title'>{item.title}</Text>
-                  <Text className='notice-item__desc'>{item.desc}</Text>
+                  <Text className='notice-item__main'>{item.title} {item.desc}</Text>
                   <Text className='notice-item__time'>{item.time}</Text>
                 </View>
                 <Text className='notice-item__arrow'>›</Text>
