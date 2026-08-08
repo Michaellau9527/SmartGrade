@@ -1,6 +1,7 @@
 import { View, Text } from '@tarojs/components';
 import Taro from '@tarojs/taro';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import AppIcon, { AppIconName } from '../../components/AppIcon';
 import {
   getWorkbench,
   WorkbenchResponse,
@@ -25,7 +26,7 @@ import './index.scss';
  * ============================================================ */
 
 interface NoticeCardItem {
-  icon: string;
+  icon: AppIconName;
   title: string;
   desc: string;
   time: string;
@@ -39,7 +40,7 @@ interface TimelineEntry {
   title: string;
   desc: string;
   dotColor: string;
-  icon: string;
+  icon: AppIconName;
   iconBg: string;
   iconColor: string;
 }
@@ -54,15 +55,15 @@ const NOTICE_TYPE_LABEL: Record<NoticeType, string> = {
 
 /** 今日动态 mock（用户指定） */
 const TIMELINE_MOCK: TimelineEntry[] = [
-  { title: '张三 已离校', desc: '14:30 · 离校原因: 家长接送', dotColor: '#22c55e', icon: '🏠', iconBg: '#f0fdf4', iconColor: '#22c55e' },
-  { title: '李四 提交请假申请', desc: '13:20 · 病假', dotColor: '#f59e0b', icon: '🕐', iconBg: '#fff7ed', iconColor: '#f59e0b' },
-  { title: '王五 请假申请已通过', desc: '11:15', dotColor: '#1677ff', icon: '✅', iconBg: '#eff6ff', iconColor: '#1677ff' }
+  { title: '张三 已离校', desc: '14:30 · 离校原因: 家长接送', dotColor: '#22c55e', icon: 'house', iconBg: '#f0fdf4', iconColor: '#22c55e' },
+  { title: '李四 提交请假申请', desc: '13:20 · 病假', dotColor: '#f59e0b', icon: 'clock-user', iconBg: '#fff7ed', iconColor: '#f59e0b' },
+  { title: '王五 请假申请已通过', desc: '11:15', dotColor: '#1677ff', icon: 'check', iconBg: '#eff6ff', iconColor: '#1677ff' }
 ];
 
 /** 通知 & 待办兜底 mock */
 const NOTICE_FALLBACK: NoticeCardItem[] = [
-  { icon: '🔔', title: '请假审批提醒', desc: '张三的请假申请等待审批', time: '10分钟前', bg: '#eff6ff', border: '#dbeafe', iconBg: '#dbeafe', iconColor: '#1677ff' },
-  { icon: '📢', title: '年级通知', desc: '关于期中考试安排通知', time: '今天 08:30', bg: '#fff7ed', border: '#ffedd5', iconBg: '#ffedd5', iconColor: '#f59e0b' }
+  { icon: 'bell', title: '请假审批提醒', desc: '张三的请假申请等待审批', time: '10分钟前', bg: '#eff6ff', border: '#dbeafe', iconBg: '#dbeafe', iconColor: '#1677ff' },
+  { icon: 'megaphone', title: '年级通知', desc: '关于期中考试安排通知', time: '今天 08:30', bg: '#fff7ed', border: '#ffedd5', iconBg: '#ffedd5', iconColor: '#f59e0b' }
 ];
 
 /* ============================================================
@@ -131,7 +132,7 @@ export default function Workbench() {
     (data.todos ?? []).slice(0, 2).forEach((t: WorkbenchTodo) => {
       const isUrgent = t.status === 'PENDING' || t.status === 'OVERDUE';
       items.push({
-        icon: t.type === 'LEAVE_APPROVE' ? '🔔' : t.type === 'DORM_CHECK' ? '⚠️' : '📋',
+        icon: t.type === 'LEAVE_APPROVE' ? 'bell' : t.type === 'DORM_CHECK' ? 'alert' : 'list-todo',
         title: t.type === 'LEAVE_APPROVE' ? '请假审批提醒' : t.type === 'DORM_CHECK' ? '宿舍检查提醒' : '待办事项',
         desc: t.title,
         time: timeAgo(t.dueAt || undefined),
@@ -145,7 +146,7 @@ export default function Workbench() {
     (data.recentNotices ?? []).slice(0, 1).forEach((n: WorkbenchNotice) => {
       const isUrgent = n.noticeType === 'URGENT';
       items.push({
-        icon: isUrgent ? '⚠️' : '📢',
+        icon: isUrgent ? 'alert' : 'megaphone',
         title: `${NOTICE_TYPE_LABEL[n.noticeType]}通知`,
         desc: n.title,
         time: timeAgo(n.publishedAt),
@@ -343,7 +344,9 @@ export default function Workbench() {
                 <Text className='overview-cell__num'>{totalStudents}</Text>
                 <Text className='overview-cell__label'>学生总数</Text>
               </View>
-              <View className='overview-cell__icon overview-cell__icon--blue' />
+              <View className='overview-cell__icon overview-cell__icon--blue'>
+                <AppIcon name='users' size={22} color='#1677ff' />
+              </View>
             </View>
             <View
               className='overview-cell overview-cell--green'
@@ -353,7 +356,9 @@ export default function Workbench() {
                 <Text className='overview-cell__num'>{leaveCount}</Text>
                 <Text className='overview-cell__label'>请假人数</Text>
               </View>
-              <View className='overview-cell__icon overview-cell__icon--green' />
+              <View className='overview-cell__icon overview-cell__icon--green'>
+                <AppIcon name='clock-user' size={22} color='#22c55e' />
+              </View>
             </View>
             <View
               className='overview-cell overview-cell--orange'
@@ -363,14 +368,18 @@ export default function Workbench() {
                 <Text className='overview-cell__num'>{pendingCount}</Text>
                 <Text className='overview-cell__label'>待审批</Text>
               </View>
-              <View className='overview-cell__icon overview-cell__icon--orange' />
+              <View className='overview-cell__icon overview-cell__icon--orange'>
+                <AppIcon name='file-check' size={22} color='#f59e0b' />
+              </View>
             </View>
             <View className='overview-cell overview-cell--red'>
               <View className='overview-cell__body'>
                 <Text className='overview-cell__num'>0</Text>
                 <Text className='overview-cell__label'>异常情况</Text>
               </View>
-              <View className='overview-cell__icon overview-cell__icon--red' />
+              <View className='overview-cell__icon overview-cell__icon--red'>
+                <AppIcon name='alert' size={22} color='#ef4444' />
+              </View>
             </View>
           </View>
         </View>
@@ -389,9 +398,9 @@ export default function Workbench() {
               >
                 <View
                   className='notice-item__icon'
-                  style={{ backgroundColor: item.iconBg, color: item.iconColor }}
+                  style={{ backgroundColor: item.iconBg }}
                 >
-                  <Text>{item.icon}</Text>
+                  <AppIcon name={item.icon} size={20} color={item.iconColor} />
                 </View>
                 <View className='notice-item__body'>
                   <Text className='notice-item__main'>{item.title} {item.desc}</Text>
@@ -421,9 +430,9 @@ export default function Workbench() {
                 />
                 <View
                   className='timeline-item__icon'
-                  style={{ backgroundColor: item.iconBg, color: item.iconColor }}
+                  style={{ backgroundColor: item.iconBg }}
                 >
-                  <Text>{item.icon}</Text>
+                  <AppIcon name={item.icon} size={20} color={item.iconColor} />
                 </View>
                 <View className='timeline-item__body'>
                   <Text className='timeline-item__title'>{item.title}</Text>

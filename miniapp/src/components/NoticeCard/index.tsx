@@ -1,6 +1,7 @@
 import { View, Text } from '@tarojs/components';
 import { useState } from 'react';
 import dayjs from 'dayjs';
+import AppIcon from '../AppIcon';
 import './index.scss';
 
 export type NoticeCategory = 'all' | 'notice' | 'todo' | 'remind';
@@ -157,7 +158,7 @@ export default function NoticeCard(props: NoticeCardProps) {
       {filteredItems.length === 0 ? (
         <View className='notice-card__empty'>
           <View className='notice-card__empty-icon'>
-            <Text className='notice-card__empty-icon-text'>{activeTab === 'todo' ? '✓' : '📭'}</Text>
+            <AppIcon name={activeTab === 'todo' ? 'check' : 'megaphone'} size={32} color='#94a3b8' />
           </View>
           <Text className='notice-card__empty-text'>
             {emptyText || `暂无${activeTab === 'all' ? '通知与待办' : tabs.find((t) => t.key === activeTab)?.label || '内容'}`}

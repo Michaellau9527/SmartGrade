@@ -41,7 +41,13 @@
 }
 
 .class-action-btn__icon {
-  font-size: 44px;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: #e6f4ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   margin-bottom: 12px;
 }
 

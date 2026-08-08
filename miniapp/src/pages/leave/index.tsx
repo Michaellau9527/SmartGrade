@@ -2,6 +2,7 @@ import { View, Text, ScrollView, Picker, Textarea } from '@tarojs/components';
 import Taro, { usePullDownRefresh } from '@tarojs/taro';
 import { useCallback, useEffect, useState, useMemo } from 'react';
 import dayjs from 'dayjs';
+import AppIcon from '../../components/AppIcon';
 import {
   approveLeave,
   confirmLeft,
@@ -286,7 +287,7 @@ export default function Leave() {
       {/* ===== 搜索 + 新增 ===== */}
       <View className='action-row'>
         <View className='search-box'>
-          <Text className='search-icon'>🔍</Text>
+          <AppIcon name='search' size={18} color='#94a3b8' className='search-icon' />
           <Textarea
             className='search-input'
             placeholder='搜索学生姓名 / 学号'
@@ -397,7 +398,9 @@ export default function Leave() {
           <View className='create-sheet' onClick={(e: any) => e.stopPropagation()}>
             <View className='create-header'>
               <Text className='create-title'>新增请假</Text>
-              <View className='create-close' onClick={() => setShowCreate(false)}>✕</View>
+              <View className='create-close' onClick={() => setShowCreate(false)}>
+                <AppIcon name='close' size={18} color='#94a3b8' />
+              </View>
             </View>
 
             <ScrollView className='create-body' scrollY>

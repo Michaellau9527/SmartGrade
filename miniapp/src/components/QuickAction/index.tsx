@@ -1,4 +1,5 @@
 import { View, Text } from '@tarojs/components';
+import AppIcon, { AppIconName } from '../AppIcon';
 import './index.scss';
 
 export interface QuickActionItem {
@@ -8,8 +9,8 @@ export interface QuickActionItem {
   label: string;
   /** 角标数字（小红点数字，可选） */
   badge?: number;
-  /** 图标（emoji 或 1-2 字），可选 */
-  icon?: string;
+  /** 图标名称（AppIcon name），可选 */
+  icon?: AppIconName;
   /** 背景色：primary / warning / success / danger / purple / default */
   theme?: 'primary' | 'warning' | 'success' | 'danger' | 'purple' | 'default';
   /** 点击事件 */
@@ -102,9 +103,13 @@ export default function QuickAction(props: QuickActionProps) {
                   className='quick-action__icon'
                   style={{ background: bg, boxShadow: `0 6px 14px ${ring}` }}
                 >
-                  <Text className='quick-action__icon-text' style={{ color: fg }}>
-                    {item.icon || item.label.charAt(0)}
-                  </Text>
+                  {item.icon ? (
+                    <AppIcon name={item.icon} size={24} color={fg} />
+                  ) : (
+                    <Text className='quick-action__icon-text' style={{ color: fg }}>
+                      {item.label.charAt(0)}
+                    </Text>
+                  )}
                   {item.badge && item.badge > 0 ? (
                     <View className='quick-action__badge'>
                       <Text className='quick-action__badge-text'>

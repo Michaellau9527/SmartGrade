@@ -72,7 +72,6 @@
 }
 
 .search-icon {
-  font-size: 28px;
   margin-right: 8px;
   flex-shrink: 0;
 }
@@ -259,7 +258,7 @@
 }
 
 .create-title { font-size: 34px; font-weight: 700; color: #333; }
-.create-close { font-size: 36px; color: #999; padding: 4px 8px; }
+.create-close { display: flex; align-items: center; justify-content: center; padding: 4px 8px; }
 
 .create-body { flex: 1; padding: 20px 32px; max-height: 55vh; }
 

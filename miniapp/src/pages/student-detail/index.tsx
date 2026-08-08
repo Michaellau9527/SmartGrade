@@ -2,6 +2,7 @@ import { View, Text, Input, Picker } from '@tarojs/components';
 import Taro, { useRouter } from '@tarojs/taro';
 import { useEffect, useState, useCallback } from 'react';
 import dayjs from 'dayjs';
+import AppIcon from '../../components/AppIcon';
 import {
   getStudentDetail,
   updateStudent,
@@ -13,11 +14,11 @@ import { getLeaves, LeaveListItem } from '../../api/leave';
 import './index.scss';
 
 /* ===== 常量 ===== */
-const STATUS_MAP: Record<StudentStatus, { label: string; className: string; icon: string }> = {
-  ON_CAMPUS: { label: '在校', className: 'tag-on-campus', icon: '🟢' },
-  OUT_OF_SCHOOL: { label: '离校', className: 'tag-out-of-school', icon: '🟠' },
-  GRADUATED: { label: '已毕业', className: 'tag-graduated', icon: '⚪' },
-  TRANSFERRED: { label: '已转学', className: 'tag-transferred', icon: '⚪' }
+const STATUS_MAP: Record<StudentStatus, { label: string; className: string; dotColor: string }> = {
+  ON_CAMPUS: { label: '在校', className: 'tag-on-campus', dotColor: '#22c55e' },
+  OUT_OF_SCHOOL: { label: '离校', className: 'tag-out-of-school', dotColor: '#f59e0b' },
+  GRADUATED: { label: '已毕业', className: 'tag-graduated', dotColor: '#94a3b8' },
+  TRANSFERRED: { label: '已转学', className: 'tag-transferred', dotColor: '#94a3b8' }
 };
 
 const GENDER_MAP: Record<string, string> = { MALE: '男', FEMALE: '女', OTHER: '其他' };
@@ -55,8 +56,8 @@ export default function StudentDetailPage() {
       l.status === 'PENDING' || l.status === 'APPROVED' || l.status === 'LEFT'
     );
     if (!active) return null;
-    if (active.status === 'LEFT') return { label: '已离校', icon: '🟠', className: 'leave-left' };
-    return { label: '请假中', icon: '🟡', className: 'leave-pending' };
+    if (active.status === 'LEFT') return { label: '已离校', dotColor: '#f59e0b', className: 'leave-left' };
+    return { label: '请假中', dotColor: '#eab308', className: 'leave-pending' };
   })();
 
   const fetchAll = useCallback(async () => {
@@ -185,9 +186,10 @@ export default function StudentDetailPage() {
         <View className='id-top'>
           <View className='id-name'>{detail.name}</View>
           <View className='id-status'>
-            <Text className='id-status-icon'>
-              {leaveStatus ? leaveStatus.icon : status.icon}
-            </Text>
+            <View
+              className='id-status-dot'
+              style={{ backgroundColor: leaveStatus ? leaveStatus.dotColor : status.dotColor }}
+            />
             <Text className={`id-status-text ${leaveStatus?.className || ''}`}>
               {leaveStatus ? leaveStatus.label : status.label}
             </Text>
@@ -216,7 +218,7 @@ export default function StudentDetailPage() {
         <View className='card-title'>快捷操作</View>
         <View className='actions'>
           <View className='act-card act-card--primary' onClick={handleApplyLeave}>
-            <Text className='act-icon'>📝</Text>
+            <View className='act-icon'><AppIcon name='file-check' size={20} color='#1677ff' /></View>
             <View>
               <Text className='act-label'>发起请假</Text>
               <Text className='act-sub'>替该学生提交请假申请</Text>
@@ -224,7 +226,7 @@ export default function StudentDetailPage() {
             <Text className='act-arrow'>›</Text>
           </View>
           <View className='act-card' onClick={() => setEditing(true)}>
-            <Text className='act-icon'>✏️</Text>
+            <View className='act-icon'><AppIcon name='edit' size={20} color='#64748b' /></View>
             <View>
               <Text className='act-label'>编辑学生</Text>
               <Text className='act-sub'>修改基本信息或住宿信息</Text>
@@ -264,7 +266,7 @@ export default function StudentDetailPage() {
       <View className='card card--danger'>
         <View className='card-title'>危险操作</View>
         <View className='danger-btn' onClick={handleDelete}>
-          <Text>🗑</Text>
+          <AppIcon name='trash' size={20} color='#ef4444' />
           <Text>删除学生</Text>
           <Text>›</Text>
         </View>

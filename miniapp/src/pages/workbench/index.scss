@@ -198,27 +198,15 @@
   width: 64rpx;
   height: 64rpx;
   border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
-  background-size: 36rpx 36rpx;
-  background-repeat: no-repeat;
-  background-position: center;
 
-  &--blue {
-    background-color: #dbeafe;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cg fill='none' stroke='%231677ff' stroke-linecap='round' stroke-linejoin='round' stroke-width='2'%3E%3Cpath d='M18 21a8 8 0 0 0-16 0'/%3E%3Ccircle cx='10' cy='8' r='5'/%3E%3Cpath d='M22 20c0-3.37-2-6.5-4-8a5 5 0 0 0-.45-8.3'/%3E%3C/g%3E%3C/svg%3E");
-  }
-  &--green {
-    background-color: #dcfce7;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cpath fill='%2322c55e' d='M136 72v43.06l36.42-18.22a8 8 0 1 1 7.16 14.32l-48 24A8 8 0 0 1 120 128V72a8 8 0 0 1 16 0m-8 144a88 88 0 1 1 88-88a8 8 0 0 0 16 0a104 104 0 1 0-104 104a8 8 0 0 0 0-16m86.62-17.38a32 32 0 1 0-45.24 0A40 40 0 0 0 152.27 222a8 8 0 0 0 7.73 10h64a8 8 0 0 0 7.73-10.06a40 40 0 0 0-17.11-23.32'/%3E%3C/svg%3E");
-  }
-  &--orange {
-    background-color: #ffedd5;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cg fill='none' stroke='%23f59e0b' stroke-linecap='round' stroke-linejoin='round' stroke-width='2'%3E%3Cpath d='M10.5 22H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.706.706l3.588 3.588A2.4 2.4 0 0 1 20 8v6'/%3E%3Cpath d='M14 2v5a1 1 0 0 0 1 1h5m-6 12l2 2l4-4'/%3E%3C/g%3E%3C/svg%3E");
-  }
-  &--red {
-    background-color: #fee2e2;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='none' stroke='%23ef4444' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m21.73 18l-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3M12 9v4m0 4h.01'/%3E%3C/svg%3E");
-  }
+  &--blue   { background-color: #dbeafe; }
+  &--green  { background-color: #dcfce7; }
+  &--orange { background-color: #ffedd5; }
+  &--red    { background-color: #fee2e2; }
 }
 
 /* ====== 通知 & 待办 ====== */

@@ -2,6 +2,7 @@ import { View, Text, ScrollView } from '@tarojs/components';
 import Taro from '@tarojs/taro';
 import { useCallback, useState, useMemo } from 'react';
 import * as XLSX from 'xlsx';
+import AppIcon from '../../components/AppIcon';
 import { batchImport, ImportRow, ImportResult } from '../../api/student';
 import './index.scss';
 
@@ -151,7 +152,7 @@ export default function StudentImport() {
       {step === 'guide' && (
         <>
           <View className='import-hero'>
-            <Text className='hero-icon'>📋</Text>
+            <View className='hero-icon'><AppIcon name='list-todo' size={36} color='#1677ff' /></View>
             <Text className='hero-title'>Excel 批量导入</Text>
             <Text className='hero-desc'>下载标准模板，按格式填写学生信息后上传，系统将自动校验并导入</Text>
           </View>
@@ -218,7 +219,7 @@ export default function StudentImport() {
                 <View className='pt-cell pt-cell--phone'>{r.phone || '-'}</View>
                 <View className='pt-cell pt-cell--bed'>{r.bedNo || '-'}</View>
                 <View className='pt-cell pt-cell--err'>
-                  {r._error ? <Text className='pt-err-text'>{r._error}</Text> : <Text className='pt-ok-text'>✓</Text>}
+                  {r._error ? <Text className='pt-err-text'>{r._error}</Text> : <AppIcon name='check' size={16} color='#22c55e' />}
                 </View>
               </View>
             ))}
@@ -238,7 +239,7 @@ export default function StudentImport() {
       {step === 'result' && importResult && (
         <>
           <View className='result-hero'>
-            <Text className='result-icon'>{importResult.failed === 0 ? '✅' : '⚠️'}</Text>
+            <AppIcon name={importResult.failed === 0 ? 'check' : 'alert'} size={40} color={importResult.failed === 0 ? '#22c55e' : '#f59e0b'} />
             <Text className='result-title'>导入完成</Text>
           </View>
 

@@ -1,6 +1,7 @@
 import { View, Text } from '@tarojs/components';
 import Taro from '@tarojs/taro';
 import { useEffect, useState } from 'react';
+import AppIcon from '../../components/AppIcon';
 import { getWorkbench, WorkbenchResponse } from '../../api/workbench';
 import { useUserStore } from '../../store/user';
 import { resolveAffiliation } from '../../utils/role';
@@ -135,14 +136,18 @@ export default function ClassManage() {
           className='class-action-btn'
           onClick={() => Taro.switchTab({ url: '/pages/student/index' })}
         >
-          <Text className='class-action-btn__icon'>👨‍🎓</Text>
+          <View className='class-action-btn__icon'>
+            <AppIcon name='users' size={24} color='#1677ff' />
+          </View>
           <Text className='class-action-btn__label'>学生管理</Text>
         </View>
         <View
           className='class-action-btn'
           onClick={() => Taro.switchTab({ url: '/pages/leave/index' })}
         >
-          <Text className='class-action-btn__icon'>📝</Text>
+          <View className='class-action-btn__icon'>
+            <AppIcon name='clipboard-check' size={24} color='#f59e0b' />
+          </View>
           <Text className='class-action-btn__label'>请假审批</Text>
         </View>
       </View>

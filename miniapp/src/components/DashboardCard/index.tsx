@@ -1,4 +1,5 @@
 import { View, Text } from '@tarojs/components';
+import AppIcon, { AppIconName } from '../AppIcon';
 import './index.scss';
 
 /** 状态点颜色：green / yellow / red / blue / gray */
@@ -85,6 +86,16 @@ const STATUS_BG_MAP: Record<StatusColor, string> = {
   orange: '#fff7e6'
 };
 
+const GRID_ICON_MAP: Record<string, { name: AppIconName; color: string }> = {
+  blue: { name: 'users', color: '#1677ff' },
+  green: { name: 'house', color: '#22c55e' },
+  orange: { name: 'file-check', color: '#f59e0b' },
+  red: { name: 'alert', color: '#ef4444' },
+  yellow: { name: 'alert', color: '#faad14' },
+  purple: { name: 'users', color: '#722ed1' },
+  gray: { name: 'users', color: '#bfbfbf' }
+};
+
 /**
  * 数据看板卡片 2.1
  * 模式 A：核心数字 hero + 状态列表（推荐）
@@ -140,9 +151,7 @@ export default function DashboardCard(props: DashboardCardProps) {
                 onClick={g.onTap}
               >
                 <View className='dg-icon' style={{ backgroundColor: c.iconBg }}>
-                  <Text className='dg-icon-text'>
-                    {g.color === 'blue' ? '👥' : g.color === 'green' ? '🏠' : g.color === 'orange' ? '📝' : '⚠️'}
-                  </Text>
+                  <AppIcon name={GRID_ICON_MAP[g.color]?.name || 'users'} size={20} color={GRID_ICON_MAP[g.color]?.color || '#1677ff'} />
                 </View>
                 <Text className='dg-value'>{g.value}</Text>
                 <Text className='dg-label'>{g.label}</Text>
