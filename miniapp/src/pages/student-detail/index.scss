@@ -1,155 +1,414 @@
+/* ============================================================
+ * SmartGrade — 学生详情页
+ * Stitch Design System
+ * ============================================================ */
+
+/* ===== Design Tokens ===== */
+$color-primary: #1677FF;
+$color-success: #22C55E;
+$color-warning: #F59E0B;
+$color-danger: #EF4444;
+$color-bg: #F5F5F5;
+$color-surface: #FFFFFF;
+$color-text-main: #333333;
+$color-text-secondary: #666666;
+$color-text-light: #999999;
+$color-border: #F0F0F0;
+$color-divider: #F8F8F8;
+
+$tag-blue-bg: #E6F4FF;
+$tag-blue-text: #1677FF;
+$tag-green-bg: #F6FFED;
+$tag-green-text: #22C55E;
+$tag-orange-bg: #FFF7E6;
+$tag-orange-text: #F59E0B;
+$tag-red-bg: #FEF2F2;
+$tag-red-text: #EF4444;
+$tag-gray-bg: #F5F5F5;
+$tag-gray-text: #999999;
+
+$radius-card: 24px;
+$radius-tag: 8px;
+$radius-input: 12px;
+$radius-avatar: 50%;
+$shadow-card: 0 2px 8px rgba(0, 0, 0, 0.04);
+$shadow-bar: 0 -2px 12px rgba(0, 0, 0, 0.06);
+
+/* ===== Page ===== */
 .sd-page {
   min-height: 100vh;
   padding: 24px;
-  padding-bottom: 80px;
+  padding-bottom: 140px;
   box-sizing: border-box;
-  background: #f5f5f5;
+  background: $color-bg;
 }
 
-.state-tip { padding: 96px 24px; text-align: center; color: #999; font-size: 28px; }
-.empty-sm { padding: 32px 0; text-align: center; color: #ccc; font-size: 26px; }
-
-/* ===== 身份卡 ===== */
-.id-card {
-  background: linear-gradient(135deg, #1677ff, #4096ff);
-  border-radius: 16px;
-  padding: 32px 28px;
-  margin-bottom: 20px;
-  color: #fff;
+.state-tip {
+  padding: 96px 24px;
+  text-align: center;
+  color: $color-text-light;
+  font-size: 28px;
 }
 
-.id-top {
-  display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;
+.sd-spacer {
+  height: 40px;
 }
 
-.id-name { font-size: 40px; font-weight: 700; }
-
-.id-status {
-  display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+/* ===== Tags ===== */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 12px;
+  border-radius: $radius-tag;
+  font-size: 22px;
+  font-weight: 500;
+  line-height: 1.6;
+  flex-shrink: 0;
 }
 
-.id-status-dot { width: 16px; height: 16px; border-radius: 50%; flex-shrink: 0; }
-.id-status-text { font-size: 26px; opacity: 0.95; }
-
-.leave-pending { color: #ffe58f; }
-.leave-left { color: #ffd591; }
-
-.id-meta {
-  display: flex; align-items: center; font-size: 26px; opacity: 0.9;
+.tag--sm {
+  padding: 1px 8px;
+  font-size: 20px;
 }
 
-.id-no { margin-right: 8px; }
-.id-sep { margin: 0 8px; opacity: 0.5; }
-.id-class { opacity: 0.85; }
+.tag--blue {
+  background: $tag-blue-bg;
+  color: $tag-blue-text;
+}
 
-/* ===== 通用卡片 ===== */
-.card {
-  background: #fff; border-radius: 14px; padding: 24px; margin-bottom: 20px;
+.tag--green {
+  background: $tag-green-bg;
+  color: $tag-green-text;
+}
 
-  &--danger {
-    border: 1px solid #ffccc7;
-  }
+.tag--orange {
+  background: $tag-orange-bg;
+  color: $tag-orange-text;
+}
+
+.tag--red {
+  background: $tag-red-bg;
+  color: $tag-red-text;
+}
+
+.tag--gray {
+  background: $tag-gray-bg;
+  color: $tag-gray-text;
+}
+
+/* ===== Header Card (学生信息头部) ===== */
+.header-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+  background: $color-surface;
+  border-radius: $radius-card;
+  padding: 32px;
+  margin-bottom: 24px;
+  box-shadow: $shadow-card;
+}
+
+.header-avatar {
+  width: 96px;
+  height: 96px;
+  border-radius: $radius-avatar;
+  background: $tag-blue-bg;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.header-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.header-name-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.header-name {
+  font-size: 36px;
+  font-weight: 700;
+  color: $color-text-main;
+}
+
+.header-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.header-meta-text {
+  font-size: 26px;
+  color: $color-text-secondary;
+}
+
+/* ===== Info Card (通用信息卡片) ===== */
+.info-card {
+  background: $color-surface;
+  border-radius: $radius-card;
+  padding: 32px;
+  margin-bottom: 24px;
+  box-shadow: $shadow-card;
+}
+
+.card-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid $color-border;
 }
 
 .card-title {
-  font-size: 28px; font-weight: 600; color: #333; margin-bottom: 18px;
-  padding-bottom: 14px; border-bottom: 1px solid #f0f0f0;
+  font-size: 30px;
+  font-weight: 600;
+  color: $color-text-main;
 }
 
-/* ===== 信息行 ===== */
-.ir {
-  display: flex; align-items: flex-start; padding: 8px 0; font-size: 26px; line-height: 1.5;
+/* ===== Info Grid (两列布局) ===== */
+.info-grid {
+  display: flex;
+  flex-wrap: wrap;
 }
 
-.ir-l { width: 150px; color: #999; flex-shrink: 0; }
-.ir-v { flex: 1; color: #333; }
+.info-cell {
+  width: 50%;
+  padding: 12px 0;
+  box-sizing: border-box;
+}
 
-/* ===== 快捷操作按钮 ===== */
-.actions { display: flex; flex-direction: column; gap: 14px; }
+.info-label {
+  display: block;
+  font-size: 24px;
+  color: $color-text-light;
+  margin-bottom: 6px;
+}
 
-.act-card {
-  display: flex; align-items: center; padding: 20px 18px;
-  background: #f7f8fa; border-radius: 12px;
+.info-value {
+  display: block;
+  font-size: 28px;
+  color: $color-text-main;
+  font-weight: 500;
+}
 
-  &--primary {
-    background: linear-gradient(135deg, #e6f4ff, #f0f5ff);
-    border: 1px solid #bae0ff;
+/* ===== Single Info Row ===== */
+.info-single {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+
+  .info-label {
+    margin-bottom: 0;
   }
 }
 
-.act-icon { width: 40px; height: 40px; border-radius: 10px; background: #f5f5f5; display: flex; align-items: center; justify-content: center; margin-right: 18px; flex-shrink: 0; }
-
-.act-label { font-size: 28px; font-weight: 600; color: #333; display: block; }
-.act-sub { font-size: 22px; color: #999; margin-top: 2px; }
-
-.act-arrow {
-  margin-left: auto; font-size: 32px; color: #bbb; flex-shrink: 0;
+/* ===== Empty State ===== */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 0;
+  gap: 16px;
 }
 
-/* ===== 请假记录 ===== */
+.empty-text {
+  font-size: 26px;
+  color: $color-text-light;
+}
+
+/* ===== Leave Records ===== */
 .leave-item {
-  padding: 14px 0; border-bottom: 1px solid #f8f8f8;
-  &:last-child { border-bottom: none; }
-}
+  padding: 20px 0;
+  border-bottom: 1px solid $color-divider;
 
-.li-top {
-  display: flex; align-items: center; gap: 12px; margin-bottom: 6px; flex-wrap: wrap;
-}
+  &:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
 
-.li-date { font-size: 26px; font-weight: 600; color: #333; }
-.li-type { font-size: 24px; color: #1677ff; background: #e6f4ff; padding: 2px 10px; border-radius: 6px; }
-.li-method { font-size: 24px; color: #666; }
-.li-status {
-  font-size: 24px; padding: 2px 10px; border-radius: 6px;
-  &.li-pending { color: #fa8c16; background: #fff7e6; }
-  &.li-approved { color: #13c2c2; background: #e6fffb; }
-  &.li-left { color: #ff4d4f; background: #fff1f0; }
-  &.li-returned { color: #52c41a; background: #f6ffed; }
-  &.li-rejected { color: #999; background: #f0f0f0; }
-}
-
-.li-meta { font-size: 24px; color: #999; }
-
-/* ===== 危险操作 ===== */
-.danger-btn {
-  display: flex; align-items: center; gap: 16px; padding: 16px 0;
-  font-size: 28px; color: #ff4d4f; font-weight: 500;
-}
-
-.sd-spacer { height: 40px; }
-
-/* ===== 编辑模式 ===== */
-.edit-form { padding-bottom: 80px; }
-
-.section {
-  background: #fff; border-radius: 14px; padding: 0 24px; margin-bottom: 20px;
-  .section-title {
-    font-size: 28px; font-weight: 600; color: #333; padding: 24px 0 16px;
-    margin-bottom: 8px; border-bottom: 1px solid #f0f0f0;
+  &:first-child {
+    padding-top: 0;
   }
 }
 
-.form-item {
-  padding: 18px 0; border-bottom: 1px solid #f8f8f8;
-  &:last-child { border-bottom: none; }
+.leave-item-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
 }
 
-.form-label { display: block; font-size: 26px; color: #666; margin-bottom: 10px; }
-.form-input {
-  width: 100%; height: 72px; padding: 0 16px; box-sizing: border-box;
-  background: #f7f8fa; border-radius: 8px; font-size: 28px; color: #333;
-}
-.form-picker {
-  padding: 18px 20px; background: #f7f8fa; border-radius: 8px; font-size: 28px; color: #333;
+.leave-date {
+  font-size: 28px;
+  font-weight: 600;
+  color: $color-text-main;
 }
 
-.submit-bar {
-  display: flex; gap: 16px;
-  .submit-btn {
-    flex: 1; text-align: center; padding: 20px 0; border-radius: 12px;
-    font-size: 28px; font-weight: 600;
-    &.cancel { color: #666; background: #f5f5f5; }
-    &.primary { color: #fff; background: #1677ff; }
-    &.disabled { opacity: 0.5; }
+.leave-type {
+  font-size: 24px;
+  color: $tag-blue-text;
+  background: $tag-blue-bg;
+  padding: 2px 10px;
+  border-radius: $radius-tag;
+}
+
+.leave-reason {
+  display: block;
+  font-size: 26px;
+  color: $color-text-secondary;
+  margin-bottom: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.leave-time {
+  font-size: 24px;
+  color: $color-text-light;
+}
+
+/* ===== Bottom Action Bar (底部固定操作栏) ===== */
+.action-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  gap: 16px;
+  padding: 16px 24px;
+  padding-bottom: calc(16px + env(safe-area-inset-bottom));
+  background: $color-surface;
+  box-shadow: $shadow-bar;
+  z-index: 100;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 80px;
+  border-radius: 16px;
+  font-size: 28px;
+  font-weight: 600;
+}
+
+.action-btn--secondary {
+  flex: 1;
+  background: $color-bg;
+  color: $color-text-secondary;
+}
+
+.action-btn--primary {
+  flex: 2;
+  background: $color-primary;
+  color: #fff;
+}
+
+.action-btn-text {
+  font-size: 26px;
+  color: $color-text-secondary;
+}
+
+.action-btn-text--white {
+  color: #fff;
+}
+
+/* ============================================================
+ * Edit Mode (编辑模式)
+ * ============================================================ */
+.edit-form {
+  padding-bottom: 40px;
+}
+
+.edit-section {
+  background: $color-surface;
+  border-radius: $radius-card;
+  padding: 0 32px;
+  margin-bottom: 24px;
+  box-shadow: $shadow-card;
+}
+
+.edit-section-title {
+  font-size: 30px;
+  font-weight: 600;
+  color: $color-text-main;
+  padding: 28px 0 16px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid $color-border;
+}
+
+.edit-form-item {
+  padding: 20px 0;
+  border-bottom: 1px solid $color-divider;
+
+  &:last-child {
+    border-bottom: none;
   }
+}
+
+.edit-form-label {
+  display: block;
+  font-size: 26px;
+  color: $color-text-secondary;
+  margin-bottom: 12px;
+}
+
+.edit-form-input {
+  width: 100%;
+  height: 80px;
+  padding: 0 20px;
+  box-sizing: border-box;
+  background: #F7F8FA;
+  border-radius: $radius-input;
+  font-size: 28px;
+  color: $color-text-main;
+}
+
+.edit-form-picker {
+  padding: 20px 24px;
+  background: #F7F8FA;
+  border-radius: $radius-input;
+  font-size: 28px;
+  color: $color-text-main;
+}
+
+.edit-submit-bar {
+  display: flex;
+  gap: 16px;
+  padding: 0 8px;
+  margin-top: 16px;
+}
+
+.edit-submit-btn {
+  flex: 1;
+  text-align: center;
+  padding: 24px 0;
+  border-radius: 16px;
+  font-size: 30px;
+  font-weight: 600;
+}
+
+.edit-submit-btn--cancel {
+  color: $color-text-secondary;
+  background: $color-bg;
+}
+
+.edit-submit-btn--primary {
+  color: #fff;
+  background: $color-primary;
+}
+
+.edit-submit-btn.is-disabled {
+  opacity: 0.5;
 }
