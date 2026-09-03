@@ -7,9 +7,9 @@ import type { WorkbenchResponse, WorkbenchTodo, WorkbenchNotice } from '../api/w
 
 // ============================================================
 // Mock 模式开关：true = 使用本地 mock 数据，不调用后端
-// 接入 /auth/me 后改为 false 即可切回真实数据
+// P0-1 已接入真实微信登录链路，关闭首页/班级页的本地 mock。
 // ============================================================
-export const USE_HOMEROOM_MOCK = true;
+export const USE_HOMEROOM_MOCK = false;
 export const USE_STUDENT_MOCK = false;
 export const USE_LEAVE_MOCK = false;
 export const USE_NOTICE_MOCK = false;

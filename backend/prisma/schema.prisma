@@ -394,6 +394,8 @@ model Teacher {
   teachingGroup String?       @map("teaching_group") @db.VarChar(50)
   subject       String?       @db.VarChar(50)
   position      String?       @db.VarChar(50)
+  wechatOpenid  String?       @unique @map("wechat_openid") @db.VarChar(100)
+  wechatUnionid String?       @map("wechat_unionid") @db.VarChar(100)
   status        TeacherStatus @default(ACTIVE)
   createdAt     DateTime      @default(now()) @map("created_at")
   updatedAt     DateTime      @updatedAt @map("updated_at")

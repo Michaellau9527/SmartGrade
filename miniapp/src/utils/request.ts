@@ -77,9 +77,6 @@ export function resetBackendStatus(): void {
   backendDownMessage = '';
 }
 
-/** 静默重登录使用的默认工号（与 App 启动登录保持一致） */
-let loginTeacherNo = 'T001';
-
 /** 登录态刷新后需要同步给 user store，由 app.ts 注入，避免 request <-> store 循环依赖 */
 export interface RefreshedUserInfo {
   token: string;
@@ -91,14 +88,10 @@ export interface RefreshedUserInfo {
 type TokenRefreshHandler = (info: RefreshedUserInfo) => void;
 let tokenRefreshHandler: TokenRefreshHandler | null = null;
 
-/** 由 app.ts 调用，注册登录态同步回调 + 默认登录工号 */
+/** 由 app.ts 调用，注册登录态同步回调 */
 export function configureRequest(options: {
-  teacherNo?: string;
   onTokenRefreshed?: TokenRefreshHandler;
 }): void {
-  if (options.teacherNo) {
-    loginTeacherNo = options.teacherNo;
-  }
   if (options.onTokenRefreshed) {
     tokenRefreshHandler = options.onTokenRefreshed;
   }
@@ -165,12 +158,14 @@ function relogin(): Promise<string> {
   }
 
   reloginPromise = (async () => {
+    // 真实微信登录：用 wx.login 的 code 换 token（不再使用写死的工号）
+    const { code } = await Taro.login();
     const { statusCode, body } = await rawRequest<{
       token: string;
       teacher: { teacherNo: string; name: string };
       roles: string[];
       permissions: string[];
-    }>('/auth/login', { method: 'POST', data: { teacherNo: loginTeacherNo }, retry: false }, '');
+    }>('/auth/login', { method: 'POST', data: { code }, retry: false }, '');
 
     if (!body || body.code !== 0 || !body.data?.token) {
       throw new Error(body?.message || `登录失败 (${statusCode})`);

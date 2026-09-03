@@ -2,6 +2,7 @@ import { View, Text } from '@tarojs/components';
 import Taro from '@tarojs/taro';
 import { useState } from 'react';
 import { useUserStore } from '../../store/user';
+import { resetSession } from '../../utils/session';
 import './index.scss';
 
 /** 角色 code -> 中文名 */
@@ -41,6 +42,8 @@ export default function Mine() {
       success: (res) => {
         if (!res.confirm) return;
         logout();
+        // 真正清除登录态：重置 session 单例，避免 reLaunch 后 ensureLoggedIn 复用旧 Promise 而不重登
+        resetSession();
         Taro.reLaunch({ url: '/pages/workbench/index' });
       }
     });

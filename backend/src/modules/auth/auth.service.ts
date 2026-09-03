@@ -15,13 +15,26 @@ export class AuthService {
     private prisma: PrismaService,
   ) {}
 
-  async mockLogin(teacherNo: string) {
+  /**
+   * 真实微信登录链路：
+   *   1. 小程序 wx.login() 拿到临时 code
+   *   2. 后端用 code 调微信 jscode2session 换取 openid
+   *   3. 用 openid 匹配已绑定教师（teacher.wechat_openid）
+   *   4. 命中则签发 JWT；未命中明确报错，绝不自动建号（防止任意微信账号冒充教师）
+   */
+  async loginByWechat(code: string) {
+    if (!code) {
+      throw new UnauthorizedException('缺少微信登录 code');
+    }
+
+    const openid = await this.exchangeWechatOpenid(code);
+
     const teacher = await this.prisma.teacher.findUnique({
-      where: { teacherNo: teacherNo },
+      where: { wechatOpenid: openid },
     });
 
     if (!teacher) {
-      throw new UnauthorizedException('教师工号不存在');
+      throw new UnauthorizedException('该微信账号未绑定教师账号，请联系学校管理员完成绑定');
     }
 
     if (teacher.status !== 'ACTIVE') {
@@ -47,6 +60,39 @@ export class AuthService {
       tags: [],
       ...tokens,
     };
+  }
+
+  /** 调微信 jscode2session 换取 openid / unionid */
+  private async exchangeWechatOpenid(code: string): Promise<string> {
+    const appid = this.configService.get<string>('WECHAT_APPID');
+    const secret = this.configService.get<string>('WECHAT_SECRET');
+
+    if (!appid || !secret) {
+      this.logger.error('微信登录未配置 WECHAT_APPID / WECHAT_SECRET');
+      throw new UnauthorizedException('微信登录未配置');
+    }
+
+    const url =
+      `https://api.weixin.qq.com/sns/jscode2session` +
+      `?appid=${appid}&secret=${secret}&js_code=${code}&grant_type=authorization_code`;
+
+    let data: { openid?: string; unionid?: string; errcode?: number; errmsg?: string };
+    try {
+      const resp = await fetch(url);
+      data = (await resp.json()) as typeof data;
+    } catch (err) {
+      this.logger.error(`微信 jscode2session 请求失败: ${String(err)}`);
+      throw new UnauthorizedException('微信登录服务暂不可用');
+    }
+
+    if (data.errcode) {
+      this.logger.error(`微信 jscode2session 失败: ${data.errcode} ${data.errmsg}`);
+      throw new UnauthorizedException('微信登录校验失败');
+    }
+    if (!data.openid) {
+      throw new UnauthorizedException('微信登录未返回 openid');
+    }
+    return data.openid;
   }
 
   async refresh(refreshToken: string) {
@@ -135,13 +181,14 @@ export class AuthService {
 
   private async loadTeacherRoles(teacherId: string, teacherNo: string): Promise<string[]> {
     try {
-      const results = await this.prisma.$queryRawUnsafe<
+      // 参数化查询（杜绝 SQL 注入，teacherId 来自 JWT 负载）
+      const results = await this.prisma.$queryRaw<
         Array<{ role_code: string }>
-      >(
-        `SELECT r.role_code FROM teacher_role tr
-         JOIN role r ON tr.role_id = r.id
-         WHERE tr.teacher_id = '${teacherId}'`,
-      );
+      >`
+        SELECT r.role_code FROM teacher_role tr
+        JOIN role r ON tr.role_id = r.id
+        WHERE tr.teacher_id = ${teacherId}
+      `;
       const roles = results.map((r) => r.role_code);
       if (roles.length > 0) return roles;
     } catch {

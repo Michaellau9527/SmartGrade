@@ -102,13 +102,14 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
   private async loadTeacherRoles(teacherId: string, teacherNo: string): Promise<string[]> {
     try {
-      const results = await this.prisma.$queryRawUnsafe<
+      // 参数化查询（杜绝 SQL 注入，teacherId 来自 JWT 负载）
+      const results = await this.prisma.$queryRaw<
         Array<{ role_code: string }>
-      >(
-        `SELECT r.role_code FROM teacher_role tr
-         JOIN role r ON tr.role_id = r.id
-         WHERE tr.teacher_id = '${teacherId}'`,
-      );
+      >`
+        SELECT r.role_code FROM teacher_role tr
+        JOIN role r ON tr.role_id = r.id
+        WHERE tr.teacher_id = ${teacherId}
+      `;
       const roles = results.map((r) => r.role_code);
       if (roles.length > 0) return roles;
     } catch {

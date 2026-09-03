@@ -5,10 +5,6 @@ import AppIcon from '../../components/AppIcon';
 import { getWorkbench, WorkbenchResponse } from '../../api/workbench';
 import { useUserStore } from '../../store/user';
 import { resolveAffiliation } from '../../utils/role';
-import {
-  USE_HOMEROOM_MOCK,
-  MOCK_HOMEROOM_WORKBENCH
-} from '../../utils/mock';
 import DashboardCard from '../../components/DashboardCard';
 import Timeline, { TimelineItem } from '../../components/Timeline';
 import './index.scss';
@@ -59,12 +55,6 @@ export default function ClassManage() {
 
   useEffect(() => {
     (async () => {
-      if (USE_HOMEROOM_MOCK) {
-        await new Promise((r) => setTimeout(r, 200));
-        setData(MOCK_HOMEROOM_WORKBENCH);
-        setLoading(false);
-        return;
-      }
       try {
         const res = await getWorkbench();
         setData(res);
@@ -127,7 +117,7 @@ export default function ClassManage() {
       {/* 班级动态 */}
       <Timeline
         title='班级动态'
-        items={USE_HOMEROOM_MOCK ? CLASS_TIMELINE_MOCK : []}
+        items={CLASS_TIMELINE_MOCK}
       />
 
       {/* 底部快捷入口 */}

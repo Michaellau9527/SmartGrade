@@ -9,16 +9,11 @@ import {
   WorkbenchNotice,
   NoticeType
 } from '../../api/workbench';
-import { mockLogin } from '../../api/auth';
 import { getStudents } from '../../api/student';
 import { getLeaves, LeaveListItem } from '../../api/leave';
 import { useUserStore } from '../../store/user';
-import {
-  USE_HOMEROOM_MOCK,
-  MOCK_HOMEROOM_USER,
-  MOCK_HOMEROOM_WORKBENCH,
-  getWelcomeGreeting
-} from '../../utils/mock';
+import { ensureLoggedIn } from '../../utils/session';
+import { getWelcomeGreeting } from '../../utils/mock';
 import './index.scss';
 
 /* ============================================================
@@ -110,7 +105,6 @@ export default function Workbench() {
   const [loginStatus, setLoginStatus] = useState<'idle' | 'logging' | 'success' | 'failed'>('idle');
   const [statusBarHeight, setStatusBarHeight] = useState(20);
 
-  const setUserInfo = useUserStore((s) => s.setUserInfo);
   const teacherName = useUserStore((s) => s.teacherName);
 
   const [studentCount, setStudentCount] = useState(0);
@@ -162,28 +156,6 @@ export default function Workbench() {
 
   /* —— 登录 —— */
   const ensureLogin = useCallback(async () => {
-    if (USE_HOMEROOM_MOCK) {
-      setLoginStatus('logging');
-      try {
-        const result = await mockLogin('T001');
-        setUserInfo({
-          token: result.token,
-          teacherNo: MOCK_HOMEROOM_USER.teacherNo,
-          teacherName: MOCK_HOMEROOM_USER.teacherName,
-          roles: MOCK_HOMEROOM_USER.roles,
-          permissions: MOCK_HOMEROOM_USER.permissions
-        });
-        setLoginStatus('success');
-        return true;
-      } catch (err) {
-        // 重要：mock 降级时【绝不能】把假 token（mock-token-xxx）写入 storage。
-        // 该 token 会被 request 层带给所有接口，导致 /students、/leaves 全部 401。
-        // 这里只降级为本地 mock 数据渲染（displayName 有 '刘老师' 兜底），不污染登录态。
-        console.error('[Workbench] Mock 登录失败，仅降级为本地数据，不写入 token:', err);
-        setLoginStatus('success');
-        return true;
-      }
-    }
     const existing = readToken();
     if (existing) {
       setLoginStatus('success');
@@ -191,16 +163,13 @@ export default function Workbench() {
     }
     setLoginStatus('logging');
     try {
-      const result = await mockLogin('T001');
-      setUserInfo({
-        token: result.token,
-        teacherNo: result.teacher.teacherNo,
-        teacherName: result.teacher.name,
-        roles: result.roles ?? [],
-        permissions: result.permissions ?? []
-      });
-      setLoginStatus('success');
-      return true;
+      // 真实微信登录（wx.login -> /auth/login），由 session.ts 收敛为全局唯一 Promise
+      await ensureLoggedIn();
+      if (readToken()) {
+        setLoginStatus('success');
+        return true;
+      }
+      throw new Error('登录态获取失败，请重试');
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error('[Workbench] 登录失败:', msg);
@@ -208,16 +177,10 @@ export default function Workbench() {
       setError(`登录失败：${msg}`);
       return false;
     }
-  }, [setUserInfo]);
+  }, []);
 
   /* —— 工作台数据 —— */
   const fetchData = useCallback(async () => {
-    if (USE_HOMEROOM_MOCK) {
-      await new Promise((r) => setTimeout(r, 300));
-      setData(MOCK_HOMEROOM_WORKBENCH);
-      setLoading(false);
-      return;
-    }
     setLoading(true);
     setError('');
     try {

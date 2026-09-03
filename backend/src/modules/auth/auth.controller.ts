@@ -4,7 +4,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { Public, CurrentUser } from '@/common/decorators';
 import { CurrentUserPayload } from '@/common/types';
-import { MockLoginDto } from './dto';
+import { LoginDto } from './dto';
 
 @ApiTags('认证')
 @Controller('auth')
@@ -12,16 +12,16 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   /**
-   * 模拟登录（开发测试用）
+   * 微信登录（生产环境）
    *
-   * 生产环境替换为微信 code 登录
+   * 小程序 wx.login() 拿到 code 后调用此接口，后端换 openid 并签发 JWT。
    */
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: '模拟登录（开发测试）', description: '通过教师工号登录，获取 JWT Token' })
-  async login(@Body() dto: MockLoginDto) {
-    return this.authService.mockLogin(dto.teacherNo);
+  @ApiOperation({ summary: '微信登录', description: '传入 wx.login 的 code，后端换 openid 并签发 JWT' })
+  async login(@Body() dto: LoginDto) {
+    return this.authService.loginByWechat(dto.code);
   }
 
   @Public()

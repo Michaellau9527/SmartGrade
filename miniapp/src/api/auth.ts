@@ -22,16 +22,16 @@ export interface LoginResult {
 }
 
 interface LoginRequest {
-  teacherNo: string;
+  code: string;
 }
 
 /**
- * 调用 POST /auth/login 进行登录
- * @param teacherNo 工号
+ * 调用 POST /auth/login 进行微信登录
+ * @param code wx.login() 返回的临时登录凭证
  * @returns 登录结果（已由 request 工具解包 data 部分）
  */
-export function mockLogin(teacherNo: string): Promise<LoginResult> {
-  const payload: LoginRequest = { teacherNo };
+export function login(code: string): Promise<LoginResult> {
+  const payload: LoginRequest = { code };
   return request<LoginResult>('/auth/login', {
     method: 'POST',
     data: payload
