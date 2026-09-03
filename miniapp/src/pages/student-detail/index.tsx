@@ -11,6 +11,7 @@ import {
   StudentStatus
 } from '../../api/student';
 import { getLeaves, LeaveListItem } from '../../api/leave';
+import { ensureLoggedIn } from '../../utils/session';
 import './index.scss';
 
 /* ============================================================
@@ -84,6 +85,9 @@ export default function StudentDetailPage() {
   const fetchAll = useCallback(async () => {
     if (!studentId) { setError('缺少学生 ID'); setLoading(false); return; }
     try {
+      // 先确保登录完成，避免 token 未就绪就发请求导致 401
+      await ensureLoggedIn();
+
       const [data, leaveData] = await Promise.all([
         getStudentDetail(studentId),
         getLeaves({ studentId }).catch(() => [] as LeaveListItem[])

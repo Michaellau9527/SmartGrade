@@ -7,7 +7,9 @@ import {
   StudentStatus
 } from '../../api/student';
 import { getLeaves } from '../../api/leave';
-import { useUserStore } from '../../store/user';
+import { ensureLoggedIn } from '../../utils/session';
+import { resetBackendStatus } from '../../utils/request';
+import AppIcon from '../../components/AppIcon';
 import './index.scss';
 
 interface StatusMeta { label: string; className: string; }
@@ -42,6 +44,9 @@ export default function Student() {
     setLoading(true);
     setError('');
     try {
+      // 先确保登录完成，避免 token 未就绪就发请求导致 401
+      await ensureLoggedIn();
+
       // 并行拉学生 + 请假
       const [students, leaves] = await Promise.all([
         getStudents(),
@@ -69,10 +74,17 @@ export default function Student() {
     }
   }, []);
 
+  /** 手动重试：先解除请求层熔断，否则会直接本地快速失败 */
+  const handleRetry = useCallback(() => {
+    resetBackendStatus();
+    return fetchAll();
+  }, [fetchAll]);
+
   useEffect(() => { fetchAll(); }, []);
 
   Taro.usePullDownRefresh(() => {
-    fetchAll().finally(() => Taro.stopPullDownRefresh());
+    // 用户主动下拉 = 明确重试意图，先解除熔断
+    handleRetry().finally(() => Taro.stopPullDownRefresh());
   });
 
   /** 根据 Tab + 搜索词过滤 */
@@ -147,6 +159,17 @@ export default function Student() {
         </View>
       )}
 
+      {/* 错误提示条：后端不可用时明确告知，避免只显示「暂无学生数据」造成误判 */}
+      {error && (
+        <View className='error-banner'>
+          <View className='error-main'>
+            <AppIcon name='alert' size={18} color='#cf1322' className='error-icon' />
+            <Text className='error-text'>加载失败：{error}</Text>
+          </View>
+          <View className='error-retry' onClick={handleRetry}>重试</View>
+        </View>
+      )}
+
       {/* 分类 Tab */}
       <ScrollView className='tab-scroll' scrollX>
         <View className='tab-row'>
@@ -185,9 +208,11 @@ export default function Student() {
       </View>
 
       {/* 列表 */}
-      {filteredList.length === 0 ? (
+      {!error && filteredList.length === 0 && (
         <View className='state-tip'>暂无学生数据</View>
-      ) : (
+      )}
+
+      {!error && filteredList.length > 0 && (
         <View className='student-list'>
           {filteredList.map((item) => {
             const status = STATUS_MAP[item.currentStatus];

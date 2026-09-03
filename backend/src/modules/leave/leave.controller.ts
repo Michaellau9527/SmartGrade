@@ -46,6 +46,11 @@ export class LeaveController {
       where,
       orderBy: { createdAt: 'desc' },
       take: 50,
+      include: {
+        student: {
+          select: { studentNo: true },
+        },
+      },
     });
     return records.map((r) => ({
       id: r.id,
@@ -53,6 +58,8 @@ export class LeaveController {
       status: r.status,
       studentId: r.studentId,
       studentName: r.studentName,
+      // 学号来自 student 关联；冗余字段 studentName/className 已存表，学号未冗余
+      studentNo: r.student?.studentNo ?? null,
       className: r.className,
       leaveType: r.leaveType,
       leaveReasonType: r.leaveReasonType,

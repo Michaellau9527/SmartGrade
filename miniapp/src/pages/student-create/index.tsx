@@ -1,4 +1,4 @@
-import { View, Text, Input, Picker, Textarea } from '@tarojs/components';
+import { View, Text, Input, Picker } from '@tarojs/components';
 import Taro from '@tarojs/taro';
 import { useCallback, useState } from 'react';
 import { createStudent } from '../../api/student';

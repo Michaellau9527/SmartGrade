@@ -41,12 +41,16 @@ export class HealthService {
       };
     } catch (error) {
       const duration = Date.now() - start;
-      this.logger.error(`数据库连接失败: ${error.message}`);
+      // 完整错误只进服务端日志：该接口是 @Public，
+      // Prisma 原始错误会携带内网数据库地址与端口，不能下发给客户端
+      this.logger.error(
+        `数据库连接失败: ${error instanceof Error ? error.message : String(error)}`
+      );
 
       return {
         status: 'error',
         database: 'disconnected',
-        error: error.message,
+        error: '数据服务暂时不可用，请检查数据库实例状态',
         duration: `${duration}ms`,
         timestamp: new Date().toISOString(),
       };

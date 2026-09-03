@@ -9,8 +9,7 @@ import {
   NoticeListItem,
   NoticeType
 } from '../../api/notice';
-import { mockLogin } from '../../api/auth';
-import { useUserStore } from '../../store/user';
+import { ensureLoggedIn } from '../../utils/session';
 import './index.scss';
 
 interface NoticeTypeMeta {
@@ -42,35 +41,24 @@ export default function Notice() {
   const [loginStatus, setLoginStatus] = useState<
     'idle' | 'logging' | 'success' | 'failed'
   >('idle');
-  const setUserInfo = useUserStore((s) => s.setUserInfo);
 
-  /** 先尝试读 storage 里已有的 token，没有就做一次 mock 登录 */
+  /** 复用全局登录守卫，避免与 App 启动登录并发触发多次 /auth/login */
   const ensureLogin = useCallback(async () => {
-    const existing = readToken();
-    if (existing) {
+    if (readToken()) {
       setLoginStatus('success');
       return true;
     }
     setLoginStatus('logging');
-    try {
-      const result = await mockLogin('T001');
-      setUserInfo({
-        token: result.token,
-        teacherNo: result.teacher.teacherNo,
-        teacherName: result.teacher.name,
-        roles: result.roles ?? [],
-        permissions: result.permissions ?? []
-      });
+    await ensureLoggedIn();
+    if (readToken()) {
       setLoginStatus('success');
       return true;
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      console.error('[Notice] 登录失败:', msg);
-      setLoginStatus('failed');
-      setError(`登录失败：${msg}`);
-      return false;
     }
-  }, [setUserInfo]);
+    console.error('[Notice] 登录失败: 未获取到有效 token');
+    setLoginStatus('failed');
+    setError('登录失败：服务暂时不可用，请下拉刷新重试');
+    return false;
+  }, []);
 
   const fetchNotices = useCallback(async () => {
     setLoading(true);

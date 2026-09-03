@@ -3,6 +3,7 @@ import Taro, { usePullDownRefresh } from '@tarojs/taro';
 import { useCallback, useEffect, useState, useMemo } from 'react';
 import dayjs from 'dayjs';
 import AppIcon from '../../components/AppIcon';
+import { resetBackendStatus } from '../../utils/request';
 import {
   approveLeave,
   confirmLeft,
@@ -16,7 +17,7 @@ import {
   rejectLeave
 } from '../../api/leave';
 import { getStudents, StudentListItem } from '../../api/student';
-import { useUserStore } from '../../store/user';
+import { ensureLoggedIn } from '../../utils/session';
 import './index.scss';
 
 /** 状态映射 */
@@ -35,6 +36,16 @@ const STATUS_MAP: Record<LeaveStatus, StatusMeta> = {
 const LEAVE_TYPE_MAP: Record<LeaveType, string> = {
   SICK: '病假', PERSONAL: '事假', OTHER: '其他'
 };
+
+/**
+ * Taro 类型定义滞后于微信基础库：showModal 的 `editable` / `placeholderText`
+ * 与返回值 `content` 在基础库 2.17.1+ 已支持，但 @tarojs/taro 尚未收录。
+ * 这里用交叉类型补齐，避免 as any 丢失类型信息。
+ */
+type ModalOption = NonNullable<Parameters<typeof Taro.showModal>[0]>;
+type ModalResult = Awaited<ReturnType<typeof Taro.showModal>>;
+type EditableModalOption = ModalOption & { editable?: boolean; placeholderText?: string };
+type EditableModalResult = ModalResult & { content?: string };
 
 /** 离校方式 */
 type LeaveMethod = 'SELF' | 'PARENT_PICKUP';
@@ -79,8 +90,6 @@ export default function Leave() {
   const [submitting, setSubmitting] = useState(false);
   const [classCount, setClassCount] = useState(0);
 
-  const teacherName = useUserStore((s) => s.teacherName);
-
   // ===== 创建表单 =====
   const [form, setForm] = useState({
     studentId: '', studentIndex: -1,
@@ -112,7 +121,7 @@ export default function Leave() {
       const kw = keyword.trim().toLowerCase();
       result = result.filter((l) =>
         l.studentName.toLowerCase().includes(kw) ||
-        l.studentNo?.toLowerCase().includes(kw)
+        (l.studentNo ?? '').toLowerCase().includes(kw)
       );
     }
     return result;
@@ -121,6 +130,7 @@ export default function Leave() {
   /** 拉取班级人数 */
   const fetchClassCount = useCallback(async () => {
     try {
+      await ensureLoggedIn();
       const all = await getStudents();
       setClassCount(all.length);
     } catch { /* 静默降级 */ }
@@ -132,6 +142,8 @@ export default function Leave() {
     setError('');
     const t = tab ?? activeTab;
     try {
+      // 先确保登录完成，避免 token 未就绪就发请求导致 401
+      await ensureLoggedIn();
       const params: QueryLeaveParams = {};
       if (t !== 'ALL') params.status = t;
       const res = await getLeaves(params);
@@ -147,6 +159,12 @@ export default function Leave() {
   }, [activeTab]);
 
   useEffect(() => { fetchClassCount(); fetchList(); }, []);
+  /** 手动重试：先解除请求层熔断，否则 30s 冷却期内点击无效 */
+  const handleRetry = useCallback(() => {
+    resetBackendStatus();
+    fetchList(activeTab);
+  }, [fetchList, activeTab]);
+
   useEffect(() => { fetchList(activeTab); }, [activeTab]);
   // 从学生详情跳转过来时自动打开请假弹窗
   useEffect(() => {
@@ -154,6 +172,8 @@ export default function Leave() {
   }, [presetStudentId]);
 
   usePullDownRefresh(() => {
+    // 用户主动下拉 = 明确重试意图，先解除熔断
+    resetBackendStatus();
     Promise.all([fetchClassCount(), fetchList()]).finally(() =>
       Taro.stopPullDownRefresh()
     );
@@ -175,7 +195,10 @@ export default function Leave() {
   }, [fetchList]);
 
   const handleReject = useCallback(async (id: string) => {
-    const m = await Taro.showModal({ title: '驳回原因', editable: true, placeholderText: '请输入驳回原因', confirmText: '驳回', cancelText: '取消' });
+    const m = (await Taro.showModal({
+      title: '驳回原因', editable: true, placeholderText: '请输入驳回原因',
+      confirmText: '驳回', cancelText: '取消'
+    } as EditableModalOption)) as EditableModalResult;
     if (!m.confirm) return;
     const reason = (m.content || '').trim();
     if (!reason) { Taro.showToast({ title: '请输入驳回原因', icon: 'none' }); return; }
@@ -271,6 +294,19 @@ export default function Leave() {
 
   return (
     <View className='leave'>
+      {/* ===== 错误提示：区分"加载失败"与"真的没数据"，避免用户误以为没有请假记录 ===== */}
+      {error && (
+        <View className='error-banner'>
+          <View className='error-main'>
+            <AppIcon name='alert' size={18} color='#cf1322' className='error-icon' />
+            <Text className='error-text'>加载失败：{error}</Text>
+          </View>
+          <View className='error-retry' onClick={handleRetry}>
+            重试
+          </View>
+        </View>
+      )}
+
       {/* ===== 统计卡 ===== */}
       <View className='stat-row'>
         <View className='stat-card'>
@@ -316,7 +352,7 @@ export default function Leave() {
       </ScrollView>
 
       {/* ===== 列表 ===== */}
-      {filteredList.length === 0 ? (
+      {filteredList.length === 0 && !error ? (
         <View className='empty'>暂无请假记录</View>
       ) : (
         <View className='leave-list'>

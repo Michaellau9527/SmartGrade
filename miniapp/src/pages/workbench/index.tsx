@@ -176,14 +176,10 @@ export default function Workbench() {
         setLoginStatus('success');
         return true;
       } catch (err) {
-        console.error('[Workbench] Mock 登录失败，降级:', err);
-        setUserInfo({
-          token: MOCK_HOMEROOM_USER.token,
-          teacherNo: MOCK_HOMEROOM_USER.teacherNo,
-          teacherName: MOCK_HOMEROOM_USER.teacherName,
-          roles: MOCK_HOMEROOM_USER.roles,
-          permissions: MOCK_HOMEROOM_USER.permissions
-        });
+        // 重要：mock 降级时【绝不能】把假 token（mock-token-xxx）写入 storage。
+        // 该 token 会被 request 层带给所有接口，导致 /students、/leaves 全部 401。
+        // 这里只降级为本地 mock 数据渲染（displayName 有 '刘老师' 兜底），不污染登录态。
+        console.error('[Workbench] Mock 登录失败，仅降级为本地数据，不写入 token:', err);
         setLoginStatus('success');
         return true;
       }

@@ -395,7 +395,6 @@ export class StudentService {
   async importExcel(_file: any, _user: CurrentUserPayload) {
     return {
       message: 'Excel 文件直传尚未实现，请使用 /students/batch 接口',
-    };
       imported: 0,
       failed: 0,
     };

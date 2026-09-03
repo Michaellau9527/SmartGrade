@@ -30,6 +30,8 @@ export interface LeaveListItem {
   status: LeaveStatus;
   studentId: string;
   studentName: string;
+  /** 学号，来自 student 关联；后端未关联到学生时为 null */
+  studentNo?: string | null;
   className: string;
   leaveType: LeaveType;
   leaveReasonType: LeaveReasonType;
