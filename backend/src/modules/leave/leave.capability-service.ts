@@ -18,6 +18,7 @@
  * 任何一步失败 → 整个事务回滚。
  */
 
+import { ForbiddenException } from '@nestjs/common';
 import type { Prisma, LeaveRecord as PrismaLeaveRecord } from '@prisma/client';
 import type { AuthorizationContext } from '../../authorization/types';
 import type { TxClient } from '../../repositories/base.repository';
@@ -54,6 +55,22 @@ export interface LeaveCapabilityDeps {
 export class LeaveCapabilityService {
   constructor(private deps: LeaveCapabilityDeps) {}
 
+  /**
+   * 数据范围校验：
+   * - 管理员 / 政教 / 宿管（dataScope.isSchoolWide）→ 全部放行
+   * - 班主任 → 仅本班（classIds 命中）
+   * - 年级主任 → 仅本年级（gradeIds 命中）
+   * - 其余（如任课教师）→ 拒绝
+   * 越权访问抛 ForbiddenException。
+   */
+  private enforceScope(recordClassId: string, recordGradeId: string, ctx: AuthorizationContext): void {
+    const ds = ctx.authorization.dataScope;
+    if (ds.isSchoolWide) return;
+    if (ds.classIds && ds.classIds.length > 0 && ds.classIds.includes(recordClassId)) return;
+    if (ds.gradeIds && ds.gradeIds.length > 0 && ds.gradeIds.includes(recordGradeId)) return;
+    throw new ForbiddenException('无权操作该请假记录（数据范围受限）');
+  }
+
   // ============================================================
   // 1. 创建请假 → PENDING
   // ============================================================
@@ -68,6 +85,9 @@ export class LeaveCapabilityService {
     if (!student) {
       throw new Error(`学生不存在：${req.studentId}`);
     }
+
+    // 1.1 数据范围校验：只能为本班/本年级学生发起请假
+    this.enforceScope(student.classId, student.gradeId, ctx);
 
     const initialState = domainService.getInitialState(); // PENDING
     const leaveNo = this._generateLeaveNo();
@@ -259,6 +279,9 @@ export class LeaveCapabilityService {
     if (!record) {
       throw new LeaveNotFoundError(id);
     }
+
+    // 数据范围校验：越权访问直接拒绝
+    this.enforceScope(record.classId, record.gradeId, ctx);
 
     // 查关联的 Timeline 事件
     const timelines = await this.deps.timelineRepository.findByRelated('LEAVE' as any, id);

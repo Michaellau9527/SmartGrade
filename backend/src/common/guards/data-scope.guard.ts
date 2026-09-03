@@ -47,7 +47,7 @@ export class DataScopeGuard implements CanActivate {
         select: { id: true },
       });
       if (grade) {
-        return { type: 'GRADE', gradeId: Number(grade.id) };
+        return { type: 'GRADE', gradeId: grade.id };
       }
     }
 
@@ -59,8 +59,8 @@ export class DataScopeGuard implements CanActivate {
       if (cls) {
         return {
           type: 'CLASS',
-          classId: Number(cls.id),
-          gradeId: Number(cls.gradeId),
+          classId: cls.id,
+          gradeId: cls.gradeId,
         };
       }
     }

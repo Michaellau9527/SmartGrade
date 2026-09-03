@@ -80,7 +80,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         where: { directorId: teacherId },
         select: { id: true },
       });
-      if (grade) return { type: 'GRADE', gradeId: Number(grade.id) };
+      if (grade) return { type: 'GRADE', gradeId: grade.id };
     }
 
     if (roles.includes('ROLE_HEADMASTER')) {
@@ -89,7 +89,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         select: { id: true, gradeId: true },
       });
       if (cls) {
-        return { type: 'CLASS', classId: Number(cls.id), gradeId: Number(cls.gradeId) };
+        return { type: 'CLASS', classId: cls.id, gradeId: cls.gradeId };
       }
     }
 
