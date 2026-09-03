@@ -11,6 +11,7 @@ import {
   UseInterceptors,
   UploadedFile,
   BadRequestException,
+  UseFilters,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
@@ -25,6 +26,8 @@ import {
 } from './dto';
 import { IdParamDto } from '@/common/dto';
 import { DataScope, CurrentUser, RequirePermissions } from '@/common/decorators';
+import { buildUploadOptions } from '@/common/security/upload';
+import { UploadExceptionFilter } from '@/common/security/upload.exception-filter';
 
 /**
  * StudentController - 学生管理接口
@@ -140,7 +143,8 @@ export class StudentController {
   @RequirePermissions('student:create')
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Excel 文件导入', description: '预留文件上传接口' })
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('file', buildUploadOptions()))
+  @UseFilters(new UploadExceptionFilter())
   async importExcel(@UploadedFile() file: Express.Multer.File, @CurrentUser() user: any) {
     if (!file) {
       throw new BadRequestException('请选择文件');
