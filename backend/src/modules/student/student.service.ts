@@ -8,6 +8,11 @@ import {
   UpdateStudentDto,
   SetDormitoryDto,
 } from './dto';
+import {
+  sanitizeStudentKeyword,
+  computeStudentListPagination,
+  STUDENT_KEYWORD_MAX_LEN,
+} from './student-query.util';
 
 /**
  * StudentService - 学生管理服务
@@ -38,10 +43,19 @@ export class StudentService {
     const where = this.buildDataScopeFilter(user.dataScope);
 
     // 合并额外查询条件
-    if (query.keyword) {
+    // 搜索关键词：去首尾空白、空关键词视为「无搜索」；超长抛错（防异常输入/查询放大）
+    let keyword: string | null = null;
+    try {
+      keyword = sanitizeStudentKeyword(query.keyword);
+    } catch {
+      throw new BadRequestException(
+        `搜索关键词长度不能超过 ${STUDENT_KEYWORD_MAX_LEN} 个字符`,
+      );
+    }
+    if (keyword) {
       where.OR = [
-        { name: { contains: query.keyword } },
-        { studentNo: { contains: query.keyword } },
+        { name: { contains: keyword } },
+        { studentNo: { contains: keyword } },
       ];
     }
     if (query.classId) {
@@ -64,11 +78,17 @@ export class StudentService {
     // 逻辑删除过滤
     where.deletedAt = null;
 
+    // 分页：page/pageSize 受 DTO 约束（page>=1，1<=pageSize<=100）；
+    // 列表默认拉满到 100，避免「一个班被默认 20 截断」（验收报告 C10），
+    // 同时硬上限 100 防 DoS。DataScope 过滤保持原样不变。
+    const { skip, take, page: effectivePage, pageSize: effectivePageSize } =
+      computeStudentListPagination(query.page, query.pageSize);
+
     const [list, total] = await Promise.all([
       this.prisma.student.findMany({
         where,
-        skip: query.skip,
-        take: query.take,
+        skip,
+        take,
         orderBy: { createdAt: 'desc' },
         include: {
           class: {
@@ -96,8 +116,8 @@ export class StudentService {
     return {
       list,
       total,
-      page: query.page,
-      pageSize: query.pageSize,
+      page: effectivePage,
+      pageSize: effectivePageSize,
     };
   }
 
