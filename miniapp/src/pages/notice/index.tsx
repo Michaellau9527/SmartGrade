@@ -9,7 +9,7 @@ import {
   NoticeListItem,
   NoticeType
 } from '../../api/notice';
-import { ensureLoggedIn } from '../../utils/session';
+import { ensureLoggedIn, useSessionRestore } from '../../utils/session';
 import './index.scss';
 
 interface NoticeTypeMeta {
@@ -35,6 +35,7 @@ function readToken(): string {
 }
 
 export default function Notice() {
+  useSessionRestore();
   const [notices, setNotices] = useState<NoticeListItem[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');

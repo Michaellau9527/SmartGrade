@@ -1,8 +1,10 @@
 import Taro from '@tarojs/taro';
+import { useEffect } from 'react';
 import { login } from '../api/auth';
 import { useUserStore } from '../store/user';
 import { configureRequest, getToken } from './request';
 import { ensurePrivacyAuthorized } from './privacy';
+import { isTokenExpired } from './jwt.util';
 
 /**
  * 全局登录态守卫。
@@ -28,15 +30,24 @@ configureRequest({
 });
 
 /**
- * 确保已登录。已持有 token 时立即返回；否则执行一次微信登录。
- * 登录失败不抛错（不阻塞页面渲染），由调用方通过接口错误感知。
+ * 确保已登录（Session 恢复）。
+ *
+ * - 已有 loginPromise → 直接复用（并发去重）。
+ * - 持有 token 且未过期 → 视为已登录立即返回（user store 已在模块加载时
+ *   从 storage 恢复，无需重复登录）。
+ * - token 缺失 / 过期 → 重新走微信登录流程恢复会话（fail-closed），
+ *   不再把过期 token 当「已登录」发给后端等一个 401 再补救。
+ *
+ * 登录失败不抛错（不阻塞页面渲染），由调用方通过接口错误感知；
+ * 失败时清空 loginPromise，使下次 ensureLoggedIn 可重试。
  */
 export function ensureLoggedIn(): Promise<void> {
   if (loginPromise) {
     return loginPromise;
   }
 
-  if (getToken()) {
+  const token = getToken();
+  if (token && !isTokenExpired(token)) {
     loginPromise = Promise.resolve();
     return loginPromise;
   }
@@ -57,15 +68,35 @@ export function ensureLoggedIn(): Promise<void> {
       });
     } catch (err) {
       console.error('[SmartGrade] 登录失败:', err);
+      loginPromise = null; // 允许下次重试
     }
   })();
 
   return loginPromise;
 }
 
-/** 供退出登录等场景重置，使下次 ensureLoggedIn 重新走登录流程 */
+/**
+ * 重置登录态，使下次 ensureLoggedIn 重新走登录流程。
+ * 彻底清除：loginPromise + store + storage（token / teacherNo / ...），
+ * 避免「只清 Promise 却留着 storage token」导致下次仍被当成已登录。
+ */
 export function resetSession(): void {
   loginPromise = null;
+  useUserStore.getState().logout();
+}
+
+/**
+ * 页面级 Session 恢复 Hook：mount 与 useDidShow 时各确保一次登录态。
+ * token 过期/缺失时自动重登，避免从后台回到前台后停留在过期会话。
+ * ensureLoggedIn 幂等（有效 token 立即 resolve，不会重复触发 wx.login）。
+ */
+export function useSessionRestore(): void {
+  useEffect(() => {
+    ensureLoggedIn().catch(() => {});
+  }, []);
+  Taro.useDidShow(() => {
+    ensureLoggedIn().catch(() => {});
+  });
 }
 
 export default ensureLoggedIn;

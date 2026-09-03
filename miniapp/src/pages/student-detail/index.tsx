@@ -11,7 +11,7 @@ import {
   StudentStatus
 } from '../../api/student';
 import { getLeaves, LeaveListItem } from '../../api/leave';
-import { ensureLoggedIn } from '../../utils/session';
+import { ensureLoggedIn, useSessionRestore } from '../../utils/session';
 import './index.scss';
 
 /* ============================================================
@@ -51,6 +51,7 @@ const LEAVE_STATUS_TAG: Record<string, string> = {
  * ============================================================ */
 
 export default function StudentDetailPage() {
+  useSessionRestore();
   const router = useRouter();
   const studentId = router.params.id || '';
 

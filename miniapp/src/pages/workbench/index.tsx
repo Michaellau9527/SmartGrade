@@ -12,7 +12,7 @@ import {
 import { getStudents } from '../../api/student';
 import { getLeaves, LeaveListItem } from '../../api/leave';
 import { useUserStore } from '../../store/user';
-import { ensureLoggedIn } from '../../utils/session';
+import { ensureLoggedIn, useSessionRestore } from '../../utils/session';
 import { getWelcomeGreeting } from '../../utils/mock';
 import './index.scss';
 
@@ -99,6 +99,7 @@ function timeAgo(iso?: string): string {
  * ============================================================ */
 
 export default function Workbench() {
+  useSessionRestore();
   const [data, setData] = useState<WorkbenchResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');

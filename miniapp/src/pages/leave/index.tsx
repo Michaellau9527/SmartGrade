@@ -17,7 +17,7 @@ import {
   rejectLeave
 } from '../../api/leave';
 import { getStudents, StudentListItem } from '../../api/student';
-import { ensureLoggedIn } from '../../utils/session';
+import { ensureLoggedIn, useSessionRestore } from '../../utils/session';
 import './index.scss';
 
 /** 状态映射 */
@@ -77,6 +77,7 @@ const TABS: { key: TabKey; label: string }[] = [
 ];
 
 export default function Leave() {
+  useSessionRestore();
   // tabBar 不支持 URL 参数，改用 storage 传递
   const presetStudentId = Taro.getStorageSync('presetLeaveStudentId') || '';
   const [list, setList] = useState<LeaveListItem[]>([]);

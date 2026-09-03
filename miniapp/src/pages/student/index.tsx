@@ -7,7 +7,7 @@ import {
   StudentStatus
 } from '../../api/student';
 import { getLeaves } from '../../api/leave';
-import { ensureLoggedIn } from '../../utils/session';
+import { ensureLoggedIn, useSessionRestore } from '../../utils/session';
 import { resetBackendStatus } from '../../utils/request';
 import AppIcon from '../../components/AppIcon';
 import './index.scss';
@@ -31,6 +31,7 @@ const TABS: { key: TabKey; label: string }[] = [
 ];
 
 export default function Student() {
+  useSessionRestore();
   const [allStudents, setAllStudents] = useState<StudentListItem[]>([]);
   const [leaveStudentIds, setLeaveStudentIds] = useState<Set<string>>(new Set());
   const [keyword, setKeyword] = useState('');
