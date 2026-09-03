@@ -233,7 +233,7 @@ export class StudentService {
 
     // 如果从住宿改为走读，清除宿舍信息
     const data: any = { ...dto };
-    if (dto.boardingType === 'DAY') {
+    if (dto.boardingType === 'DAY_STUDENT') {
       data.dormId = null;
       data.bedNo = null;
     } else if (dto.dorm_room_id !== undefined) {
@@ -352,7 +352,7 @@ export class StudentService {
       if (!s.name || !s.name.trim()) { errors.push({ row, message: '姓名不能为空' }); continue; }
       if (!s.studentNo || !s.studentNo.trim()) { errors.push({ row, message: '学号不能为空' }); continue; }
       if (!s.gender || !['MALE', 'FEMALE'].includes(s.gender)) { errors.push({ row, message: `性别无效: ${s.gender}` }); continue; }
-      if (!s.boardingType || !['DAY', 'BOARDING'].includes(s.boardingType)) { errors.push({ row, message: `住宿类型无效: ${s.boardingType}` }); continue; }
+      if (!s.boardingType || !['DAY_STUDENT', 'BOARDING'].includes(s.boardingType)) { errors.push({ row, message: `住宿类型无效: ${s.boardingType}` }); continue; }
       if (!s.classId) { errors.push({ row, message: '班级ID不能为空' }); continue; }
       // 学号重复检查
       const exists = await this.prisma.student.findFirst({

@@ -26,10 +26,10 @@ export class QueryStudentDto extends PaginationDto {
   @IsInt()
   gradeId?: number;
 
-  @ApiPropertyOptional({ description: '住宿类型', enum: ['DAY', 'BOARDING'] })
+  @ApiPropertyOptional({ description: '住宿类型', enum: ['DAY_STUDENT', 'BOARDING'] })
   @IsOptional()
   @IsString()
-  @IsIn(['DAY', 'BOARDING'])
+  @IsIn(['DAY_STUDENT', 'BOARDING'])
   boardingType?: string;
 
   @ApiPropertyOptional({ description: '学生状态', enum: ['IN_SCHOOL', 'PENDING_LEAVE', 'LEFT_SCHOOL'] })
@@ -69,16 +69,15 @@ export class CreateStudentDto {
   @Type(() => Number)
   classId: number;
 
-  @ApiProperty({ description: '住宿类型', enum: ['DAY', 'BOARDING'], example: 'DAY' })
+  @ApiProperty({ description: '住宿类型', enum: ['DAY_STUDENT', 'BOARDING'], example: 'DAY_STUDENT' })
   @IsString()
-  @IsIn(['DAY', 'BOARDING'])
+  @IsIn(['DAY_STUDENT', 'BOARDING'])
   boardingType: string;
 
-  @ApiPropertyOptional({ description: '宿舍房间ID' })
+  @ApiPropertyOptional({ description: '宿舍房间ID（DormRoom 的 cuid）' })
   @IsOptional()
-  @IsInt()
-  @Type(() => Number)
-  dorm_room_id?: number;
+  @IsString()
+  dorm_room_id?: string;
 
   @ApiPropertyOptional({ description: '床位号' })
   @IsOptional()
@@ -118,17 +117,16 @@ export class UpdateStudentDto {
   @IsIn(['MALE', 'FEMALE'])
   gender?: string;
 
-  @ApiPropertyOptional({ description: '住宿类型', enum: ['DAY', 'BOARDING'] })
+  @ApiPropertyOptional({ description: '住宿类型', enum: ['DAY_STUDENT', 'BOARDING'] })
   @IsOptional()
   @IsString()
-  @IsIn(['DAY', 'BOARDING'])
+  @IsIn(['DAY_STUDENT', 'BOARDING'])
   boardingType?: string;
 
-  @ApiPropertyOptional({ description: '宿舍房间ID' })
+  @ApiPropertyOptional({ description: '宿舍房间ID（DormRoom 的 cuid）' })
   @IsOptional()
-  @IsInt()
-  @Type(() => Number)
-  dorm_room_id?: number;
+  @IsString()
+  dorm_room_id?: string;
 
   @ApiPropertyOptional({ description: '床位号' })
   @IsOptional()
