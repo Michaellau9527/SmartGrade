@@ -1,5 +1,6 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Res, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Response } from 'express';
 import { HealthService } from './health.service';
 import { Public } from '@/common/decorators';
 
@@ -25,8 +26,14 @@ export class HealthController {
 
   @Get('db')
   @ApiOperation({ summary: '数据库连接检查' })
-  async checkDatabase() {
-    return this.healthService.checkDatabase();
+  async checkDatabase(@Res({ passthrough: true }) res: Response) {
+    const result = await this.healthService.checkDatabase();
+    // readiness probe（P1-4）：DB 不可用时必须返回 503 而非 200，
+    // 否则容器编排/负载均衡会误判实例健康并把流量打进无 DB 的实例。
+    // 通过显式设置 HTTP status 实现 fail-closed，不抛异常、不绕道全局业务异常过滤器
+    // （避免把健康探针变成普通业务错误处理，也不触碰 P0-6 的 50300/50000 体系）。
+    res.status(result.status === 'ok' ? HttpStatus.OK : HttpStatus.SERVICE_UNAVAILABLE);
+    return result;
   }
 
   @Get('full')
