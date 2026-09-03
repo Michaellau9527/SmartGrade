@@ -55,6 +55,25 @@ const ALL_QUICK_ACTIONS: QuickAction[] = [
   { code: 'statistics.read',   label: '数据统计', requiredPermission: 'statistics.read' },
 ];
 
+/**
+ * 工作台「全校可见」判定（P1-1 收口）
+ *
+ * 规则：全校可见仅限系统管理员 / 政教。
+ * - 年级主任 → 本年级范围
+ * - 班主任 → 本班范围
+ * - 宿管 → 既有宿管权限（非全校）
+ * - 任课教师 / 其他角色 → 按真实班级/年级关系，无关系则 deny by default
+ *
+ * ⚠️ 严禁「无班级关系 + 无年级关系 = 全校权限」：普通教师不得因没有关系而获得全校数据。
+ * 抽成纯函数便于 ts-node 单测（见 test/workbench-scope.idor.ts）。
+ */
+export function computeWorkbenchSchoolWide(roleCodes: RoleCode[]): boolean {
+  return (
+    roleCodes.includes(RoleCode.ROLE_ADMIN) ||
+    roleCodes.includes(RoleCode.ROLE_POLITICAL)
+  );
+}
+
 @ApiTags('工作台')
 @ApiBearerAuth()
 @Controller('workbench')
@@ -107,9 +126,8 @@ export class WorkbenchController {
       try { getPermissions(r).forEach((p) => permissionSet.add(p)); } catch {}
     });
 
-    const isAdmin = roleCodes.includes(RoleCode.ROLE_ADMIN);
-    const isPolitical = roleCodes.includes(RoleCode.ROLE_POLITICAL);
-    const isSchoolWide = isAdmin || isPolitical || (classIds.length === 0 && gradeIds.length === 0);
+    // P1-1：全校可见仅限 ADMIN / POLITICAL，不再因「无班级/年级关系」兜底成全校
+    const isSchoolWide = computeWorkbenchSchoolWide(roleCodes);
 
     this.logger.log(
       `[Workbench] ${teacher.teacherNo}(${teacher.name}) roles=${roleCodes.join(',')} ` +
@@ -183,7 +201,9 @@ export class WorkbenchController {
     if (scope.isSchoolWide) return { schoolId };
     if (scope.classIds.length > 0) return { schoolId, classId: { in: scope.classIds } };
     if (scope.gradeIds.length > 0) return { schoolId, gradeId: { in: scope.gradeIds } };
-    return { schoolId };
+    // P1-1 deny by default：非全校且没有任何班级/年级范围时，不匹配任何学生
+    // （原 `return { schoolId }` 会把「无关系教师」错误地暴露成全校数据）
+    return { schoolId, id: { in: [] } };
   }
 
   /** 查教师今日待办（Task 表：assigneeId = teacherId，status PENDING/IN_PROGRESS） */
