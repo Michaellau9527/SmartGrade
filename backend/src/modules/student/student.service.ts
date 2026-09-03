@@ -136,7 +136,7 @@ export class StudentService {
     }
 
     // 数据权限校验：检查当前用户是否能查看该学生
-    this.checkDataScopeAccess(student.classId, student.boardingType, user.dataScope);
+    this.checkDataScopeAccess(student.classId, student.gradeId, student.boardingType, user.dataScope);
 
     // 统计请假数量和时间轴数量
     const [leaveCount, timelineCount] = await Promise.all([
@@ -224,7 +224,7 @@ export class StudentService {
     }
 
     // 数据权限校验
-    this.checkDataScopeAccess(student.classId, student.boardingType, user.dataScope);
+    this.checkDataScopeAccess(student.classId, student.gradeId, student.boardingType, user.dataScope);
 
     // 如果修改住宿类型为 BOARDING，需要验证宿舍
     if (dto.boardingType === 'BOARDING' && dto.dorm_room_id) {
@@ -281,7 +281,7 @@ export class StudentService {
     }
 
     // 数据权限校验
-    this.checkDataScopeAccess(student.classId, student.boardingType, user.dataScope);
+    this.checkDataScopeAccess(student.classId, student.gradeId, student.boardingType, user.dataScope);
 
     await this.prisma.student.update({
       where: { id },
@@ -308,7 +308,7 @@ export class StudentService {
       throw new NotFoundException('学生不存在');
     }
 
-    this.checkDataScopeAccess(student.classId, student.boardingType, user.dataScope);
+    this.checkDataScopeAccess(student.classId, student.gradeId, student.boardingType, user.dataScope);
 
     await this.validateDormitory(String(dto.dorm_room_id), dto.bedNo);
 
@@ -453,6 +453,7 @@ export class StudentService {
    */
   private checkDataScopeAccess(
     studentClassId: string,
+    studentGradeId: string,
     studentBoardingType: string,
     dataScope: DataScope,
   ): void {
@@ -462,8 +463,10 @@ export class StudentService {
         return;
 
       case 'GRADE':
-        // 年级主任：学生班级属于该年级
-        // 注：此处仅校验 gradeId，实际查询时需要确认 class 的 grade
+        // 年级主任：学生必须属于该年级（真实比对，杜绝 IDOR 越权）
+        if (dataScope.gradeId && studentGradeId !== String(dataScope.gradeId)) {
+          throw new NotFoundException('无权访问该学生（非本年级）');
+        }
         return;
 
       case 'CLASS':
