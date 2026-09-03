@@ -2,6 +2,7 @@ import Taro from '@tarojs/taro';
 import { login } from '../api/auth';
 import { useUserStore } from '../store/user';
 import { configureRequest, getToken } from './request';
+import { ensurePrivacyAuthorized } from './privacy';
 
 /**
  * 全局登录态守卫。
@@ -42,6 +43,9 @@ export function ensureLoggedIn(): Promise<void> {
 
   loginPromise = (async () => {
     try {
+      // 隐私合规：采集用户身份前必须先取得隐私授权（微信《个人信息保护指引》）
+      await ensurePrivacyAuthorized();
+
       const { code } = await Taro.login();
       const result = await login(code);
       useUserStore.getState().setUserInfo({
