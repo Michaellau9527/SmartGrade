@@ -26,6 +26,11 @@ import type {
 import type { AuthorizationContext, DataScope as AuthDataScope } from '../../authorization/types';
 import { RoleCode } from '@smartgrade/shared/enums/RoleCode';
 import { PermissionCode } from '@smartgrade/shared/enums/PermissionCode';
+import {
+  pickNoticeSchoolId,
+  isSchoolWideRole,
+  resolveFallbackSchoolId,
+} from './notice-school.util';
 
 @ApiTags('学生通知')
 @ApiBearerAuth()
@@ -36,13 +41,19 @@ export class NoticeController {
     private readonly prisma: PrismaService,
   ) {}
 
-  /** GET /notices — 通知列表 */
+  /** GET /notices — 通知列表（P1-8：按登录用户所属学校过滤，deny-by-default） */
   @Get()
   @ApiOperation({ summary: '通知列表', description: '获取通知列表' })
-  async list(@Query('noticeType') noticeType?: string) {
+  async list(@CurrentUser() user: CurrentUserPayload, @Query('noticeType') noticeType?: string) {
+    const schoolId = await this._resolveSchoolId(user);
+    if (!schoolId) {
+      // 无法确定所属学校（无组织关系且不满足单校兜底）→ 不返回任何通知
+      return [];
+    }
     const where: Record<string, unknown> = {
       deletedAt: null,
       status: { in: ['PUBLISHED', 'ARCHIVED'] },
+      schoolId,
     };
     if (noticeType) {
       where.noticeType = noticeType;
@@ -67,11 +78,15 @@ export class NoticeController {
     }));
   }
 
-  /** POST /notices — 创建通知草稿 */
+  /** POST /notices — 创建通知草稿（P1-8：必须能确定真实 schoolId，否则 400，绝不写空串） */
   @Post()
   @ApiOperation({ summary: '创建通知草稿', description: '创建通知草稿（DRAFT 状态）' })
   async create(@Body() body: CreateNoticeRequest, @CurrentUser() user: CurrentUserPayload) {
-    return this.noticeService.createNotice(body, buildAuthContext(user));
+    const schoolId = await this._resolveSchoolId(user);
+    if (!schoolId) {
+      throw new HttpException('无法确定所属学校，请先完善教师组织关系', HttpStatus.BAD_REQUEST);
+    }
+    return this.noticeService.createNotice(body, buildAuthContext(user, schoolId));
   }
 
   /** GET /notices/:id — 通知详情 */
@@ -132,13 +147,55 @@ export class NoticeController {
       throw e;
     }
   }
+
+  // ============================================================
+  // P1-8：解析登录用户的真实 schoolId（deny-by-default）
+  //
+  // 口径与 workbench 一致：TeacherClassRelation→class.schoolId、
+  // grade.director→grade.schoolId；关系必须指向同一所学校。
+  // 全校角色（ADMIN/POLITICAL，同 P1-1 判定口径）无关系时，
+  // 仅当全库恰好一所学校才用唯一学校兜底（多校不猜）。
+  // 解析失败返回 null，由调用方 fail-closed（create→400 / list→[]）。
+  // ============================================================
+  private async _resolveSchoolId(user: CurrentUserPayload): Promise<string | null> {
+    const teacherId = String(user.id);
+
+    const [classRels, directedGrades] = await Promise.all([
+      this.prisma.teacherClassRelation.findMany({
+        where: { teacherId, endDate: null },
+        select: { class: { select: { schoolId: true } } },
+      }),
+      this.prisma.grade.findMany({
+        where: { directorId: teacherId },
+        select: { schoolId: true },
+      }),
+    ]);
+
+    const direct = pickNoticeSchoolId(
+      classRels.map((r) => r.class?.schoolId),
+      directedGrades.map((g) => g.schoolId),
+    );
+    if (direct) return direct;
+
+    if (isSchoolWideRole(user.roles)) {
+      const schools = await this.prisma.school.findMany({ select: { id: true } });
+      const fallback = resolveFallbackSchoolId(
+        true,
+        schools.length,
+        schools[0]?.id ?? null,
+      );
+      if (fallback) return fallback;
+    }
+
+    return null;
+  }
 }
 
 // ============================================================
 // 由真实登录用户推导 AuthorizationContext（替代写死的 Demo Context）
 // ============================================================
 
-function buildAuthContext(user: CurrentUserPayload): AuthorizationContext {
+function buildAuthContext(user: CurrentUserPayload, schoolId = ''): AuthorizationContext {
   const ds = user.dataScope;
   const dataScope: AuthDataScope = {
     classIds: ds.type === 'CLASS' && ds.classId ? [ds.classId] : [],
@@ -159,7 +216,10 @@ function buildAuthContext(user: CurrentUserPayload): AuthorizationContext {
       roleSet: new Set(user.roles as RoleCode[]),
       permissionSet: new Set(user.permissions as PermissionCode[]),
       organization: {
-        schoolId: '',
+        // P1-8：真实学校 ID（此前写死空串导致 Notice/Timeline 落库 schoolId=''）。
+        // 仅 create 消费该值（由 _resolveSchoolId 解析后传入）；
+        // 读路径不消费，默认空串保持既有行为。
+        schoolId,
         gradeIds: dataScope.gradeIds,
         classIds: dataScope.classIds,
       },
