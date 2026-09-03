@@ -7,6 +7,7 @@ import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters';
 import { TransformInterceptor, LoggingInterceptor } from './common/interceptors';
 import { PrismaService } from './common/prisma/prisma.service';
+import { resolveCorsConfig } from './common/security/cors';
 
 /**
  * 打印 DATABASE_URL 脱敏后的摘要（绝不输出用户名/密码）
@@ -31,17 +32,26 @@ async function bootstrap() {
 
   // ================= 启动阶段日志（一）基础环境 =================
   const nodeEnv = process.env.NODE_ENV || 'development';
+  const isProd = nodeEnv === 'production';
   const port = Number(process.env.PORT) || 3000;
   const rawDbUrl = process.env.DATABASE_URL || '';
   const dbUrlPresent = !!rawDbUrl;
   const maskedDbUrl = dbUrlPresent ? maskDatabaseUrl(rawDbUrl) : '(not set)';
+
+  // CORS 配置解析（P1-2）：复用既有 CORS_ORIGIN 环境变量，生产环境 deny by default
+  const cors = resolveCorsConfig(process.env.CORS_ORIGIN, isProd);
+  const corsMode = isProd
+    ? Array.isArray(cors.origin) && cors.origin.length > 0
+      ? `allowlist(${cors.origin.length})`
+      : 'DENY by default（需在云托管配置 CORS_ORIGIN）'
+    : 'reflect all (dev)';
 
   logger.log(`============== SmartGrade Bootstrap ==============`);
   logger.log(`NODE_ENV     : ${nodeEnv}`);
   logger.log(`PORT         : ${port}`);
   logger.log(`DATABASE_URL : ${dbUrlPresent ? 'SET' : 'NOT SET'} (${maskedDbUrl})`);
   logger.log(`API_PREFIX   : ${process.env.API_PREFIX || '/api/v1'}`);
-  logger.log(`CORS_ORIGIN  : ${process.env.CORS_ORIGIN || '*'}`);
+  logger.log(`CORS_ORIGIN  : ${process.env.CORS_ORIGIN || '*'} → ${corsMode}`);
   logger.log(`==================================================`);
 
   // ================= 1. 创建 Nest 应用 =================
@@ -79,11 +89,11 @@ async function bootstrap() {
     exclude: ['health', 'health/(.*)'],
   });
 
-  // CORS
-  const corsOrigin = process.env.CORS_ORIGIN || '*';
+  // CORS（P1-2）：使用 resolveCorsConfig 解析后的配置
+  // 生产环境未配置明确白名单时 origin=[]（deny by default），不会与 credentials:true 形成 wildcard 暴露
   app.enableCors({
-    origin: corsOrigin === '*' ? true : corsOrigin.split(','),
-    credentials: true,
+    origin: cors.origin,
+    credentials: cors.credentials,
   });
 
   // Swagger 文档 (仅非生产环境)
