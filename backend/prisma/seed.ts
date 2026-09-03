@@ -1,5 +1,6 @@
 import { PrismaClient, Gender, BoardingType, SchoolType, GradeStage, GradeStatus, ClassStatus, TeacherStatus, TeacherClassRole, UserType, UserStatus, IdentityProvider, IdentityStatus } from '@prisma/client';
 import * as bcryptjs from 'bcryptjs';
+import { resolveAdminPassword } from './seed-admin-password';
 
 const prisma = new PrismaClient();
 
@@ -23,15 +24,12 @@ const prisma = new PrismaClient();
 const mode: 'full' | 'bootstrap' =
   process.env.SEED_MODE === 'full' ? 'full' : 'bootstrap';
 
-/** 管理员默认账号（用户名） */
+/** 管理员默认账号（用户名），可通过 SMARTGRADE_ADMIN_USERNAME 覆盖 */
 const ADMIN_USERNAME = process.env.SMARTGRADE_ADMIN_USERNAME || 'admin';
 /**
- * 管理员默认密码：
- *  - 生产部署请务必显式设置 SMARTGRADE_ADMIN_PASSWORD 环境变量
- *  - 未设置时使用内建默认值（仅限首次初始化）
+ * 管理员密码：P1-5 起强制通过环境变量 SMARTGRADE_ADMIN_PASSWORD 提供，禁止任何硬编码默认弱口令。
+ * 解析与缺省校验见 ./seed-admin-password.ts 的 resolveAdminPassword（未设置即抛错，fail-closed）。
  */
-const ADMIN_PASSWORD =
-  process.env.SMARTGRADE_ADMIN_PASSWORD || 'SmartGrade@2025';
 /** 管理员绑定的教师工号，用于小程序 teacherNo 登录 */
 const ADMIN_TEACHER_NO =
   process.env.SMARTGRADE_ADMIN_TEACHER_NO || 'ADMIN';
@@ -190,13 +188,16 @@ async function seedRolesAndPermissions(adminRole: { id: bigint; roleCode: string
 /**
  * 创建默认管理员（ROLE_ADMIN）
  *  - Username: admin（可通过 SMARTGRADE_ADMIN_USERNAME 覆盖）
- *  - Password: 环境变量 SMARTGRADE_ADMIN_PASSWORD，默认 SmartGrade@2025
+ *  - Password: 必须通过环境变量 SMARTGRADE_ADMIN_PASSWORD 显式提供（无默认值，缺失即失败）
  *  - 同步创建 User / Teacher / UserIdentity 记录
  *  - 密码使用 bcrypt hash，不在数据库或 seed 代码中保存明文
  */
 async function seedDefaultAdmin() {
   console.log('\n👤 初始化默认管理员账号...');
 
+  // P1-5：强制从环境变量取密码；未设置时 resolveAdminPassword 会抛错，
+  // 由 main().catch 捕获并以非零码退出，避免写入任何默认弱口令。
+  const ADMIN_PASSWORD = resolveAdminPassword();
   const passwordHash = await bcryptjs.hash(ADMIN_PASSWORD, 10);
   const teacherNo = ADMIN_TEACHER_NO;
 
@@ -282,9 +283,8 @@ async function seedDefaultAdmin() {
   console.log(`  ✅ Teacher  : ${teacherNo} / ${teacher.name}`);
   console.log(`  ✅ Username : ${ADMIN_USERNAME}`);
   console.log(`  ✅ Role     : ROLE_ADMIN (${adminRole ? 'assigned' : 'not found - skipped'})`);
-  console.log(`  ✅ Password : bcrypt hash length=${passwordHash.length}`);
+  console.log(`  ✅ Password : bcrypt hash length=${passwordHash.length}（来源：环境变量 SMARTGRADE_ADMIN_PASSWORD，无默认弱口令）`);
   console.log('');
-  console.log('  ⚠️  生产环境请设置 SMARTGRADE_ADMIN_PASSWORD 环境变量覆盖默认密码');
 }
 
 async function main() {
