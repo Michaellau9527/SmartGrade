@@ -18,10 +18,12 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 
 import { NoticeCapabilityService } from './notice.capability-service';
 import { PrismaService } from '@/common/prisma';
+import { CurrentUser } from '@/common/decorators';
+import { CurrentUserPayload } from '@/common/types';
 import type {
   CreateNoticeRequest, PublishNoticeRequest,
 } from '@smartgrade/shared/types/notice/NoticeResponse';
-import type { AuthorizationContext } from '../../authorization/types';
+import type { AuthorizationContext, DataScope as AuthDataScope } from '../../authorization/types';
 import { RoleCode } from '@smartgrade/shared/enums/RoleCode';
 import { PermissionCode } from '@smartgrade/shared/enums/PermissionCode';
 
@@ -68,16 +70,16 @@ export class NoticeController {
   /** POST /notices — 创建通知草稿 */
   @Post()
   @ApiOperation({ summary: '创建通知草稿', description: '创建通知草稿（DRAFT 状态）' })
-  async create(@Body() body: CreateNoticeRequest) {
-    return this.noticeService.createNotice(body, _buildDemoContext());
+  async create(@Body() body: CreateNoticeRequest, @CurrentUser() user: CurrentUserPayload) {
+    return this.noticeService.createNotice(body, buildAuthContext(user));
   }
 
   /** GET /notices/:id — 通知详情 */
   @Get(':id')
   @ApiOperation({ summary: '通知详情', description: '返回通知详情（含 Timeline + 阅读状态）' })
-  async getOne(@Param('id') id: string) {
+  async getOne(@Param('id') id: string, @CurrentUser() user: CurrentUserPayload) {
     try {
-      return await this.noticeService.getNotice(id, _buildDemoContext());
+      return await this.noticeService.getNotice(id, buildAuthContext(user));
     } catch (e: any) {
       if (e.name === 'NoticeNotFoundError') {
         throw new HttpException(e.message, HttpStatus.NOT_FOUND);
@@ -89,9 +91,9 @@ export class NoticeController {
   /** POST /notices/:id/publish — 发布通知 */
   @Post(':id/publish')
   @ApiOperation({ summary: '发布通知', description: '发布通知（DRAFT → PUBLISHED）' })
-  async publish(@Param('id') id: string, @Body() body: PublishNoticeRequest) {
+  async publish(@Param('id') id: string, @Body() body: PublishNoticeRequest, @CurrentUser() user: CurrentUserPayload) {
     try {
-      return await this.noticeService.publishNotice(id, body, _buildDemoContext());
+      return await this.noticeService.publishNotice(id, body, buildAuthContext(user));
     } catch (e: any) {
       if (e.name === 'NoticeStateTransitionError') {
         throw new HttpException(e.message, HttpStatus.BAD_REQUEST);
@@ -106,9 +108,9 @@ export class NoticeController {
   /** POST /notices/:id/read — 标记已读 */
   @Post(':id/read')
   @ApiOperation({ summary: '标记已读', description: '标记通知为已读' })
-  async markRead(@Param('id') id: string) {
+  async markRead(@Param('id') id: string, @CurrentUser() user: CurrentUserPayload) {
     try {
-      return await this.noticeService.markRead(id, _buildDemoContext());
+      return await this.noticeService.markRead(id, buildAuthContext(user));
     } catch (e: any) {
       if (e.name === 'NoticeNotFoundError') {
         throw new HttpException(e.message, HttpStatus.NOT_FOUND);
@@ -120,9 +122,9 @@ export class NoticeController {
   /** POST /notices/:id/acknowledge — 确认阅读 */
   @Post(':id/acknowledge')
   @ApiOperation({ summary: '确认阅读', description: '确认已阅读通知（Acknowledge）' })
-  async acknowledge(@Param('id') id: string) {
+  async acknowledge(@Param('id') id: string, @CurrentUser() user: CurrentUserPayload) {
     try {
-      return await this.noticeService.acknowledge(id, _buildDemoContext());
+      return await this.noticeService.acknowledge(id, buildAuthContext(user));
     } catch (e: any) {
       if (e.name === 'NoticeNotFoundError') {
         throw new HttpException(e.message, HttpStatus.NOT_FOUND);
@@ -133,36 +135,35 @@ export class NoticeController {
 }
 
 // ============================================================
-// Sprint 2 过渡：Demo AuthorizationContext（与 C01/C02 一致）
+// 由真实登录用户推导 AuthorizationContext（替代写死的 Demo Context）
 // ============================================================
 
-function _buildDemoContext(): AuthorizationContext {
+function buildAuthContext(user: CurrentUserPayload): AuthorizationContext {
+  const ds = user.dataScope;
+  const dataScope: AuthDataScope = {
+    classIds: ds.type === 'CLASS' && ds.classId ? [ds.classId] : [],
+    gradeIds: ds.type === 'GRADE' && ds.gradeId ? [ds.gradeId] : [],
+    // 管理员 / 政教看全校；宿管负责全体住宿生，按全校范围处理
+    isSchoolWide: ds.type === 'ALL' || ds.type === 'DORM',
+    isParentScoped: false,
+    version: 1,
+  };
   return {
     actor: {
-      userId: 'demo_teacher_001',
-      teacherId: 'teacher_001',
+      userId: String(user.id),
+      teacherId: String(user.id),
       parentId: null,
       userType: 'TEACHER',
     },
     authorization: {
-      roleSet: new Set([RoleCode.ROLE_HEADMASTER]),
-      permissionSet: new Set([
-        PermissionCode.NOTICE_PUBLISH,
-        PermissionCode.NOTICE_READ,
-        PermissionCode.NOTICE_DELETE,
-      ]),
+      roleSet: new Set(user.roles as RoleCode[]),
+      permissionSet: new Set(user.permissions as PermissionCode[]),
       organization: {
-        schoolId: 'school_001',
-        gradeIds: ['grade_001'],
-        classIds: ['class_001'],
+        schoolId: '',
+        gradeIds: dataScope.gradeIds,
+        classIds: dataScope.classIds,
       },
-      dataScope: {
-        classIds: ['class_001'],
-        gradeIds: ['grade_001'],
-        isSchoolWide: false,
-        isParentScoped: false,
-        version: 1,
-      },
+      dataScope,
     },
     issuedAt: new Date(),
   };

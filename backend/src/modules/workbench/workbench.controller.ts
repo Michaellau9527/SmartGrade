@@ -12,10 +12,9 @@
  * - 简化：所有查询统一走 Nest 注入的 PrismaService，一个事务上下文 + 一个连接池
  * - 后续 C03/C04/C05 各 Capability 有自己的 Service 后，再把每块查询替换为调用对应 Service
  *
- * 角色兜底：
- * - 优先查 teacher_role 表
- * - 查不到（系统管理员 T001 等纯行政身份没有 TeacherClass 业务关系），
- *   用工号特征做分配（T001=管理员，T002=年级主任，T003=政教，T004=班主任，T005=宿管，其他=任课教师）
+ * 角色来源：
+ * - 直接使用 JWT 中由 teacher_role 表计算出的真实角色（见 JwtStrategy）
+ * - 无任何角色时，仅按真实业务关系兜底（年级主任 / 班主任 / 任课教师），不含工号硬编码
  */
 
 import { Controller, Get, UnauthorizedException, Logger } from '@nestjs/common';
@@ -95,20 +94,11 @@ export class WorkbenchController {
     ];
     const schoolId = schoolIds[0] ?? '';
 
-    // 2. 角色：teacher_role 优先 → 工号兜底
-    let roleCodes: RoleCode[] = [];
-    try {
-      const rows: any = await this.prisma.$queryRawUnsafe(`
-        SELECT r.role_code FROM teacher_role tr
-        JOIN role r ON tr.role_id = r.id
-        WHERE tr.teacher_id = '${teacherId}'
-      `);
-      roleCodes = (rows || []).map((r: any) => r.role_code as RoleCode);
-    } catch (e) {
-      this.logger.warn(`teacher_role 查询失败，用工号兜底: ${(e as Error).message}`);
-    }
+    // 2. 角色：直接使用 JWT 中由 teacher_role 表计算出的真实角色（见 JwtStrategy）
+    //    不再自行查库，杜绝 SQL 注入；无角色时按真实业务关系兜底（不含工号硬编码）
+    let roleCodes: RoleCode[] = [...(user.roles as RoleCode[])];
     if (roleCodes.length === 0) {
-      roleCodes = this._fallbackRoles(teacher.teacherNo, classRels, directedGrades.length > 0);
+      roleCodes = this._deriveRolesFromRelations(classRels, directedGrades.length > 0);
     }
 
     const roleSet = new Set(roleCodes);
@@ -241,18 +231,14 @@ export class WorkbenchController {
     }));
   }
 
-  /** 用工号 + 关系特征兜底分配角色 */
-  private _fallbackRoles(
-    teacherNo: string,
+  /** 按真实业务关系兜底分配角色（不含工号硬编码） */
+  private _deriveRolesFromRelations(
     classRels: { role: string }[],
     isGradeDirector: boolean,
   ): RoleCode[] {
-    if (teacherNo === 'T001') return [RoleCode.ROLE_ADMIN];
-    if (teacherNo === 'T002' || isGradeDirector) return [RoleCode.ROLE_GRADE_DIRECTOR];
-    if (teacherNo === 'T003') return [RoleCode.ROLE_POLITICAL];
-    if (teacherNo === 'T005') return [RoleCode.ROLE_DORM_MANAGER];
+    if (isGradeDirector) return [RoleCode.ROLE_GRADE_DIRECTOR];
     const hasHead = classRels.some((r) => r.role === 'HEAD_TEACHER');
-    if (teacherNo === 'T004' || hasHead) return [RoleCode.ROLE_HEADMASTER];
+    if (hasHead) return [RoleCode.ROLE_HEADMASTER];
     return [RoleCode.ROLE_SUBJECT_TEACHER];
   }
 }

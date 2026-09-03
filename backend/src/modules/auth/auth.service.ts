@@ -179,7 +179,7 @@ export class AuthService {
     return [...new Set(rolePermissions.map((rp) => rp.permission.permissionCode))];
   }
 
-  private async loadTeacherRoles(teacherId: string, teacherNo: string): Promise<string[]> {
+  private async loadTeacherRoles(teacherId: string, _teacherNo: string): Promise<string[]> {
     try {
       // 参数化查询（杜绝 SQL 注入，teacherId 来自 JWT 负载）
       const results = await this.prisma.$queryRaw<
@@ -192,45 +192,34 @@ export class AuthService {
       const roles = results.map((r) => r.role_code);
       if (roles.length > 0) return roles;
     } catch {
-      // teacher_role 表不存在，静默降级
+      // teacher_role 查询异常：拒绝默认授权（deny by default），绝不回退到工号硬编码角色
     }
-    return this._fallbackRoles(teacherNo);
+    // 无任何角色：返回空（权限为空）— 安全默认
+    return [];
   }
 
   private async loadPermissionsByRoles(roles: string[]): Promise<string[]> {
     if (roles.length === 0) return [];
     try {
-      const placeholders = roles.map(() => `?`).join(',');
-      const results = await this.prisma.$queryRawUnsafe<
+      // 参数化查询（Prisma 模板自动展开数组，杜绝 SQL 注入）
+      const results = await this.prisma.$queryRaw<
         Array<{ permission_code: string }>
-      >(
-        `SELECT DISTINCT p.permission_code FROM role_permission rp
-         JOIN permission p ON rp.permission_id = p.id
-         JOIN role r ON rp.role_id = r.id
-         WHERE r.role_code IN (${placeholders})`,
-        ...roles,
-      );
+      >`
+        SELECT DISTINCT p.permission_code FROM role_permission rp
+        JOIN permission p ON rp.permission_id = p.id
+        JOIN role r ON rp.role_id = r.id
+        WHERE r.role_code IN (${roles})
+      `;
       const perms = results.map((r) => r.permission_code);
       if (perms.length > 0) return perms;
     } catch {
-      // role_permission 表不存在，静默降级
+      // role_permission 查询异常：从内存映射加载权限作为兜底（非角色兜底）
     }
-    // 降级：从内存映射加载权限
     const allPerms = new Set<string>();
     for (const role of roles) {
       const roleCode = role as RoleCode;
       getPermissions(roleCode).forEach((p) => allPerms.add(p as string));
     }
     return [...allPerms];
-  }
-
-  /** 用工号兜底分配角色（与 workbench.controller 一致） */
-  private _fallbackRoles(teacherNo: string): string[] {
-    if (teacherNo === 'T001') return [RoleCode.ROLE_ADMIN];
-    if (teacherNo === 'T002') return [RoleCode.ROLE_GRADE_DIRECTOR];
-    if (teacherNo === 'T003') return [RoleCode.ROLE_POLITICAL];
-    if (teacherNo === 'T004') return [RoleCode.ROLE_HEADMASTER];
-    if (teacherNo === 'T005') return [RoleCode.ROLE_DORM_MANAGER];
-    return [RoleCode.ROLE_SUBJECT_TEACHER];
   }
 }
