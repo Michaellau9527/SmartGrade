@@ -37,11 +37,11 @@ const MAX_RETRY = 2;
 const BASE_BACKOFF = 600;
 
 /**
- * 业务码 40007 = 数据服务不可用（后端连不上数据库）。
- * 这是「确定性故障」：重试只是空等 Prisma 连接超时（每次可达 10s+），
- * 且前端多页面并发重试会放大成请求风暴。因此命中即熔断，直接对客户端报错。
+ * 基础设施错误码（与后端 INFRA_ERROR_CODE 保持一致）：
+ * 仅当后端返回该码（数据库/下游不可用，HTTP 503）时才立即熔断。
+ * 普通应用层 500（50000）不会触发熔断。
  */
-const CODE_DB_UNAVAILABLE = 40007;
+const INFRA_ERROR_CODE = 50300;
 
 /** 熔断冷却时长（毫秒）：期间所有请求本地快速失败，不再打网络 */
 const BACKEND_DOWN_COOLDOWN = 30000;
@@ -236,8 +236,9 @@ export async function request<T>(url: string, options: RequestOptions = {}): Pro
       continue;
     }
 
-    // ---- 数据服务不可用：立即熔断，不重试（重试只会空等 DB 连接超时）----
-    if (body?.code === CODE_DB_UNAVAILABLE) {
+    // ---- 基础设施故障（数据库/下游不可用）：立即熔断，不重试 ----
+    // 重试只会空等 Prisma 连接超时（每次可达 10s+），且多页面并发重试会放大成请求风暴。
+    if (body?.code === INFRA_ERROR_CODE) {
       markBackendDown(body.message);
       throw new Error(getBackendStatus().message);
     }
@@ -259,14 +260,21 @@ export async function request<T>(url: string, options: RequestOptions = {}): Pro
       }
     }
 
-    // ---- 5xx / 网络层失败：退避重试 ----
+    // ---- 网关类 5xx（502/503/504）/ 网络层失败：退避重试 ----
+    // 502/503/504 可能是云托管冷启动（偶发），先退避重试吸收；
+    // 重试耗尽仍失败，判定为后端持续不可用 → 熔断冷却，杜绝请求风暴。
+    // 注意：普通应用层 500（非网关 5xx）不会熔断，仅按普通错误返回。
     if (isRetryable(statusCode)) {
+      const isGateway5xx = RETRYABLE_STATUS.has(statusCode);
       lastError = new Error(
         statusCode === 0
           ? `网络异常，请检查网络后重试 (${url})`
           : `服务暂时不可用 (${statusCode})，正在重试…`
       );
       if (!allowRetry || attempt === MAX_RETRY) {
+        if (isGateway5xx) {
+          markBackendDown(`服务暂时不可用 (${statusCode})，请稍后重试`);
+        }
         throw new Error(
           statusCode === 0
             ? `网络异常，请检查网络后重试 (${url})`

@@ -39,6 +39,16 @@ const PRISMA_CONNECTIVITY_MARKERS = [
 ];
 
 /**
+ * 基础设施（数据库/下游）不可用时的独立业务错误码。
+ * 与通用 500（50000）区分：前端熔断只认此码 + 网关 5xx，
+ * 普通应用 500 不会误触发布式冷却。
+ */
+const INFRA_ERROR_CODE = 50300;
+
+/** 通用服务端错误码（应用层 500，非基础设施故障） */
+const GENERIC_SERVER_ERROR = 50000;
+
+/**
  * AllExceptionsFilter - 全局异常过滤器（实现见上方说明）
  */
 @Catch()
@@ -67,7 +77,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
     let message = '服务器内部错误';
-    let code = 40007;
+    let code = GENERIC_SERVER_ERROR;
 
     // ---------- 数据库不可用：最高优先级判定 ----------
     // 必须在 HttpException 分支之前，否则会被归入通用 500 并泄漏原始错误
@@ -77,7 +87,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       this.logger.error(`[DB UNAVAILABLE] ${raw}`);
 
       response.status(HttpStatus.SERVICE_UNAVAILABLE).json({
-        code: 40007,
+        code: INFRA_ERROR_CODE,
         message: '数据服务暂时不可用，请稍后重试',
         data: null,
       });
@@ -99,12 +109,12 @@ export class AllExceptionsFilter implements ExceptionFilter {
         message = exceptionResponse as string;
       }
 
-      // 映射 HTTP 状态码到业务错误码
+      // 映射 HTTP 状态码到业务错误码（5xx 归为通用服务端错误，不触发前端熔断）
       if (status === HttpStatus.UNAUTHORIZED) code = 40002;
       else if (status === HttpStatus.FORBIDDEN) code = 40001;
       else if (status === HttpStatus.NOT_FOUND) code = 40005;
       else if (status === HttpStatus.BAD_REQUEST) code = 40004;
-      else code = 40007;
+      else code = GENERIC_SERVER_ERROR;
     } else if (exception instanceof Error) {
       // 未知运行时错误：记录完整堆栈，但对外只给脱敏提示
       const isDev = process.env.NODE_ENV === 'development';
