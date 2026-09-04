@@ -35,6 +35,8 @@ export interface StudentSnapshot {
   classId: string;
   /** 班级名称（冗余到 LeaveRecord.className） */
   className: string;
+  /** 学校ID（冗余到 LeaveRecord.schoolId）— 复用 class.schoolId，无新增查询 */
+  schoolId: string;
   /** 住宿类型（冗余到 LeaveRecord.boardingType） */
   boardingType: string;
   /** 宿舍房间ID（冗余到 LeaveRecord.dormId） */
@@ -74,7 +76,7 @@ export class StudentSnapshotService {
       where: { id: String(studentId), deletedAt: null },
       include: {
         class: {
-          select: { id: true, name: true },
+          select: { id: true, name: true, schoolId: true },
         },
       },
     });
@@ -93,6 +95,7 @@ export class StudentSnapshotService {
       studentName: student.name,
       classId: student.classId,
       className: student.class.name,
+      schoolId: student.class.schoolId,
       boardingType: student.boardingType,
       dormId: student.dormId,
       bedNo: student.bedNo,

@@ -438,6 +438,8 @@ export class NoticeService {
       targets: any;
       publisherId: string;
       publisherName: string;
+      /** P1-8 补修：必填真实学校 ID，禁止空串 / 默认值 / 兜底（fail-closed） */
+      schoolId: string;
     },
   ): Promise<any> {
     let scope: any;
@@ -462,7 +464,7 @@ export class NoticeService {
         requireConfirm: false,
         status: 'PUBLISHED',
         publishedAt: now,
-        schoolId: '',
+        schoolId: data.schoolId,
       },
     });
 

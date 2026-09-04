@@ -45,7 +45,7 @@ export class LeaveService {
           classId: snapshot.classId,
           className: snapshot.className,
           gradeId: '',
-          schoolId: '',
+          schoolId: snapshot.schoolId,
           leaveType: dto.leaveType as any,
           leaveReasonType: 'OTHER' as any,
           reason: dto.leaveReason,
@@ -93,6 +93,7 @@ export class LeaveService {
         targets: { type: 'ROLE', roles: ['ROLE_POLITICAL'] },
         publisherId: String(user.id),
         publisherName: user.name,
+        schoolId: snapshot.schoolId,
       });
 
       await tx.student.update({
@@ -167,6 +168,7 @@ export class LeaveService {
           targets: { type: 'ROLE', roles: ['ROLE_DORM_MANAGER'] },
           publisherId: String(user.id),
           publisherName: user.name,
+          schoolId: record.schoolId,
         });
       }
 
@@ -177,6 +179,7 @@ export class LeaveService {
         targets: { type: 'ROLE', roles: ['ROLE_HEADMASTER'] },
         publisherId: String(user.id),
         publisherName: '系统',
+        schoolId: record.schoolId,
       });
 
       return result;
@@ -239,6 +242,7 @@ export class LeaveService {
         targets: { type: 'ROLE', roles: ['ROLE_HEADMASTER'] },
         publisherId: String(user.id),
         publisherName: '系统',
+        schoolId: record.schoolId,
       });
 
       return result;
@@ -299,6 +303,7 @@ export class LeaveService {
           targets: { type: 'ROLE', roles: ['ROLE_DORM_MANAGER'] },
           publisherId: String(user.id),
           publisherName: user.name,
+          schoolId: record.schoolId,
         });
       }
 
@@ -363,6 +368,7 @@ export class LeaveService {
           targets: { type: 'ROLE', roles: ['ROLE_DORM_MANAGER'] },
           publisherId: String(user.id),
           publisherName: user.name,
+          schoolId: record.schoolId,
         });
       }
 
