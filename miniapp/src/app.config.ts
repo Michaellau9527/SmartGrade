@@ -8,7 +8,9 @@ export default defineAppConfig({
     'pages/leave/index',
     'pages/notice/index',
     'pages/mine/index',
-    'pages/class/index'
+    'pages/class/index',
+    'pages/wechat-bind/index',
+    'pages/teacher-bind/index'
   ],
   window: {
     backgroundTextStyle: 'light',

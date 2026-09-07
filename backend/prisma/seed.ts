@@ -100,6 +100,9 @@ async function seedRolesAndPermissions(adminRole: { id: bigint; roleCode: string
     { permissionCode: 'teacher:delete', permissionName: '删除教师', resource: 'teacher', action: 'delete' },
     { permissionCode: 'teacher:assign-role', permissionName: '分配角色', resource: 'teacher', action: 'assign-role' },
     { permissionCode: 'teacher:assign-tag', permissionName: '分配标签', resource: 'teacher', action: 'assign-tag' },
+    // 教师微信绑定（P1-13）：bind 授 ADMIN/GRADE_DIRECTOR/POLITICAL，unbind 仅 ADMIN
+    { permissionCode: 'teacher:bind-wechat', permissionName: '绑定教师微信', resource: 'teacher', action: 'bind-wechat' },
+    { permissionCode: 'teacher:unbind-wechat', permissionName: '解绑教师微信', resource: 'teacher', action: 'unbind-wechat' },
     // 角色/权限
     { permissionCode: 'role:read', permissionName: '查看角色', resource: 'role', action: 'read' },
     { permissionCode: 'role:create', permissionName: '新增角色', resource: 'role', action: 'create' },
@@ -124,6 +127,9 @@ async function seedRolesAndPermissions(adminRole: { id: bigint; roleCode: string
 
   console.log('\n📝 分配角色权限...');
   const ROLE_PERMISSIONS: Record<string, string[]> = {
+    // ROLE_ADMIN 不落库任何 role_permission：PermissionsGuard 对 ROLE_ADMIN 直接短路放行，
+    // 因此 teacher:bind-wechat / teacher:unbind-wechat 对 ADMIN 均生效（unbind 仅 ADMIN）。
+    // 请勿在此为 ADMIN 补列表，否则会与"ADMIN 全权限"语义重复。
     ROLE_ADMIN: [],
     ROLE_GRADE_DIRECTOR: [
       'notice:read', 'notice:create',
@@ -134,6 +140,7 @@ async function seedRolesAndPermissions(adminRole: { id: bigint; roleCode: string
       'timeline:read',
       'statistics:read',
       'teacher:read',
+      'teacher:bind-wechat',
     ],
     ROLE_POLITICAL: [
       'notice:read',
@@ -145,6 +152,7 @@ async function seedRolesAndPermissions(adminRole: { id: bigint; roleCode: string
       'timeline:read',
       'statistics:read',
       'teacher:read',
+      'teacher:bind-wechat',
     ],
     ROLE_HEADMASTER: [
       'notice:read',

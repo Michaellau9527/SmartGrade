@@ -81,6 +81,19 @@ export enum PermissionCode {
   FILE_PUBLISH = 'file.publish',
 
   // ============================================================
+  // 教师微信绑定（Teacher WeChat Binding）— P1-13
+  //
+  // 编码形式说明：本域采用 `domain:action` 冒号形式，而非本文件其余项的
+  // `domain.action` 点号形式。原因：运行时权限真相源是数据库 permission
+  // 表（auth.service.loadPermissionsByRoles 走 role_permission JOIN permission
+  // 查询），该表与 teacher.controller 现均使用冒号形式（teacher:read 等）。
+  // P1-13 新增项必须与 DB 编码一致，且不得再制造新的裸字符串常量。
+  // 点号/冒号两种形式的历史不一致属权限治理事项，不在 P1-13 范围内统一。
+  // ============================================================
+  TEACHER_BIND_WECHAT = 'teacher:bind-wechat',
+  TEACHER_UNBIND_WECHAT = 'teacher:unbind-wechat',
+
+  // ============================================================
   // 系统管理（System）— 仅 ROLE_ADMIN
   // ============================================================
   SYSTEM_ADMIN = 'system.admin',
@@ -124,6 +137,9 @@ export const PermissionCodeText: Record<PermissionCode, string> = {
 
   [PermissionCode.FILE_READ]: '查看文件',
   [PermissionCode.FILE_PUBLISH]: '发布文件',
+
+  [PermissionCode.TEACHER_BIND_WECHAT]: '绑定教师微信',
+  [PermissionCode.TEACHER_UNBIND_WECHAT]: '解绑教师微信',
 
   [PermissionCode.SYSTEM_ADMIN]: '系统管理',
 };

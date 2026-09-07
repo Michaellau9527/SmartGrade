@@ -43,6 +43,8 @@ export function createMockPrisma(): MockPrisma {
     dormBuilding: createMockTable(),
     dormRoom: createMockTable(),
     teacherClassRelation: createMockTable(),
+    // P1-13 Gate D：教师微信绑定一次性绑定码
+    teacherWechatBinding: createMockTable(),
     leaveRecord: createMockTable(),
     notice: createMockTable(),
     noticeRead: createMockTable(),

@@ -2,7 +2,7 @@ import { View, Text } from '@tarojs/components';
 import Taro from '@tarojs/taro';
 import { useState } from 'react';
 import { useUserStore } from '../../store/user';
-import { resetSession } from '../../utils/session';
+import { resetSession, ensureLoggedIn } from '../../utils/session';
 import './index.scss';
 
 /** 角色 code -> 中文名 */
@@ -53,6 +53,17 @@ export default function Mine() {
     setPermissionsExpanded((v) => !v);
   };
 
+  /** 是否有教师微信绑定管理权：ROLE_ADMIN（guard 短路）或持 teacher:bind-wechat */
+  const canManageBind =
+    roles.includes('ROLE_ADMIN') ||
+    permissions.includes('teacher:bind-wechat');
+
+  /** 进入微信绑定管理页（P1-13 Gate F 管理员发起视角） */
+  const handleOpenBindManage = async () => {
+    await ensureLoggedIn();
+    Taro.navigateTo({ url: '/pages/teacher-bind/index' });
+  };
+
   return (
     <View className='mine'>
       {/* 顶部用户信息卡 */}
@@ -71,6 +82,16 @@ export default function Mine() {
           )}
         </View>
       </View>
+
+      {/* 教师微信绑定管理（仅管理员/年级主任/政教可见） */}
+      {canManageBind && (
+        <View className='card'>
+          <View className='cell' onClick={() => void handleOpenBindManage()}>
+            <Text className='cell-label'>微信绑定管理</Text>
+            <Text className='cell-arrow'>›</Text>
+          </View>
+        </View>
+      )}
 
       {/* 角色权限列表 */}
       <View className='card'>

@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '@/common/prisma';
 import { getPermissions } from '@/authorization/role-permission.map';
 import { RoleCode } from '@smartgrade/shared/enums/RoleCode';
+import { WechatCodeExchangeService } from './wechat-code-exchange.service';
 
 @Injectable()
 export class AuthService {
@@ -13,6 +14,7 @@ export class AuthService {
     private jwtService: JwtService,
     private configService: ConfigService,
     private prisma: PrismaService,
+    private wechatCodeExchange: WechatCodeExchangeService,
   ) {}
 
   /**
@@ -27,7 +29,9 @@ export class AuthService {
       throw new UnauthorizedException('缺少微信登录 code');
     }
 
-    const openid = await this.exchangeWechatOpenid(code);
+    // 微信 code → openid（P1-13 Gate C：统一由 WechatCodeExchangeService 换码，
+    // 登录与教师微信绑定共用同一实现；此处只取 openid，unionid 在绑定时写入）
+    const { openid } = await this.wechatCodeExchange.exchange(code);
 
     const teacher = await this.prisma.teacher.findUnique({
       where: { wechatOpenid: openid },
@@ -60,39 +64,6 @@ export class AuthService {
       tags: [],
       ...tokens,
     };
-  }
-
-  /** 调微信 jscode2session 换取 openid / unionid */
-  private async exchangeWechatOpenid(code: string): Promise<string> {
-    const appid = this.configService.get<string>('WECHAT_APPID');
-    const secret = this.configService.get<string>('WECHAT_SECRET');
-
-    if (!appid || !secret) {
-      this.logger.error('微信登录未配置 WECHAT_APPID / WECHAT_SECRET');
-      throw new UnauthorizedException('微信登录未配置');
-    }
-
-    const url =
-      `https://api.weixin.qq.com/sns/jscode2session` +
-      `?appid=${appid}&secret=${secret}&js_code=${code}&grant_type=authorization_code`;
-
-    let data: { openid?: string; unionid?: string; errcode?: number; errmsg?: string };
-    try {
-      const resp = await fetch(url);
-      data = (await resp.json()) as typeof data;
-    } catch (err) {
-      this.logger.error(`微信 jscode2session 请求失败: ${String(err)}`);
-      throw new UnauthorizedException('微信登录服务暂不可用');
-    }
-
-    if (data.errcode) {
-      this.logger.error(`微信 jscode2session 失败: ${data.errcode} ${data.errmsg}`);
-      throw new UnauthorizedException('微信登录校验失败');
-    }
-    if (!data.openid) {
-      throw new UnauthorizedException('微信登录未返回 openid');
-    }
-    return data.openid;
   }
 
   async refresh(refreshToken: string) {
