@@ -1,6 +1,7 @@
 import { Injectable, UnauthorizedException, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { compare } from 'bcryptjs';
 import { PrismaService } from '@/common/prisma';
 import { getPermissions } from '@/authorization/role-permission.map';
 import { RoleCode } from '@smartgrade/shared/enums/RoleCode';
@@ -49,6 +50,91 @@ export class AuthService {
     const permissions = await this.loadPermissionsByRoles(roles);
 
     const tokens = await this.generateTokens(teacher);
+
+    return {
+      teacher: {
+        id: teacher.id,
+        teacherNo: teacher.teacherNo,
+        name: teacher.name,
+        gender: teacher.gender,
+        avatar: teacher.avatar,
+        position: teacher.position,
+      },
+      roles,
+      permissions,
+      tags: [],
+      ...tokens,
+    };
+  }
+
+  /**
+   * 管理员账号密码冷启动登录（P1-13 运维配套）
+   *
+   * 设计边界（严格，不扩大）：
+   * - 仅 admin（Teacher.teacher_role 含 ROLE_ADMIN）可登入；普通教师/年级主任/政教不在白名单
+   * - 仅消费 seed.ts bootstrap 模式预置的 UserIdentity(provider='ACCOUNT') 行
+   * - 失败统一抛 UnauthorizedException('用户名或密码错误')，不区分原因
+   * - 不复用 loginByWechat，仅复用本服务内部的 generateTokens / loadTeacherRoles / loadPermissionsByRoles
+   *   ——保持"不复制 JWT 生成代码"的约束
+   *
+   * 校验链（任一失败 → 同一 401）：
+   *  1. username / password 非空
+   *  2. User.username 命中且 User.status='ACTIVE'
+   *  3. UserIdentity(provider='ACCOUNT', userId=user.id, status='ACTIVE', credentialHash 非空) 存在
+   *  4. bcrypt.compare(password, credentialHash) 通过
+   *  5. User.teacherId 非空
+   *  6. Teacher.status='ACTIVE'
+   *  7. teacher_role（含显式 teacher_role 表 join）必须含 ROLE_ADMIN
+   */
+  async loginByPassword(username: string, password: string) {
+    if (!username || !password) {
+      throw new UnauthorizedException('用户名或密码错误');
+    }
+
+    // 1. User.username 命中（不直接查 UserIdentity，避免外部输入成为主键入口）
+    const user = await this.prisma.user.findUnique({ where: { username } });
+    if (!user || user.status !== 'ACTIVE') {
+      throw new UnauthorizedException('用户名或密码错误');
+    }
+
+    // 2. 该 user 下 provider=ACCOUNT 的 ACTIVE identity
+    const identity = await this.prisma.userIdentity.findFirst({
+      where: {
+        userId: user.id,
+        provider: 'ACCOUNT',
+        status: 'ACTIVE',
+      },
+    });
+
+    // 3. credentialHash bcrypt 校验
+    if (
+      !identity ||
+      !identity.credentialHash ||
+      !(await compare(password, identity.credentialHash))
+    ) {
+      throw new UnauthorizedException('用户名或密码错误');
+    }
+
+    // 4. User.teacherId 非空
+    if (!user.teacherId) {
+      throw new UnauthorizedException('用户名或密码错误');
+    }
+
+    // 5. Teacher ACTIVE
+    const teacher = await this.prisma.teacher.findUnique({ where: { id: user.teacherId } });
+    if (!teacher || teacher.status !== 'ACTIVE') {
+      throw new UnauthorizedException('用户名或密码错误');
+    }
+
+    // 6. 必须含 ROLE_ADMIN（复用现有 loadTeacherRoles）
+    const roles = await this.loadTeacherRoles(teacher.id, teacher.teacherNo);
+    if (!roles.includes('ROLE_ADMIN')) {
+      throw new UnauthorizedException('用户名或密码错误');
+    }
+
+    // 7. 复用现有 generateTokens（与微信登录同 payload：{sub,teacherNo,name}）
+    const tokens = await this.generateTokens(teacher);
+    const permissions = await this.loadPermissionsByRoles(roles);
 
     return {
       teacher: {
