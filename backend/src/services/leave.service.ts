@@ -10,7 +10,7 @@
  *
  * ⚠️ v1.3 关键：
  * - ❌ 不允许自动判定 OVERDUE / NO_SHOW / EXPIRED（v4.2 冻结）
- * - ✅ expected_return_time 仅供参考，不参与自动判定
+ * - ✅ expectedReturnTime 仅供参考，不参与自动判定
  * - ✅ 状态机走法：见 LeaveStatus 注释
  *
  * 状态机：

@@ -17,11 +17,11 @@ function createMockMethod(): jest.Mock {
 }
 
 function createMockTable(): any {
-  return new Proxy({}, {
+  return new Proxy({} as Record<string, any>, {
     get(target, prop) {
       if (typeof prop === 'symbol' || prop === 'then') return undefined;
-      if (!(prop in target)) target[prop] = createMockMethod();
-      return target[prop];
+      if (!(prop in target)) target[prop as string] = createMockMethod();
+      return target[prop as string];
     },
   });
 }
@@ -43,6 +43,8 @@ export function createMockPrisma(): MockPrisma {
     dormBuilding: createMockTable(),
     dormRoom: createMockTable(),
     teacherClassRelation: createMockTable(),
+    // P1-13 Gate D：教师微信绑定一次性绑定码
+    teacherWechatBinding: createMockTable(),
     leaveRecord: createMockTable(),
     notice: createMockTable(),
     noticeRead: createMockTable(),

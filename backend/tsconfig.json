@@ -21,10 +21,7 @@
     "resolveJsonModule": true,
     "paths": {
       "@/*": ["src/*"]
-    },
-    "references": [
-      { "path": "../shared" }
-    ]
+    }
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]

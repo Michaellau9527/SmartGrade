@@ -5,6 +5,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { WechatCodeExchangeService } from './wechat-code-exchange.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 
 @Module({
@@ -22,7 +23,8 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy],
-  exports: [AuthService],
+  providers: [AuthService, WechatCodeExchangeService, JwtStrategy],
+  // 导出 WechatCodeExchangeService：P1-13 Gate D 的教师微信绑定需复用同一套换码逻辑
+  exports: [AuthService, WechatCodeExchangeService],
 })
 export class AuthModule {}

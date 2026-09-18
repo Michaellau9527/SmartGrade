@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '@/common/prisma';
 import { QueryDormDto, CheckDormDto } from './dto';
+import { TimelineEventType, TimelineEventSource } from '@prisma/client';
 
 @Injectable()
 export class DormService {
@@ -9,7 +10,8 @@ export class DormService {
   constructor(private prisma: PrismaService) {}
 
   async findAllDormitories() {
-    return this.prisma.dormitory.findMany({
+    return this.prisma.dormBuilding.findMany({
+      where: { deletedAt: null },
       include: {
         manager: { select: { id: true, name: true } },
         _count: { select: { rooms: true } },
@@ -17,13 +19,14 @@ export class DormService {
     });
   }
 
-  async findOneDormitory(id: number) {
-    const dorm = await this.prisma.dormitory.findUnique({
-      where: { id: BigInt(id) },
+  async findOneDormitory(id: string) {
+    const dorm = await this.prisma.dormBuilding.findUnique({
+      where: { id, deletedAt: null },
       include: {
         manager: { select: { id: true, name: true, phone: true } },
         rooms: {
-          orderBy: [{ floor: 'asc' }, { room_no: 'asc' }],
+          where: { deletedAt: null },
+          orderBy: [{ floor: 'asc' }, { roomNo: 'asc' }],
           include: { _count: { select: { students: true } } },
         },
       },
@@ -33,8 +36,8 @@ export class DormService {
   }
 
   async findRooms(query: QueryDormDto) {
-    const where: any = {};
-    if (query.dormitoryId) where.building_id = BigInt(query.dormitoryId);
+    const where: any = { deletedAt: null };
+    if (query.dormitoryId) where.buildingId = String(query.dormitoryId);
     if (query.floor !== undefined) where.floor = query.floor;
 
     const [list, total] = await Promise.all([
@@ -42,9 +45,9 @@ export class DormService {
         where,
         skip: query.skip,
         take: query.take,
-        orderBy: [{ floor: 'asc' }, { room_no: 'asc' }],
+        orderBy: [{ floor: 'asc' }, { roomNo: 'asc' }],
         include: {
-          building: { select: { id: true, building_name: true } },
+          building: { select: { id: true, name: true } },
           _count: { select: { students: true } },
         },
       }),
@@ -54,16 +57,17 @@ export class DormService {
     return { list, total, page: query.page, pageSize: query.pageSize };
   }
 
-  async findOneRoom(id: number) {
+  async findOneRoom(id: string) {
     const room = await this.prisma.dormRoom.findUnique({
-      where: { id: BigInt(id) },
+      where: { id, deletedAt: null },
       include: {
-        building: { select: { id: true, building_name: true, gender: true } },
+        building: { select: { id: true, name: true, gender: true } },
         students: {
+          where: { deletedAt: null },
           select: {
-            id: true, student_no: true, name: true, gender: true,
-            class: { select: { id: true, class_name: true } },
-            bed_no: true,
+            id: true, studentNo: true, name: true, gender: true,
+            class: { select: { id: true, name: true } },
+            bedNo: true,
           },
         },
       },
@@ -72,25 +76,32 @@ export class DormService {
     return room;
   }
 
-  async checkRoom(id: number, dto: CheckDormDto, user: any) {
+  async checkRoom(id: string, dto: CheckDormDto, user: any) {
     const room = await this.findOneRoom(id);
 
     const results = await this.prisma.$transaction(async (tx) => {
       const records = [];
       for (const studentId of dto.studentIds) {
-        const timeline = await tx.timeline.create({
+        const eventType = this.mapCheckStatusToEventType(dto.status);
+        const timeline = await tx.timelineEvent.create({
           data: {
-            timeline_no: `T${Date.now()}${Math.floor(Math.random() * 1000)}`,
-            student_id: BigInt(studentId),
-            event_type: dto.status === 'NORMAL' ? 'CHECKOUT_DORM' : 'DORM_EXCEPTION',
-            event_title: dto.status === 'NORMAL' ? '查寝正常' : '查寝异常',
-            event_description: `${room.building.building_name} ${room.room_no} 查寝：${dto.status}${dto.remark ? `，备注：${dto.remark}` : ''}`,
-            operator_teacher_id: BigInt(user.id),
-            operator_teacher_name: user.name,
-            operator_role: 'DORM_MANAGER',
-            event_source: 'DORM',
-            source_id: room.id,
-            is_system: false,
+            eventType,
+            eventSource: 'DORM' as TimelineEventSource,
+            sourceEventId: room.id,
+            studentId: String(studentId),
+            operatorId: user.id,
+            operatorName: user.name,
+            operatorRole: 'DORM_MANAGER',
+            metadata: {
+              title: dto.status === 'NORMAL' ? '查寝正常' : '查寝异常',
+              description: `${room.building.name} ${room.roomNo} 查寝：${dto.status}${dto.remark ? `，备注：${dto.remark}` : ''}`,
+              roomId: room.id,
+              roomNo: room.roomNo,
+              status: dto.status,
+              remark: dto.remark,
+            },
+            occurredAt: new Date(),
+            isSystem: false,
           },
         });
         records.push(timeline);
@@ -98,24 +109,25 @@ export class DormService {
       return records;
     });
 
-    this.logger.log(`查寝 ${room.room_no}: ${dto.status}, 学生 ${dto.studentIds.length} 人`);
+    this.logger.log(`查寝 ${room.roomNo}: ${dto.status}, 学生 ${dto.studentIds.length} 人`);
     return { roomId: room.id, checkedCount: dto.studentIds.length, status: dto.status, records: results };
   }
 
   async getStatistics() {
     const [dormitories, totalRooms, totalStudents, totalBoarding] = await Promise.all([
-      this.prisma.dormitory.count(),
-      this.prisma.dormRoom.count(),
-      this.prisma.student.count({ where: { deleted_at: null } }),
-      this.prisma.student.count({ where: { boarding_type: 'BOARDING', deleted_at: null } }),
+      this.prisma.dormBuilding.count({ where: { deletedAt: null } }),
+      this.prisma.dormRoom.count({ where: { deletedAt: null } }),
+      this.prisma.student.count({ where: { deletedAt: null } }),
+      this.prisma.student.count({ where: { boardingType: 'BOARDING', deletedAt: null } }),
     ]);
 
     const rooms = await this.prisma.dormRoom.findMany({
-      select: { capacity: true, current_count: true },
+      where: { deletedAt: null },
+      select: { capacity: true, currentCount: true },
     });
 
     const totalCapacity = rooms.reduce((sum, r) => sum + r.capacity, 0);
-    const currentCount = rooms.reduce((sum, r) => sum + r.current_count, 0);
+    const currentCount = rooms.reduce((sum, r) => sum + r.currentCount, 0);
 
     return {
       dormitories,
@@ -127,5 +139,15 @@ export class DormService {
       occupancyRate: totalCapacity > 0 ? Math.round((currentCount / totalCapacity) * 100) : 0,
       emptyBeds: totalCapacity - currentCount,
     };
+  }
+
+  private mapCheckStatusToEventType(status: string): TimelineEventType {
+    const map: Record<string, TimelineEventType> = {
+      'NORMAL': 'DORM_CHECKED_IN' as TimelineEventType,
+      'ABSENT': 'DORM_ABSENT' as TimelineEventType,
+      'LATE': 'DORM_LATE' as TimelineEventType,
+      'NIGHT_OUT': 'DORM_ABSENT' as TimelineEventType,
+    };
+    return map[status] || ('DORM_CHECKED_IN' as TimelineEventType);
   }
 }

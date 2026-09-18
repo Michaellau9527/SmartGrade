@@ -11,7 +11,7 @@ export class PermissionService {
       this.prisma.permission.findMany({
         skip: query.skip,
         take: query.take,
-        orderBy: { created_at: 'desc' },
+        orderBy: { createdAt: 'desc' },
       }),
       this.prisma.permission.count(),
     ]);
@@ -19,9 +19,9 @@ export class PermissionService {
     return { list, total, page: query.page, pageSize: query.pageSize };
   }
 
-  async findOne(id: number) {
+  async findOne(id: number | string) {
     const permission = await this.prisma.permission.findUnique({
-      where: { id },
+      where: { id: BigInt(id) },
     });
 
     if (!permission) {
@@ -34,8 +34,8 @@ export class PermissionService {
   async create(body: any) {
     return this.prisma.permission.create({
       data: {
-        permission_code: body.permissionCode,
-        permission_name: body.permissionName,
+        permissionCode: body.permissionCode,
+        permissionName: body.permissionName,
         resource: body.resource,
         action: body.action,
         description: body.description,
@@ -43,11 +43,11 @@ export class PermissionService {
     });
   }
 
-  async update(id: number, body: any) {
+  async update(id: number | string, body: any) {
     return this.prisma.permission.update({
-      where: { id },
+      where: { id: BigInt(id) },
       data: {
-        permission_name: body.permissionName,
+        permissionName: body.permissionName,
         resource: body.resource,
         action: body.action,
         description: body.description,
@@ -55,9 +55,9 @@ export class PermissionService {
     });
   }
 
-  async remove(id: number) {
-    await this.prisma.rolePermission.deleteMany({ where: { permission_id: id } });
-    await this.prisma.permission.delete({ where: { id } });
+  async remove(id: number | string) {
+    await this.prisma.rolePermission.deleteMany({ where: { permissionId: BigInt(id) } });
+    await this.prisma.permission.delete({ where: { id: BigInt(id) } });
     return { success: true };
   }
 }

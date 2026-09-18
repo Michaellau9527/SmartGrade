@@ -3,7 +3,7 @@
  *
  * 上游规则：SPRINT2_DOMAIN_RULE_v1.3 §2.5 + §8.1.1
  *
- * 职责：根据 TimelineEvent 推导出 Student 的新 current_status / current_location。
+ * 职责：根据 TimelineEvent 推导出 Student 的新 currentStatus / currentLocation。
  *
  * ⚠️ v1.3 关键定位：
  * - shared/types/domain/StudentStatusLocationResolver.ts 是**判断工具**（读侧 / 已存在学生判断）
@@ -130,7 +130,7 @@ export function resolveFromEvent(
 /**
  * 应用 Resolver 结果到 Student
  *
- * ⚠️ v1.3 强制：本方法是**唯一**写入 Student.current_status / current_location 的路径。
+ * ⚠️ v1.3 强制：本方法是**唯一**写入 Student.currentStatus / currentLocation 的路径。
  * 不允许 Service / Controller / Repository 直接调用 setCurrentStatus。
  */
 export async function applyStatusUpdate(

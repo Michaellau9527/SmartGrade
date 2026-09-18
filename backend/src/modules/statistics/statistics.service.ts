@@ -32,36 +32,36 @@ export class StatisticsService {
       todoCount,
     ] = await Promise.all([
       // 学生总数
-      this.prisma.student.count({ where: { deleted_at: null } }),
+      this.prisma.student.count({ where: { deletedAt: null } }),
 
       // 在校学生
-      this.prisma.student.count({ where: { status: 'IN_SCHOOL', deleted_at: null } }),
+      this.prisma.student.count({ where: { currentStatus: 'ON_CAMPUS', deletedAt: null } }),
 
       // 离校学生
       this.prisma.student.count({
-        where: { status: { in: ['PENDING_LEAVE', 'LEFT_SCHOOL'] }, deleted_at: null },
+        where: { currentStatus: { in: ['OUT_OF_SCHOOL'] }, deletedAt: null },
       }),
 
       // 待审批请假
       this.prisma.leaveRecord.count({
-        where: { status: 'PENDING', deleted_at: null },
+        where: { status: 'PENDING', deletedAt: null },
       }),
 
       // 今日请假
       this.prisma.leaveRecord.count({
-        where: { created_at: { gte: todayStart }, deleted_at: null },
+        where: { createdAt: { gte: todayStart }, deletedAt: null },
       }),
 
       // 未读通知
       this.prisma.noticeRead.count({
-        where: { teacher_id: BigInt(user.id), is_read: false },
+        where: { teacherId: String(user.id), isRead: false },
       }),
 
       // 待处理待办
-      this.prisma.todo.count({
+      this.prisma.task.count({
         where: {
-          teacher_id: BigInt(user.id),
-          status: { in: ['TODO', 'PROCESSING'] },
+          assigneeId: String(user.id),
+          status: { in: ['PENDING', 'IN_PROGRESS'] },
         },
       }),
     ]);
@@ -82,16 +82,16 @@ export class StatisticsService {
    */
   async getRecentLeaves(user: CurrentUserPayload) {
     return this.prisma.leaveRecord.findMany({
-      where: { deleted_at: null },
-      orderBy: { created_at: 'desc' },
+      where: { deletedAt: null },
+      orderBy: { createdAt: 'desc' },
       take: 5,
       select: {
         id: true,
-        leave_no: true,
-        student_name: true,
-        leave_type: true,
+        leaveNo: true,
+        studentName: true,
+        leaveType: true,
         status: true,
-        created_at: true,
+        createdAt: true,
       },
     });
   }
@@ -101,9 +101,9 @@ export class StatisticsService {
    */
   async getRecentNotices(user: CurrentUserPayload) {
     const unreadIds = await this.prisma.noticeRead.findMany({
-      where: { teacher_id: BigInt(user.id), is_read: false },
-      select: { notice_id: true },
-      orderBy: { created_at: 'desc' },
+      where: { teacherId: String(user.id), isRead: false },
+      select: { noticeId: true },
+      orderBy: { createdAt: 'desc' },
       take: 5,
     });
 
@@ -111,16 +111,15 @@ export class StatisticsService {
 
     const notices = await this.prisma.notice.findMany({
       where: {
-        id: { in: unreadIds.map((r) => r.notice_id) },
-        deleted_at: null,
+        id: { in: unreadIds.map((r) => r.noticeId) },
+        deletedAt: null,
       },
-      orderBy: { created_at: 'desc' },
+      orderBy: { createdAt: 'desc' },
       select: {
         id: true,
         title: true,
-        priority: true,
-        created_at: true,
-        publisher_name: true,
+        createdAt: true,
+        publisherName: true,
       },
     });
 
@@ -138,24 +137,24 @@ export class StatisticsService {
     const where: any = {};
     if (!isAdmin) {
       const studentIds = await this.prisma.student.findMany({
-        where: { class_id: BigInt(user.dataScope.classId || 0) },
+        where: { classId: user.dataScope.classId ? String(user.dataScope.classId) : '' },
         select: { id: true },
       });
       if (studentIds.length === 0) return [];
-      where.student_id = { in: studentIds.map((s) => s.id) };
+      where.studentId = { in: studentIds.map((s) => s.id) };
     }
 
-    return this.prisma.timeline.findMany({
+    return this.prisma.timelineEvent.findMany({
       where,
-      orderBy: { created_at: 'desc' },
+      orderBy: { occurredAt: 'desc' },
       take: 10,
       select: {
         id: true,
-        event_type: true,
-        event_title: true,
+        eventType: true,
+        metadata: true,
         student: { select: { name: true } },
-        operator_teacher_name: true,
-        created_at: true,
+        operatorName: true,
+        occurredAt: true,
       },
     });
   }

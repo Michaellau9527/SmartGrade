@@ -17,7 +17,7 @@ import { DirectStatusUpdateError } from '../repositories/base.repository';
 
 setupPrismaMock();
 
-describe('测试 4: 状态保护 - 禁止直接修改 Student.current_status/current_location', () => {
+describe('测试 4: 状态保护 - 禁止直接修改 Student.currentStatus/currentLocation', () => {
   beforeEach(() => {
     setMockPrisma(createMockPrisma());
   });
@@ -254,7 +254,7 @@ describe('测试 4: 状态保护 - 禁止直接修改 Student.current_status/cur
       expect(mockTx.student.update).not.toHaveBeenCalled();
     });
 
-    it('事务中更新 Student 时必须同时设置 status_updated_at / location_updated_at', async () => {
+    it('事务中更新 Student 时必须同时设置 statusUpdatedAt / locationUpdatedAt', async () => {
       const { timelineService } = await import('../services/timeline.service');
       const mockPrisma = getMockPrisma();
 

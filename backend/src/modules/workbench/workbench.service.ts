@@ -21,7 +21,7 @@
  * 都不会动 WorkbenchService。
  */
 
-import type { AuthorizationContext } from '../authorization/types';
+import type { AuthorizationContext } from '../../authorization/types';
 import type {
   WorkbenchResponse,
   WorkbenchToday,

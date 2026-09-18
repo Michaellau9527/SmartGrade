@@ -13,6 +13,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { RoleModule } from './modules/role/role.module';
 import { PermissionModule } from './modules/permission/permission.module';
 import { TeacherModule } from './modules/teacher/teacher.module';
+import { WechatBindingModule } from './modules/wechat-binding/wechat-binding.module';
 import { StudentModule } from './modules/student/student.module';
 import { LeaveModule } from './modules/leave/leave.module';
 import { NoticeModule } from './modules/notice/notice.module';
@@ -56,6 +57,7 @@ import { WorkbenchModule } from './modules/workbench/workbench.module';
 
     // 业务模块 (Phase 骨架)
     TeacherModule,
+    WechatBindingModule,
     StudentModule,
     LeaveModule,
     NoticeModule,

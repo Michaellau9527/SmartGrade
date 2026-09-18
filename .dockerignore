@@ -1,0 +1,61 @@
+# ============================================================
+# .dockerignore
+# 只保留 backend 构建所需的文件
+# ============================================================
+
+# 依赖与构建产物
+node_modules
+**/node_modules
+pnpm-store
+.pnpm-store
+dist
+**/dist
+build
+**/build
+*.tsbuildinfo
+
+# 版本控制
+.git
+.gitignore
+
+# Docker 自身
+Dockerfile
+.dockerignore
+
+# 环境变量
+.env
+.env.*
+*.env
+
+# IDE & 编辑器
+.vscode
+.idea
+*.swp
+*.swo
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 日志
+logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# 测试覆盖
+coverage
+.nyc_output
+
+# 不需要的 monorepo 子包
+admin/
+miniapp/
+
+# 文档
+docs/
+
+# 上传文件
+uploads/
+
+# 脚本
+scripts/

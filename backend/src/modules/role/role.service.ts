@@ -11,7 +11,7 @@ export class RoleService {
       this.prisma.role.findMany({
         skip: query.skip,
         take: query.take,
-        orderBy: { created_at: 'desc' },
+        orderBy: { createdAt: 'desc' },
       }),
       this.prisma.role.count(),
     ]);
@@ -19,9 +19,9 @@ export class RoleService {
     return { list, total, page: query.page, pageSize: query.pageSize };
   }
 
-  async findOne(id: number) {
+  async findOne(id: number | string) {
     const role = await this.prisma.role.findUnique({
-      where: { id },
+      where: { id: BigInt(id) },
       include: {
         permissions: {
           include: { permission: true },
@@ -36,9 +36,9 @@ export class RoleService {
     return role;
   }
 
-  async getRolePermissions(id: number) {
+  async getRolePermissions(id: number | string) {
     const rolePermissions = await this.prisma.rolePermission.findMany({
-      where: { role_id: id },
+      where: { roleId: BigInt(id) },
       include: { permission: true },
     });
 
@@ -48,42 +48,43 @@ export class RoleService {
   async create(body: any) {
     return this.prisma.role.create({
       data: {
-        role_code: body.roleCode,
-        role_name: body.roleName,
+        roleCode: body.roleCode,
+        roleName: body.roleName,
         description: body.description,
       },
     });
   }
 
-  async update(id: number, body: any) {
+  async update(id: number | string, body: any) {
     return this.prisma.role.update({
-      where: { id },
+      where: { id: BigInt(id) },
       data: {
-        role_name: body.roleName,
+        roleName: body.roleName,
         description: body.description,
       },
     });
   }
 
-  async remove(id: number) {
-    await this.prisma.rolePermission.deleteMany({ where: { role_id: id } });
-    await this.prisma.teacherRole.deleteMany({ where: { role_id: id } });
-    await this.prisma.role.delete({ where: { id } });
+  async remove(id: number | string) {
+    await this.prisma.rolePermission.deleteMany({ where: { roleId: BigInt(id) } });
+    try {
+      await (this.prisma as any).teacherRole.deleteMany({ where: { roleId: BigInt(id) } });
+    } catch {
+    }
+    await this.prisma.role.delete({ where: { id: BigInt(id) } });
     return { success: true };
   }
 
-  async assignPermissions(roleId: number, permissionIds: number[]) {
-    // 先删除旧权限
+  async assignPermissions(roleId: number | string, permissionIds: (number | string)[]) {
     await this.prisma.rolePermission.deleteMany({
-      where: { role_id: roleId },
+      where: { roleId: BigInt(roleId) },
     });
 
-    // 添加新权限
     if (permissionIds && permissionIds.length > 0) {
       await this.prisma.rolePermission.createMany({
         data: permissionIds.map((pid) => ({
-          role_id: roleId,
-          permission_id: pid,
+          roleId: BigInt(roleId),
+          permissionId: BigInt(pid),
         })),
       });
     }

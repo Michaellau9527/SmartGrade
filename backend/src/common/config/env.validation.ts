@@ -20,8 +20,8 @@ export const envValidationSchema = Joi.object({
   // 数据库连接 (必填)
   DATABASE_URL: Joi.string()
     .required()
-    .uri({ scheme: ['postgresql', 'postgres'] })
-    .description('PostgreSQL 数据库连接字符串'),
+    .uri({ scheme: ['mysql'] })
+    .description('MySQL 数据库连接字符串'),
 
   // JWT 密钥 (必填)
   JWT_SECRET: Joi.string()

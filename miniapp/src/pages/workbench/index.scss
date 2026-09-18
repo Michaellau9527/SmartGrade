@@ -1,3 +1,342 @@
+/* ============================================================
+ * SmartGrade Workbench — Stitch 设计稿严格复刻
+ * designWidth: 750 (1px in SCSS = 1rpx = 0.5px CSS on 375px screen)
+ * ============================================================ */
+
+/* ====== 页面容器 ====== */
 .workbench {
-  padding: 32px;
+  min-height: 100vh;
+  background: #f8fafc;
+  padding-bottom: 48rpx;
+  box-sizing: border-box;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+.workbench--state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 200rpx;
+}
+
+.state-tip {
+  padding: 24rpx;
+  text-align: center;
+  color: #64748b;
+  font-size: 28rpx;
+}
+
+.state-tip.state-error {
+  color: #ef4444;
+}
+
+.workbench__spacer {
+  height: 48rpx;
+}
+
+/* ====== 顶部蓝色渐变 Header ====== */
+.hero-header {
+  background: linear-gradient(135deg, #4096ff 0%, #1677ff 100%);
+  border-radius: 0 0 48rpx 48rpx;
+  padding: 0 40rpx 48rpx;
+  color: #fff;
+}
+
+/* 导航行（SmartGrade 品牌，避开胶囊按钮） */
+.hero-header__nav {
+  height: 88rpx;
+  display: flex;
+  align-items: center;
+  margin-bottom: 8rpx;
+}
+
+.hero-header__brand {
+  font-size: 40rpx;
+  font-weight: 700;
+  letter-spacing: 1rpx;
+  color: #fff;
+}
+
+/* 用户信息 */
+.hero-header__profile {
+  display: flex;
+  align-items: center;
+  gap: 32rpx;
+  margin-bottom: 24rpx;
+}
+
+.hero-header__avatar {
+  width: 112rpx;
+  height: 112rpx;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  border: 4rpx solid rgba(255, 255, 255, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.hero-header__avatar-text {
+  font-size: 44rpx;
+  font-weight: 600;
+  color: #fff;
+}
+
+.hero-header__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.hero-header__greeting {
+  font-size: 36rpx;
+  font-weight: 600;
+  color: #fff;
+  display: block;
+}
+
+.hero-header__role {
+  font-size: 28rpx;
+  color: rgba(255, 255, 255, 0.8);
+  margin-top: 8rpx;
+  display: block;
+}
+
+/* 教育格言 */
+.hero-header__quote {
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.7);
+  font-style: italic;
+  display: block;
+}
+
+/* ====== 主内容区 ====== */
+.content {
+  padding: 0 40rpx;
+  margin-top: -16rpx;
+  position: relative;
+  z-index: 10;
+}
+
+/* ====== 卡片通用 ====== */
+.overview-card,
+.notice-card,
+.timeline-card {
+  background: #fff;
+  border-radius: 32rpx;
+  padding: 32rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+  border: 2rpx solid rgba(226, 232, 240, 0.5);
+  margin-bottom: 40rpx;
+}
+
+.timeline-card {
+  margin-bottom: 48rpx;
+}
+
+/* 卡片标题行 */
+.card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32rpx;
+}
+
+.card-head__title {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.card-head__more {
+  font-size: 24rpx;
+  color: #64748b;
+}
+
+/* ====== 今日概览：四宫格 ====== */
+.overview-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24rpx;
+}
+
+.overview-cell {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 24rpx;
+  border-radius: 24rpx;
+  border: 2rpx solid;
+
+  &--blue   { background: rgba(239, 246, 255, 0.5); border-color: #dbeafe; }
+  &--green  { background: rgba(240, 253, 244, 0.5); border-color: #dcfce7; }
+  &--orange { background: rgba(255, 247, 237, 0.5); border-color: #ffedd5; }
+  &--red    { background: rgba(254, 242, 242, 0.5); border-color: #fee2e2; }
+}
+
+.overview-cell__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.overview-cell__num {
+  font-size: 48rpx;
+  font-weight: 700;
+  color: #1e293b;
+  line-height: 1.2;
+  display: block;
+}
+
+.overview-cell__label {
+  font-size: 24rpx;
+  color: #64748b;
+  margin-top: 8rpx;
+  display: block;
+}
+
+.overview-cell__icon {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  &--blue   { background-color: #dbeafe; }
+  &--green  { background-color: #dcfce7; }
+  &--orange { background-color: #ffedd5; }
+  &--red    { background-color: #fee2e2; }
+}
+
+/* ====== 通知 & 待办 ====== */
+.notice-list {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+}
+
+.notice-item {
+  display: flex;
+  align-items: flex-start;
+  padding: 24rpx;
+  border-radius: 24rpx;
+  border: 2rpx solid;
+}
+
+.notice-item__icon {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32rpx;
+  flex-shrink: 0;
+  margin-right: 24rpx;
+}
+
+.notice-item__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.notice-item__main {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #1e293b;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.notice-item__time {
+  font-size: 22rpx;
+  color: #94a3b8;
+  margin-top: 6rpx;
+  display: block;
+}
+
+.notice-item__arrow {
+  font-size: 24rpx;
+  color: #94a3b8;
+  flex-shrink: 0;
+  margin-left: 8rpx;
+  margin-top: 28rpx;
+}
+
+/* ====== 今日动态：时间轴 ====== */
+.timeline {
+  padding-left: 8rpx;
+}
+
+.timeline-item {
+  display: flex;
+  align-items: flex-start;
+  position: relative;
+  padding-bottom: 40rpx;
+  padding-left: 36rpx;
+
+  &:last-child {
+    padding-bottom: 0;
+  }
+
+  /* 左侧竖线 */
+  &::before {
+    content: '';
+    position: absolute;
+    left: 7rpx;
+    top: 28rpx;
+    bottom: 0;
+    width: 4rpx;
+    background: #f1f5f9;
+  }
+
+  &:last-child::before {
+    display: none;
+  }
+}
+
+.timeline-item__dot {
+  position: absolute;
+  left: 0;
+  top: 8rpx;
+  width: 18rpx;
+  height: 18rpx;
+  border-radius: 50%;
+  border: 4rpx solid;
+  z-index: 1;
+}
+
+.timeline-item__icon {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28rpx;
+  flex-shrink: 0;
+  margin-right: 24rpx;
+  margin-top: 4rpx;
+}
+
+.timeline-item__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.timeline-item__title {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #1e293b;
+  display: block;
+}
+
+.timeline-item__desc {
+  font-size: 24rpx;
+  color: #64748b;
+  margin-top: 8rpx;
+  display: block;
 }

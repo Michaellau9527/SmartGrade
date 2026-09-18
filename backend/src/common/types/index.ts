@@ -16,10 +16,12 @@ export type DataScopeType = 'ALL' | 'GRADE' | 'CLASS' | 'DORM' | 'SELF';
  */
 export interface DataScope {
   type: DataScopeType;
-  gradeId?: number;
-  classId?: number;
-  /** 预留：授课班级 ID 列表，未来扩展任课教师数据范围 */
-  classIds?: number[];
+  /** 年级 ID（cuid 字符串，与数据库一致） */
+  gradeId?: string;
+  /** 班级 ID（cuid 字符串，与数据库一致） */
+  classId?: string;
+  /** 可管理的班级 ID 列表（cuid 字符串），用于多班级/年级场景 */
+  classIds?: string[];
 }
 
 /**

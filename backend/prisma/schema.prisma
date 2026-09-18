@@ -394,6 +394,8 @@ model Teacher {
   teachingGroup String?       @map("teaching_group") @db.VarChar(50)
   subject       String?       @db.VarChar(50)
   position      String?       @db.VarChar(50)
+  wechatOpenid  String?       @unique @map("wechat_openid") @db.VarChar(100)
+  wechatUnionid String?       @map("wechat_unionid") @db.VarChar(100)
   status        TeacherStatus @default(ACTIVE)
   createdAt     DateTime      @default(now()) @map("created_at")
   updatedAt     DateTime      @updatedAt @map("updated_at")
@@ -412,11 +414,42 @@ model Teacher {
   createdTasks         Task[]                 @relation("TaskCreator")
   operatedTimelines    TimelineEvent[]
   managedDormBuildings DormBuilding[]         @relation("DormManager")
+  // 教师微信绑定（P1-13）：被绑定教师 / 发起绑定的管理员
+  wechatBindings          TeacherWechatBinding[] @relation("BindingTeacher")
+  initiatedWechatBindings TeacherWechatBinding[] @relation("BindingAdmin")
 
   @@index([status])
   @@index([phone])
   @@index([teachingGroup])
   @@map("teacher")
+}
+
+// DB-022 TeacherWechatBinding（P1-13 教师微信绑定一次性绑定码 + 审计）
+model TeacherWechatBinding {
+  id         String                    @id @default(cuid())
+  tokenHash  String                    @unique @map("token_hash") @db.VarChar(64)
+  teacherId  String                    @map("teacher_id") @db.VarChar(36)
+  adminId    String                    @map("admin_id") @db.VarChar(36)
+  status     TeacherWechatBindingStatus @default(ACTIVE)
+  expiresAt  DateTime                  @map("expires_at")
+  consumedAt DateTime?                 @map("consumed_at")
+  createdAt  DateTime                  @default(now()) @map("created_at")
+  updatedAt  DateTime                  @updatedAt @map("updated_at")
+
+  teacher Teacher @relation("BindingTeacher", fields: [teacherId], references: [id])
+  admin   Teacher @relation("BindingAdmin", fields: [adminId], references: [id])
+
+  @@index([teacherId])
+  @@index([status, expiresAt])
+  @@map("teacher_wechat_binding")
+}
+
+// 绑定码状态（P1-13）
+enum TeacherWechatBindingStatus {
+  ACTIVE
+  CONSUMED
+  EXPIRED
+  REVOKED
 }
 
 // DB-005 Student（v1.2 双维度核心）

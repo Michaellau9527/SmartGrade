@@ -1,1 +1,2 @@
-export { LoginDto, MockLoginDto } from './login.dto';
+export { LoginDto } from './login.dto';
+export { LoginByPasswordDto } from './login-by-password.dto';

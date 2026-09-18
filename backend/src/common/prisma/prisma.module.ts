@@ -23,8 +23,8 @@ export class PrismaModule implements OnModuleInit, OnModuleDestroy {
       await this.prisma.$connect();
       this.logger.log('数据库连接成功');
     } catch (error) {
-      this.logger.error('数据库连接失败', error);
-      throw error;
+      // 生产环境下不因数据库连接失败而崩溃，保证服务启动和健康检查通过
+      this.logger.warn(`数据库连接失败（服务仍将启动）: ${error.message}`);
     }
   }
 

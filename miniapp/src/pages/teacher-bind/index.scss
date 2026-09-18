@@ -1,0 +1,249 @@
+.tb {
+  min-height: 100vh;
+  padding: 24px;
+  padding-bottom: 48px;
+  box-sizing: border-box;
+  background-color: #f5f5f5;
+}
+
+/* 头部说明 */
+.tb__head {
+  margin-bottom: 24px;
+  padding: 8px 4px 0;
+}
+
+.tb__head-title {
+  display: block;
+  font-size: 36px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 12px;
+}
+
+.tb__head-desc {
+  display: block;
+  font-size: 24px;
+  line-height: 1.7;
+  color: #8c8c8c;
+}
+
+/* 无权限提示 */
+.tb__denied {
+  padding: 80px 32px;
+  text-align: center;
+}
+
+.tb__denied-title {
+  display: block;
+  font-size: 36px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 16px;
+}
+
+.tb__denied-desc {
+  display: block;
+  font-size: 26px;
+  color: #8c8c8c;
+  line-height: 1.7;
+  margin-bottom: 40px;
+}
+
+.tb__denied-btn {
+  background-color: #1677ff;
+  color: #fff;
+  border-radius: 8px;
+  font-size: 30px;
+}
+
+/* 绑定码展示卡 */
+.tb__token {
+  margin-bottom: 24px;
+  padding: 24px;
+  border-radius: 12px;
+  background-color: #fff;
+  border: 1px solid #91caff;
+}
+
+.tb__token-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.tb__token-label {
+  font-size: 26px;
+  font-weight: 600;
+  color: #1677ff;
+}
+
+.tb__token-close {
+  font-size: 24px;
+  color: #999;
+}
+
+.tb__token-teacher {
+  display: block;
+  font-size: 24px;
+  color: #666;
+  margin-bottom: 16px;
+}
+
+.tb__token-code {
+  display: block;
+  padding: 24px;
+  border-radius: 8px;
+  background-color: #f0f5ff;
+  border: 1px dashed #1677ff;
+  font-size: 32px;
+  font-weight: 600;
+  color: #1a1a1a;
+  text-align: center;
+  word-break: break-all;
+  letter-spacing: 1px;
+  margin-bottom: 16px;
+}
+
+.tb__token-copy {
+  background-color: #1677ff;
+  color: #fff;
+  border-radius: 8px;
+  font-size: 28px;
+  margin-bottom: 16px;
+}
+
+.tb__token-tip {
+  display: block;
+  font-size: 22px;
+  line-height: 1.7;
+  color: #8c8c8c;
+}
+
+/* 错误条 */
+.tb__error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  margin-bottom: 24px;
+  border-radius: 8px;
+  background-color: #fff2f0;
+  border: 1px solid #ffccc7;
+}
+
+.tb__error-text {
+  flex: 1;
+  font-size: 24px;
+  color: #cf1322;
+  word-break: break-all;
+}
+
+.tb__error-retry {
+  margin-left: 16px;
+  font-size: 24px;
+  color: #1677ff;
+}
+
+/* 教师列表 */
+.tb__list {
+  max-height: 60vh;
+}
+
+.tb__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px;
+  margin-bottom: 16px;
+  border-radius: 12px;
+  background-color: #fff;
+}
+
+.tb__row-info {
+  flex: 1;
+  min-width: 0;
+  margin-right: 16px;
+}
+
+.tb__row-name {
+  display: block;
+  font-size: 30px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 6px;
+}
+
+.tb__row-no {
+  display: block;
+  font-size: 22px;
+  color: #999;
+  margin-bottom: 8px;
+}
+
+.tb__row-status {
+  display: inline-block;
+  padding: 2px 12px;
+  border-radius: 16px;
+  font-size: 20px;
+  line-height: 1.6;
+}
+
+.tb__row-status--free {
+  background-color: #f6ffed;
+  color: #52c41a;
+}
+
+.tb__row-status--pending {
+  background-color: #fff7e6;
+  color: #fa8c16;
+}
+
+.tb__row-status--bound {
+  background-color: #f0f0f0;
+  color: #999;
+}
+
+.tb__row-status--inactive {
+  background-color: #f0f0f0;
+  color: #999;
+}
+
+.tb__row-btn {
+  flex-shrink: 0;
+  min-width: 168px;
+  margin: 0;
+  padding: 0 8px;
+  font-size: 26px;
+  line-height: 2.4;
+  border-radius: 8px;
+  background-color: #1677ff;
+  color: #fff;
+
+  &[disabled] {
+    background-color: #c9d9f5;
+    color: #fff;
+  }
+}
+
+.tb__empty {
+  padding: 60px 0;
+  text-align: center;
+  color: #999;
+  font-size: 26px;
+}
+
+.tb__more {
+  margin: 24px 0 8px;
+  background-color: #fff;
+  color: #1677ff;
+  border-radius: 8px;
+  font-size: 26px;
+}
+
+.tb__end {
+  padding: 24px 0 8px;
+  text-align: center;
+  color: #bbb;
+  font-size: 22px;
+}

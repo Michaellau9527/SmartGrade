@@ -1,0 +1,263 @@
+src/__tests__/helpers/mock-prisma.ts(23,30): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{}'.
+  No index signature with a parameter of type 'string' was found on type '{}'.
+src/__tests__/helpers/mock-prisma.ts(24,14): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{}'.
+  No index signature with a parameter of type 'string' was found on type '{}'.
+src/__tests__/test9-sprint2-2-c03-notice.test.ts(131,24): error TS2551: Property 'NOTICE_CREATE' does not exist on type 'typeof PermissionCode'. Did you mean 'NOTICE_READ'?
+src/__tests__/test9-sprint2-2-c03-notice.test.ts(133,24): error TS2339: Property 'NOTICE_UPDATE' does not exist on type 'typeof PermissionCode'.
+src/common/guards/data-scope.guard.ts(71,18): error TS2322: Type 'number' is not assignable to type 'string | StringNullableFilter<"Grade"> | null | undefined'.
+src/common/guards/data-scope.guard.ts(82,18): error TS2322: Type 'number' is not assignable to type 'string | StringNullableFilter<"Class"> | null | undefined'.
+src/modules/auth/auth.service.ts(33,9): error TS2353: Object literal may only specify known properties, and 'roles' does not exist in type 'TeacherInclude<DefaultArgs>'.
+src/modules/auth/auth.service.ts(59,29): error TS2339: Property 'department' does not exist on type '{ id: string; name: string; status: TeacherStatus; createdAt: Date; updatedAt: Date; deletedAt: Date | null; teacherNo: string; gender: Gender; phone: string | null; ... 4 more ...; position: string | null; }'.
+src/modules/auth/auth.service.ts(62,22): error TS2339: Property 'roles' does not exist on type '{ id: string; name: string; status: TeacherStatus; createdAt: Date; updatedAt: Date; deletedAt: Date | null; teacherNo: string; gender: Gender; phone: string | null; ... 4 more ...; position: string | null; }'.
+src/modules/auth/auth.service.ts(62,33): error TS7006: Parameter 'tr' implicitly has an 'any' type.
+src/modules/auth/auth.service.ts(67,21): error TS2339: Property 'tags' does not exist on type '{ id: string; name: string; status: TeacherStatus; createdAt: Date; updatedAt: Date; deletedAt: Date | null; teacherNo: string; gender: Gender; phone: string | null; ... 4 more ...; position: string | null; }'.
+src/modules/auth/auth.service.ts(67,31): error TS7006: Parameter 'tt' implicitly has an 'any' type.
+src/modules/auth/auth.service.ts(112,16): error TS2322: Type 'number' is not assignable to type 'string'.
+src/modules/auth/auth.service.ts(114,9): error TS2353: Object literal may only specify known properties, and 'roles' does not exist in type 'TeacherInclude<DefaultArgs>'.
+src/modules/auth/auth.service.ts(128,29): error TS2339: Property 'roles' does not exist on type '{ id: string; name: string; status: TeacherStatus; createdAt: Date; updatedAt: Date; deletedAt: Date | null; teacherNo: string; gender: Gender; phone: string | null; ... 4 more ...; position: string | null; }'.
+src/modules/auth/auth.service.ts(128,40): error TS7006: Parameter 'tr' implicitly has an 'any' type.
+src/modules/auth/auth.service.ts(137,27): error TS2339: Property 'department' does not exist on type '{ id: string; name: string; status: TeacherStatus; createdAt: Date; updatedAt: Date; deletedAt: Date | null; teacherNo: string; gender: Gender; phone: string | null; ... 4 more ...; position: string | null; }'.
+src/modules/auth/auth.service.ts(139,22): error TS2339: Property 'roles' does not exist on type '{ id: string; name: string; status: TeacherStatus; createdAt: Date; updatedAt: Date; deletedAt: Date | null; teacherNo: string; gender: Gender; phone: string | null; ... 4 more ...; position: string | null; }'.
+src/modules/auth/auth.service.ts(139,33): error TS7006: Parameter 'tr' implicitly has an 'any' type.
+src/modules/auth/auth.service.ts(140,21): error TS2339: Property 'tags' does not exist on type '{ id: string; name: string; status: TeacherStatus; createdAt: Date; updatedAt: Date; deletedAt: Date | null; teacherNo: string; gender: Gender; phone: string | null; ... 4 more ...; position: string | null; }'.
+src/modules/auth/auth.service.ts(140,31): error TS7006: Parameter 'tt' implicitly has an 'any' type.
+src/modules/auth/strategies/jwt.strategy.ts(50,44): error TS2339: Property 'teacherRole' does not exist on type 'PrismaService'.
+src/modules/auth/strategies/jwt.strategy.ts(58,37): error TS7006: Parameter 'tr' implicitly has an 'any' type.
+src/modules/auth/strategies/jwt.strategy.ts(61,39): error TS7006: Parameter 'tr' implicitly has an 'any' type.
+src/modules/auth/strategies/jwt.strategy.ts(107,18): error TS2322: Type 'number' is not assignable to type 'string | StringNullableFilter<"Grade"> | null | undefined'.
+src/modules/auth/strategies/jwt.strategy.ts(116,18): error TS2322: Type 'number' is not assignable to type 'string | StringNullableFilter<"Class"> | null | undefined'.
+src/modules/dorm/dorm.service.ts(12,24): error TS2339: Property 'dormitory' does not exist on type 'PrismaService'.
+src/modules/dorm/dorm.service.ts(21,36): error TS2339: Property 'dormitory' does not exist on type 'PrismaService'.
+src/modules/dorm/dorm.service.ts(47,43): error TS2353: Object literal may only specify known properties, and 'building_name' does not exist in type 'DormBuildingSelect<DefaultArgs>'.
+src/modules/dorm/dorm.service.ts(59,16): error TS2322: Type 'bigint' is not assignable to type 'string | (DormRoomBuildingIdRoomNoCompoundUniqueInput & string) | undefined'.
+src/modules/dorm/dorm.service.ts(61,41): error TS2353: Object literal may only specify known properties, and 'building_name' does not exist in type 'DormBuildingSelect<DefaultArgs>'.
+src/modules/dorm/dorm.service.ts(65,42): error TS2353: Object literal may only specify known properties, and 'class_name' does not exist in type 'ClassSelect<DefaultArgs>'.
+src/modules/dorm/dorm.service.ts(84,13): error TS2322: Type 'bigint' is not assignable to type 'string'.
+src/modules/dorm/dorm.service.ts(85,13): error TS2322: Type '"CHECKOUT_DORM" | "DORM_EXCEPTION"' is not assignable to type 'TimelineEventType'.
+  Type '"CHECKOUT_DORM"' is not assignable to type 'TimelineEventType'.
+src/modules/dorm/dorm.service.ts(87,40): error TS2551: Property 'building' does not exist on type '{ id: string; status: string; createdAt: Date; updatedAt: Date; deletedAt: Date | null; buildingId: string; floor: number; roomNo: string; capacity: number; currentCount: number; }'. Did you mean 'buildingId'?
+src/modules/dorm/dorm.service.ts(107,19): error TS2339: Property 'dormitory' does not exist on type 'PrismaService'.
+src/modules/leave/leave.capability-service.ts(22,43): error TS2307: Cannot find module '../authorization/types' or its corresponding type declarations.
+src/modules/leave/leave.capability-service.ts(78,9): error TS2352: Conversion of type '{ leaveNo: string; studentId: string; studentName: string; classId: string; className: any; gradeId: string; schoolId: string; leaveType: any; leaveReasonType: any; reason: string; startAt: Date; ... 6 more ...; attachmentIds: never[]; }' to type 'LeaveRecordCreateInput' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type '{ leaveNo: string; studentId: string; studentName: string; classId: string; className: any; gradeId: string; schoolId: string; leaveType: any; leaveReasonType: any; reason: string; startAt: Date; ... 6 more ...; attachmentIds: never[]; }' is missing the following properties from type 'LeaveRecordCreateInput': student, applicant
+src/modules/leave/leave.capability-service.ts(83,30): error TS2339: Property 'className' does not exist on type '{ id: string; name: string; gradeId: string; classId: string; schoolId: string; createdAt: Date; updatedAt: Date; deletedAt: Date | null; gender: Gender; phone: string | null; ... 10 more ...; transferredAt: Date | null; }'.
+src/modules/leave/leave.service.ts(76,11): error TS2322: Type 'bigint' is not assignable to type 'string'.
+src/modules/leave/leave.service.ts(78,11): error TS2322: Type 'bigint' is not assignable to type 'string'.
+src/modules/leave/leave.service.ts(83,11): error TS2322: Type 'string' is not assignable to type 'LeaveType'.
+src/modules/leave/leave.service.ts(97,9): error TS2322: Type 'string' is not assignable to type 'bigint'.
+src/modules/leave/leave.service.ts(107,9): error TS2322: Type 'string' is not assignable to type 'bigint'.
+src/modules/leave/leave.service.ts(116,9): error TS2322: Type 'string' is not assignable to type 'bigint'.
+src/modules/leave/leave.service.ts(133,18): error TS2322: Type 'bigint' is not assignable to type 'string'.
+src/modules/leave/leave.service.ts(134,17): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type '(Without<StudentUpdateInput, StudentUncheckedUpdateInput> & StudentUncheckedUpdateInput) | (Without<...> & StudentUpdateInput)'.
+src/modules/leave/leave.service.ts(164,31): error TS2345: Argument of type 'string' is not assignable to parameter of type 'bigint'.
+src/modules/leave/leave.service.ts(164,54): error TS2339: Property 'boardingType' does not exist on type '{ gradeId: string; classId: string; id: string; schoolId: string; status: LeaveStatus; createdAt: Date; updatedAt: Date; deletedAt: Date | null; studentId: string; ... 23 more ...; attachmentIds: JsonValue; }'.
+src/modules/leave/leave.service.ts(170,18): error TS2322: Type 'bigint' is not assignable to type 'string'.
+src/modules/leave/leave.service.ts(173,11): error TS2353: Object literal may only specify known properties, and 'current_node' does not exist in type '(Without<LeaveRecordUpdateInput, LeaveRecordUncheckedUpdateInput> & LeaveRecordUncheckedUpdateInput) | (Without<...> & LeaveRecordUpdateInput)'.
+src/modules/leave/leave.service.ts(183,9): error TS2322: Type 'string' is not assignable to type 'bigint'.
+src/modules/leave/leave.service.ts(184,9): error TS2322: Type 'string' is not assignable to type 'bigint'.
+src/modules/leave/leave.service.ts(194,9): error TS2322: Type 'string' is not assignable to type 'bigint'.
+src/modules/leave/leave.service.ts(199,18): error TS2322: Type 'bigint' is not assignable to type 'string'.
+src/modules/leave/leave.service.ts(200,17): error TS2353: Object literal may only specify known properties, and 'timeline_count' does not exist in type '(Without<LeaveRecordUpdateInput, LeaveRecordUncheckedUpdateInput> & LeaveRecordUncheckedUpdateInput) | (Without<...> & LeaveRecordUpdateInput)'.
+src/modules/leave/leave.service.ts(204,45): error TS2345: Argument of type 'string' is not assignable to parameter of type 'bigint'.
+src/modules/leave/leave.service.ts(207,18): error TS2339: Property 'is_boarding_notice' does not exist on type '{ gradeId: string; classId: string; id: string; schoolId: string; status: LeaveStatus; createdAt: Date; updatedAt: Date; deletedAt: Date | null; studentId: string; ... 23 more ...; attachmentIds: JsonValue; }'.
+src/modules/leave/leave.service.ts(213,11): error TS2322: Type 'string' is not assignable to type 'bigint'.
+src/modules/leave/leave.service.ts(263,31): error TS2345: Argument of type 'string' is not assignable to parameter of type 'bigint'.
+src/modules/leave/leave.service.ts(263,54): error TS2339: Property 'boardingType' does not exist on type '{ gradeId: string; classId: string; id: string; schoolId: string; status: LeaveStatus; createdAt: Date; updatedAt: Date; deletedAt: Date | null; studentId: string; ... 23 more ...; attachmentIds: JsonValue; }'.
+src/modules/leave/leave.service.ts(269,18): error TS2322: Type 'bigint' is not assignable to type 'string'.
+src/modules/leave/leave.service.ts(272,11): error TS2353: Object literal may only specify known properties, and 'current_node' does not exist in type '(Without<LeaveRecordUpdateInput, LeaveRecordUncheckedUpdateInput> & LeaveRecordUncheckedUpdateInput) | (Without<...> & LeaveRecordUpdateInput)'.
+src/modules/leave/leave.service.ts(282,9): error TS2322: Type 'string' is not assignable to type 'bigint'.
+src/modules/leave/leave.service.ts(283,9): error TS2322: Type 'string' is not assignable to type 'bigint'.
+src/modules/leave/leave.service.ts(293,9): error TS2322: Type 'string' is not assignable to type 'bigint'.
+src/modules/leave/leave.service.ts(298,18): error TS2322: Type 'bigint' is not assignable to type 'string'.
+src/modules/leave/leave.service.ts(299,17): error TS2353: Object literal may only specify known properties, and 'timeline_count' does not exist in type '(Without<LeaveRecordUpdateInput, LeaveRecordUncheckedUpdateInput> & LeaveRecordUncheckedUpdateInput) | (Without<...> & LeaveRecordUpdateInput)'.
+src/modules/leave/leave.service.ts(305,17): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type '(Without<StudentUpdateInput, StudentUncheckedUpdateInput> & StudentUncheckedUpdateInput) | (Without<...> & StudentUpdateInput)'.
+src/modules/leave/leave.service.ts(309,43): error TS2345: Argument of type 'string' is not assignable to parameter of type 'bigint'.
+src/modules/leave/leave.service.ts(347,31): error TS2345: Argument of type 'string' is not assignable to parameter of type 'bigint'.
+src/modules/leave/leave.service.ts(347,54): error TS2339: Property 'boardingType' does not exist on type '{ gradeId: string; classId: string; id: string; schoolId: string; status: LeaveStatus; createdAt: Date; updatedAt: Date; deletedAt: Date | null; studentId: string; ... 23 more ...; attachmentIds: JsonValue; }'.
+src/modules/leave/leave.service.ts(353,18): error TS2322: Type 'bigint' is not assignable to type 'string'.
+src/modules/leave/leave.service.ts(356,11): error TS2353: Object literal may only specify known properties, and 'current_node' does not exist in type '(Without<LeaveRecordUpdateInput, LeaveRecordUncheckedUpdateInput> & LeaveRecordUncheckedUpdateInput) | (Without<...> & LeaveRecordUpdateInput)'.
+src/modules/leave/leave.service.ts(363,9): error TS2322: Type 'string' is not assignable to type 'bigint'.
+src/modules/leave/leave.service.ts(364,9): error TS2322: Type 'string' is not assignable to type 'bigint'.
+src/modules/leave/leave.service.ts(374,9): error TS2322: Type 'string' is not assignable to type 'bigint'.
+src/modules/leave/leave.service.ts(379,18): error TS2322: Type 'bigint' is not assignable to type 'string'.
+src/modules/leave/leave.service.ts(380,17): error TS2353: Object literal may only specify known properties, and 'timeline_count' does not exist in type '(Without<LeaveRecordUpdateInput, LeaveRecordUncheckedUpdateInput> & LeaveRecordUncheckedUpdateInput) | (Without<...> & LeaveRecordUpdateInput)'.
+src/modules/leave/leave.service.ts(386,17): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type '(Without<StudentUpdateInput, StudentUncheckedUpdateInput> & StudentUncheckedUpdateInput) | (Without<...> & StudentUpdateInput)'.
+src/modules/leave/leave.service.ts(390,45): error TS2345: Argument of type 'string' is not assignable to parameter of type 'bigint'.
+src/modules/leave/leave.service.ts(393,18): error TS2339: Property 'boardingType' does not exist on type '{ gradeId: string; classId: string; id: string; schoolId: string; status: LeaveStatus; createdAt: Date; updatedAt: Date; deletedAt: Date | null; studentId: string; ... 23 more ...; attachmentIds: JsonValue; }'.
+src/modules/leave/leave.service.ts(430,31): error TS2345: Argument of type 'string' is not assignable to parameter of type 'bigint'.
+src/modules/leave/leave.service.ts(430,54): error TS2339: Property 'boardingType' does not exist on type '{ gradeId: string; classId: string; id: string; schoolId: string; status: LeaveStatus; createdAt: Date; updatedAt: Date; deletedAt: Date | null; studentId: string; ... 23 more ...; attachmentIds: JsonValue; }'.
+src/modules/leave/leave.service.ts(438,18): error TS2322: Type 'bigint' is not assignable to type 'string'.
+src/modules/leave/leave.service.ts(440,11): error TS2322: Type '"FINISHED"' is not assignable to type 'LeaveStatus | EnumLeaveStatusFieldUpdateOperationsInput | undefined'.
+src/modules/leave/leave.service.ts(449,9): error TS2322: Type 'string' is not assignable to type 'bigint'.
+src/modules/leave/leave.service.ts(450,9): error TS2322: Type 'string' is not assignable to type 'bigint'.
+src/modules/leave/leave.service.ts(460,9): error TS2322: Type 'string' is not assignable to type 'bigint'.
+src/modules/leave/leave.service.ts(465,18): error TS2322: Type 'bigint' is not assignable to type 'string'.
+src/modules/leave/leave.service.ts(466,17): error TS2353: Object literal may only specify known properties, and 'timeline_count' does not exist in type '(Without<LeaveRecordUpdateInput, LeaveRecordUncheckedUpdateInput> & LeaveRecordUncheckedUpdateInput) | (Without<...> & LeaveRecordUpdateInput)'.
+src/modules/leave/leave.service.ts(472,17): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type '(Without<StudentUpdateInput, StudentUncheckedUpdateInput> & StudentUncheckedUpdateInput) | (Without<...> & StudentUpdateInput)'.
+src/modules/leave/leave.service.ts(476,45): error TS2345: Argument of type 'string' is not assignable to parameter of type 'bigint'.
+src/modules/leave/leave.service.ts(479,18): error TS2339: Property 'boardingType' does not exist on type '{ gradeId: string; classId: string; id: string; schoolId: string; status: LeaveStatus; createdAt: Date; updatedAt: Date; deletedAt: Date | null; studentId: string; ... 23 more ...; attachmentIds: JsonValue; }'.
+src/modules/leave/leave.service.ts(575,16): error TS2322: Type 'bigint' is not assignable to type 'string'.
+src/modules/leave/leave.service.ts(589,39): error TS2353: Object literal may only specify known properties, and 'grade_name' does not exist in type 'GradeSelect<DefaultArgs>'.
+src/modules/leave/leave.service.ts(607,22): error TS2353: Object literal may only specify known properties, and 'createdAt' does not exist in type 'TimelineEventOrderByWithRelationInput | TimelineEventOrderByWithRelationInput[]'.
+src/modules/leave/leave.service.ts(617,31): error TS2345: Argument of type 'string' is not assignable to parameter of type 'bigint'.
+src/modules/leave/leave.service.ts(617,54): error TS2339: Property 'boardingType' does not exist on type '{ gradeId: string; classId: string; id: string; schoolId: string; status: LeaveStatus; createdAt: Date; updatedAt: Date; deletedAt: Date | null; studentId: string; ... 23 more ...; attachmentIds: JsonValue; }'.
+src/modules/leave/leave.service.ts(718,22): error TS2322: Type 'bigint' is not assignable to type 'string | StringFilter<"Class"> | undefined'.
+src/modules/leave/leave.service.ts(788,16): error TS2322: Type 'bigint' is not assignable to type 'string'.
+src/modules/leave/leave.service.ts(858,9): error TS2322: Type 'bigint' is not assignable to type 'string'.
+src/modules/leave/leave.service.ts(859,9): error TS2322: Type 'bigint' is not assignable to type 'string'.
+src/modules/leave/leave.service.ts(868,9): error TS2322: Type 'string' is not assignable to type 'TimelineEventSource'.
+src/modules/leave/leave.service.ts(869,9): error TS2322: Type 'bigint | null' is not assignable to type 'string'.
+  Type 'null' is not assignable to type 'string'.
+src/modules/leave/leave.service.ts(903,9): error TS2322: Type 'string' is not assignable to type 'TaskPriority | undefined'.
+src/modules/leave/leave.service.ts(904,9): error TS2322: Type '"TODO"' is not assignable to type 'TaskStatus | undefined'.
+src/modules/leave/leave.service.ts(921,9): error TS2322: Type '"TODO"' is not assignable to type 'TaskStatus | EnumTaskStatusFilter<"Task"> | undefined'.
+src/modules/leave/leave.service.ts(924,9): error TS2322: Type '"DONE"' is not assignable to type 'TaskStatus | EnumTaskStatusFieldUpdateOperationsInput | undefined'.
+src/modules/leave/leave.service.ts(942,9): error TS2322: Type '"TODO"' is not assignable to type 'TaskStatus | EnumTaskStatusFilter<"Task"> | undefined'.
+src/modules/notice/notice.capability-service.ts(17,43): error TS2307: Cannot find module '../authorization/types' or its corresponding type declarations.
+src/modules/notice/notice.capability-service.ts(63,9): error TS2352: Conversion of type '{ noticeNo: string; title: string; content: string; contentFormat: string; noticeType: any; targets: any; requireConfirm: boolean; confirmDeadline: Date | null; status: NoticeStatus; publisherId: any; publisherName: any; schoolId: any; }' to type 'NoticeCreateInput' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'publisher' is missing in type '{ noticeNo: string; title: string; content: string; contentFormat: string; noticeType: any; targets: any; requireConfirm: boolean; confirmDeadline: Date | null; status: NoticeStatus; publisherId: any; publisherName: any; schoolId: any; }' but required in type 'NoticeCreateInput'.
+src/modules/notice/notice.capability-service.ts(82,9): error TS2352: Conversion of type '{ eventType: any; eventSource: any; sourceEventId: string; operatorId: any; operatorName: any; operatorRole: any; metadata: { noticeNo: string; title: string; noticeType: NoticeType; status: NoticeStatus; }; occurredAt: Date; schoolId: any; noticeId: string; }' to type 'CreateTimelineEventInput' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'studentId' is missing in type '{ eventType: any; eventSource: any; sourceEventId: string; operatorId: any; operatorName: any; operatorRole: any; metadata: { noticeNo: string; title: string; noticeType: NoticeType; status: NoticeStatus; }; occurredAt: Date; schoolId: any; noticeId: string; }' but required in type 'CreateTimelineEventInput'.
+src/modules/notice/notice.capability-service.ts(127,9): error TS2352: Conversion of type '{ eventType: any; eventSource: any; sourceEventId: string; operatorId: any; operatorName: any; operatorRole: any; metadata: { noticeNo: string; title: string; from: $Enums.NoticeStatus; to: string; }; occurredAt: Date; schoolId: string; noticeId: string; }' to type 'CreateTimelineEventInput' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'studentId' is missing in type '{ eventType: any; eventSource: any; sourceEventId: string; operatorId: any; operatorName: any; operatorRole: any; metadata: { noticeNo: string; title: string; from: $Enums.NoticeStatus; to: string; }; occurredAt: Date; schoolId: string; noticeId: string; }' but required in type 'CreateTimelineEventInput'.
+src/modules/notice/notice.capability-service.ts(152,50): error TS2339: Property 'reads' does not exist on type '{ id: string; schoolId: string; status: NoticeStatus; createdAt: Date; updatedAt: Date; deletedAt: Date | null; title: string; noticeNo: string; content: string; ... 8 more ...; archivedAt: Date | null; }'.
+src/modules/notice/notice.capability-service.ts(173,9): error TS2352: Conversion of type '{ eventType: any; eventSource: any; sourceEventId: string; operatorId: any; operatorName: any; operatorRole: any; metadata: { noticeNo: string; title: string; readerId: any; }; occurredAt: Date; schoolId: string; noticeId: string; }' to type 'CreateTimelineEventInput' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'studentId' is missing in type '{ eventType: any; eventSource: any; sourceEventId: string; operatorId: any; operatorName: any; operatorRole: any; metadata: { noticeNo: string; title: string; readerId: any; }; occurredAt: Date; schoolId: string; noticeId: string; }' but required in type 'CreateTimelineEventInput'.
+src/modules/notice/notice.capability-service.ts(195,48): error TS2339: Property 'reads' does not exist on type '{ id: string; schoolId: string; status: NoticeStatus; createdAt: Date; updatedAt: Date; deletedAt: Date | null; title: string; noticeNo: string; content: string; ... 8 more ...; archivedAt: Date | null; }'.
+src/modules/notice/notice.capability-service.ts(210,33): error TS2339: Property 'reads' does not exist on type '{ id: string; schoolId: string; status: NoticeStatus; createdAt: Date; updatedAt: Date; deletedAt: Date | null; title: string; noticeNo: string; content: string; ... 8 more ...; archivedAt: Date | null; }'.
+src/modules/notice/notice.capability-service.ts(222,9): error TS2352: Conversion of type '{ eventType: any; eventSource: any; sourceEventId: string; operatorId: any; operatorName: any; operatorRole: any; metadata: { noticeNo: string; title: string; readerId: any; }; occurredAt: Date; schoolId: string; noticeId: string; }' to type 'CreateTimelineEventInput' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'studentId' is missing in type '{ eventType: any; eventSource: any; sourceEventId: string; operatorId: any; operatorName: any; operatorRole: any; metadata: { noticeNo: string; title: string; readerId: any; }; occurredAt: Date; schoolId: string; noticeId: string; }' but required in type 'CreateTimelineEventInput'.
+src/modules/notice/notice.capability-service.ts(244,48): error TS2339: Property 'reads' does not exist on type '{ id: string; schoolId: string; status: NoticeStatus; createdAt: Date; updatedAt: Date; deletedAt: Date | null; title: string; noticeNo: string; content: string; ... 8 more ...; archivedAt: Date | null; }'.
+src/modules/notice/notice.capability-service.ts(258,31): error TS2339: Property 'reads' does not exist on type '{ id: string; schoolId: string; status: NoticeStatus; createdAt: Date; updatedAt: Date; deletedAt: Date | null; title: string; noticeNo: string; content: string; ... 8 more ...; archivedAt: Date | null; }'.
+src/modules/notice/notice.controller.ts(115,24): error TS2551: Property 'NOTICE_CREATE' does not exist on type 'typeof PermissionCode'. Did you mean 'NOTICE_READ'?
+src/modules/notice/notice.controller.ts(117,24): error TS2339: Property 'NOTICE_UPDATE' does not exist on type 'typeof PermissionCode'.
+src/modules/notice/notice.service.ts(47,18): error TS2322: Type 'bigint' is not assignable to type 'string | StringFilter<"NoticeRead"> | undefined'.
+src/modules/notice/notice.service.ts(58,18): error TS2322: Type 'bigint' is not assignable to type 'string | StringFilter<"NoticeRead"> | undefined'.
+src/modules/notice/notice.service.ts(73,11): error TS2322: Type 'bigint' is not assignable to type 'string | StringFilter<"NoticeRead"> | undefined'.
+src/modules/notice/notice.service.ts(108,13): error TS2353: Object literal may only specify known properties, and 'priority' does not exist in type 'NoticeOrderByWithRelationInput'.
+src/modules/notice/notice.service.ts(125,9): error TS2322: Type 'bigint' is not assignable to type 'string | StringFilter<"NoticeRead"> | undefined'.
+src/modules/notice/notice.service.ts(157,9): error TS2322: Type 'bigint' is not assignable to type 'string | StringFilter<"NoticeRead"> | undefined'.
+src/modules/notice/notice.service.ts(172,19): error TS2353: Object literal may only specify known properties, and 'priority' does not exist in type 'NoticeOrderByWithRelationInput'.
+src/modules/notice/notice.service.ts(190,16): error TS2322: Type 'bigint' is not assignable to type 'string'.
+src/modules/notice/notice.service.ts(203,21): error TS2345: Argument of type 'string' is not assignable to parameter of type 'bigint'.
+src/modules/notice/notice.service.ts(241,11): error TS2353: Object literal may only specify known properties, and 'publisher_teacher_id' does not exist in type '(Without<NoticeCreateInput, NoticeUncheckedCreateInput> & NoticeUncheckedCreateInput) | (Without<...> & NoticeCreateInput)'.
+src/modules/notice/notice.service.ts(258,11): error TS2322: Type '{ noticeId: string; teacherId: bigint; isRead: false; }[]' is not assignable to type 'NoticeReadCreateManyInput | NoticeReadCreateManyInput[]'.
+  Type '{ noticeId: string; teacherId: bigint; isRead: false; }[]' is not assignable to type 'NoticeReadCreateManyInput[]'.
+    Type '{ noticeId: string; teacherId: bigint; isRead: false; }' is not assignable to type 'NoticeReadCreateManyInput'.
+      Types of property 'teacherId' are incompatible.
+        Type 'bigint' is not assignable to type 'string'.
+src/modules/notice/notice.service.ts(288,38): error TS2339: Property 'publisher_teacher_id' does not exist on type '{ id: string; schoolId: string; status: NoticeStatus; createdAt: Date; updatedAt: Date; deletedAt: Date | null; title: string; content: string; noticeNo: string; ... 8 more ...; archivedAt: Date | null; }'.
+src/modules/notice/notice.service.ts(297,16): error TS2322: Type 'bigint' is not assignable to type 'string'.
+src/modules/notice/notice.service.ts(315,16): error TS2322: Type 'bigint' is not assignable to type 'string'.
+src/modules/notice/notice.service.ts(336,38): error TS2339: Property 'publisher_teacher_id' does not exist on type '{ id: string; schoolId: string; status: NoticeStatus; createdAt: Date; updatedAt: Date; deletedAt: Date | null; title: string; content: string; noticeNo: string; ... 8 more ...; archivedAt: Date | null; }'.
+src/modules/notice/notice.service.ts(339,16): error TS2322: Type 'bigint' is not assignable to type 'string'.
+src/modules/notice/notice.service.ts(340,15): error TS2322: Type '"WITHDRAWN"' is not assignable to type 'NoticeStatus | EnumNoticeStatusFieldUpdateOperationsInput | undefined'.
+src/modules/notice/notice.service.ts(357,16): error TS2322: Type 'bigint' is not assignable to type 'string | StringFilter<"NoticeRead"> | undefined'.
+src/modules/notice/notice.service.ts(360,60): error TS2353: Object literal may only specify known properties, and 'department' does not exist in type 'TeacherSelect<DefaultArgs>'.
+src/modules/notice/notice.service.ts(398,9): error TS2561: Object literal may only specify known properties, but 'notice_id_teacher_id' does not exist in type 'NoticeReadWhereUniqueInput'. Did you mean to write 'noticeId_teacherId'?
+src/modules/notice/notice.service.ts(430,16): error TS2322: Type 'bigint' is not assignable to type 'string'.
+src/modules/notice/notice.service.ts(447,11): error TS2322: Type 'bigint' is not assignable to type 'string | StringFilter<"NoticeRead"> | undefined'.
+src/modules/notice/notice.service.ts(448,11): error TS2322: Type 'bigint' is not assignable to type 'string | StringFilter<"NoticeRead"> | undefined'.
+src/modules/notice/notice.service.ts(475,20): error TS2322: Type 'true' is not assignable to type 'TeacherStatus | EnumTeacherStatusFilter<"Teacher"> | undefined'.
+src/modules/notice/notice.service.ts(478,9): error TS2322: Type 'string[]' is not assignable to type 'bigint[]'.
+  Type 'string' is not assignable to type 'bigint'.
+src/modules/notice/notice.service.ts(486,48): error TS2339: Property 'teacherRole' does not exist on type 'PrismaService'.
+src/modules/notice/notice.service.ts(493,51): error TS7006: Parameter 'tr' implicitly has an 'any' type.
+src/modules/notice/notice.service.ts(494,9): error TS2322: Type 'unknown[]' is not assignable to type 'bigint[]'.
+  Type 'unknown' is not assignable to type 'bigint'.
+src/modules/notice/notice.service.ts(502,47): error TS2551: Property 'teacherTag' does not exist on type 'PrismaService'. Did you mean 'teacher'?
+src/modules/notice/notice.service.ts(506,50): error TS7006: Parameter 'tt' implicitly has an 'any' type.
+src/modules/notice/notice.service.ts(507,9): error TS2322: Type 'unknown[]' is not assignable to type 'bigint[]'.
+  Type 'unknown' is not assignable to type 'bigint'.
+src/modules/notice/notice.service.ts(516,32): error TS2322: Type 'true' is not assignable to type 'TeacherStatus | EnumTeacherStatusFilter<"Teacher"> | undefined'.
+src/modules/notice/notice.service.ts(519,9): error TS2322: Type 'string[]' is not assignable to type 'bigint[]'.
+  Type 'string' is not assignable to type 'bigint'.
+src/modules/notice/notice.service.ts(572,9): error TS2353: Object literal may only specify known properties, and 'publisher_teacher_id' does not exist in type '(Without<NoticeCreateInput, NoticeUncheckedCreateInput> & NoticeUncheckedCreateInput) | (Without<...> & NoticeCreateInput)'.
+src/modules/notice/notice.service.ts(589,9): error TS2322: Type '{ noticeId: string; teacherId: bigint; isRead: false; }[]' is not assignable to type 'NoticeReadCreateManyInput | NoticeReadCreateManyInput[]'.
+  Type '{ noticeId: string; teacherId: bigint; isRead: false; }[]' is not assignable to type 'NoticeReadCreateManyInput[]'.
+    Type '{ noticeId: string; teacherId: bigint; isRead: false; }' is not assignable to type 'NoticeReadCreateManyInput'.
+      Types of property 'teacherId' are incompatible.
+        Type 'bigint' is not assignable to type 'string'.
+src/modules/role/role.service.ts(70,23): error TS2339: Property 'teacherRole' does not exist on type 'PrismaService'.
+src/modules/statistics/statistics.service.ts(38,44): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'StudentWhereInput'.
+src/modules/statistics/statistics.service.ts(42,18): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'StudentWhereInput'.
+src/modules/statistics/statistics.service.ts(57,18): error TS2322: Type 'bigint' is not assignable to type 'string | StringFilter<"NoticeRead"> | undefined'.
+src/modules/statistics/statistics.service.ts(64,26): error TS2322: Type '"TODO"' is not assignable to type 'TaskStatus'.
+src/modules/statistics/statistics.service.ts(64,34): error TS2322: Type '"PROCESSING"' is not assignable to type 'TaskStatus'.
+src/modules/statistics/statistics.service.ts(104,16): error TS2322: Type 'bigint' is not assignable to type 'string | StringFilter<"NoticeRead"> | undefined'.
+src/modules/statistics/statistics.service.ts(121,9): error TS2353: Object literal may only specify known properties, and 'priority' does not exist in type 'NoticeSelect<DefaultArgs>'.
+src/modules/statistics/statistics.service.ts(141,18): error TS2322: Type 'bigint' is not assignable to type 'string | StringFilter<"Student"> | undefined'.
+src/modules/statistics/statistics.service.ts(150,18): error TS2353: Object literal may only specify known properties, and 'createdAt' does not exist in type 'TimelineEventOrderByWithRelationInput | TimelineEventOrderByWithRelationInput[]'.
+src/modules/statistics/statistics.service.ts(155,9): error TS2353: Object literal may only specify known properties, and 'event_title' does not exist in type 'TimelineEventSelect<DefaultArgs>'.
+src/modules/student/student-snapshot.service.ts(73,16): error TS2322: Type 'bigint' is not assignable to type 'string'.
+src/modules/student/student-snapshot.service.ts(76,31): error TS2353: Object literal may only specify known properties, and 'class_name' does not exist in type 'ClassSelect<DefaultArgs>'.
+src/modules/student/student-snapshot.service.ts(87,24): error TS2551: Property 'class' does not exist on type '{ gradeId: string; classId: string; id: string; schoolId: string; name: string; createdAt: Date; updatedAt: Date; deletedAt: Date | null; gender: Gender; phone: string | null; ... 10 more ...; transferredAt: Date | null; }'. Did you mean 'classId'?
+src/modules/student/student-snapshot.service.ts(91,7): error TS2322: Type 'string' is not assignable to type 'bigint'.
+src/modules/student/student-snapshot.service.ts(93,7): error TS2322: Type 'string' is not assignable to type 'bigint'.
+src/modules/student/student-snapshot.service.ts(94,27): error TS2551: Property 'class' does not exist on type '{ gradeId: string; classId: string; id: string; schoolId: string; name: string; createdAt: Date; updatedAt: Date; deletedAt: Date | null; gender: Gender; phone: string | null; ... 10 more ...; transferredAt: Date | null; }'. Did you mean 'classId'?
+src/modules/student/student-snapshot.service.ts(96,29): error TS2339: Property 'dorm_room_id' does not exist on type '{ gradeId: string; classId: string; id: string; schoolId: string; name: string; createdAt: Date; updatedAt: Date; deletedAt: Date | null; gender: Gender; phone: string | null; ... 10 more ...; transferredAt: Date | null; }'.
+src/modules/student/student-snapshot.service.ts(113,16): error TS2322: Type 'bigint' is not assignable to type 'string'.
+src/modules/student/student-snapshot.service.ts(114,39): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'StudentSelect<DefaultArgs>'.
+src/modules/student/student-snapshot.service.ts(122,17): error TS2339: Property 'status' does not exist on type '{ gradeId: string; classId: string; id: string; schoolId: string; name: string; createdAt: Date; updatedAt: Date; deletedAt: Date | null; gender: Gender; phone: string | null; ... 10 more ...; transferredAt: Date | null; }'.
+src/modules/student/student-snapshot.service.ts(125,36): error TS2339: Property 'status' does not exist on type '{ gradeId: string; classId: string; id: string; schoolId: string; name: string; createdAt: Date; updatedAt: Date; deletedAt: Date | null; gender: Gender; phone: string | null; ... 10 more ...; transferredAt: Date | null; }'.
+src/modules/student/student-snapshot.service.ts(132,9): error TS2322: Type 'bigint' is not assignable to type 'string | StringFilter<"LeaveRecord"> | undefined'.
+src/modules/student/student.service.ts(77,37): error TS2353: Object literal may only specify known properties, and 'grade_name' does not exist in type 'GradeSelect<DefaultArgs>'.
+src/modules/student/student.service.ts(112,16): error TS2322: Type 'number' is not assignable to type 'string'.
+src/modules/student/student.service.ts(117,35): error TS2353: Object literal may only specify known properties, and 'grade_name' does not exist in type 'GradeSelect<DefaultArgs>'.
+src/modules/student/student.service.ts(139,31): error TS2345: Argument of type 'string' is not assignable to parameter of type 'bigint'.
+src/modules/student/student.service.ts(144,18): error TS2322: Type 'number' is not assignable to type 'string | StringFilter<"LeaveRecord"> | undefined'.
+src/modules/student/student.service.ts(147,18): error TS2322: Type 'number' is not assignable to type 'string | StringFilter<"TimelineEvent"> | undefined'.
+src/modules/student/student.service.ts(166,16): error TS2322: Type 'number' is not assignable to type 'string | (ClassGradeIdCodeCompoundUniqueInput & string) | undefined'.
+src/modules/student/student.service.ts(183,9): error TS2322: Type 'number' is not assignable to type 'string'.
+src/modules/student/student.service.ts(195,35): error TS2353: Object literal may only specify known properties, and 'grade_name' does not exist in type 'GradeSelect<DefaultArgs>'.
+src/modules/student/student.service.ts(217,16): error TS2322: Type 'number' is not assignable to type 'string'.
+src/modules/student/student.service.ts(226,31): error TS2345: Argument of type 'string' is not assignable to parameter of type 'bigint'.
+src/modules/student/student.service.ts(241,16): error TS2322: Type 'number' is not assignable to type 'string'.
+src/modules/student/student.service.ts(246,42): error TS2353: Object literal may only specify known properties, and 'grade_name' does not exist in type 'GradeSelect<DefaultArgs>'.
+src/modules/student/student.service.ts(267,16): error TS2322: Type 'number' is not assignable to type 'string'.
+src/modules/student/student.service.ts(276,31): error TS2345: Argument of type 'string' is not assignable to parameter of type 'bigint'.
+src/modules/student/student.service.ts(279,16): error TS2322: Type 'number' is not assignable to type 'string'.
+src/modules/student/student.service.ts(295,16): error TS2322: Type 'number' is not assignable to type 'string'.
+src/modules/student/student.service.ts(303,31): error TS2345: Argument of type 'string' is not assignable to parameter of type 'bigint'.
+src/modules/student/student.service.ts(308,16): error TS2322: Type 'number' is not assignable to type 'string'.
+src/modules/student/student.service.ts(310,9): error TS2353: Object literal may only specify known properties, and 'dorm_room_id' does not exist in type '(Without<StudentUpdateInput, StudentUncheckedUpdateInput> & StudentUncheckedUpdateInput) | (Without<...> & StudentUpdateInput)'.
+src/modules/student/student.service.ts(315,9): error TS2353: Object literal may only specify known properties, and 'dorm_room' does not exist in type 'StudentInclude<DefaultArgs>'.
+src/modules/student/student.service.ts(436,16): error TS2322: Type 'number' is not assignable to type 'string | (DormRoomBuildingIdRoomNoCompoundUniqueInput & string) | undefined'.
+src/modules/student/student.service.ts(447,11): error TS2353: Object literal may only specify known properties, and 'dorm_room_id' does not exist in type 'StudentWhereInput'.
+src/modules/teacher/teacher.service.ts(17,11): error TS2353: Object literal may only specify known properties, and 'roles' does not exist in type 'TeacherInclude<DefaultArgs>'.
+src/modules/teacher/teacher.service.ts(29,16): error TS2322: Type 'number' is not assignable to type 'string'.
+src/modules/teacher/teacher.service.ts(31,9): error TS2353: Object literal may only specify known properties, and 'roles' does not exist in type 'TeacherInclude<DefaultArgs>'.
+src/modules/teacher/teacher.service.ts(52,9): error TS2353: Object literal may only specify known properties, and 'department' does not exist in type '(Without<TeacherCreateInput, TeacherUncheckedCreateInput> & TeacherUncheckedCreateInput) | (Without<...> & TeacherCreateInput)'.
+src/modules/teacher/teacher.service.ts(61,16): error TS2322: Type 'number' is not assignable to type 'string'.
+src/modules/teacher/teacher.service.ts(68,9): error TS2353: Object literal may only specify known properties, and 'department' does not exist in type '(Without<TeacherUpdateInput, TeacherUncheckedUpdateInput> & TeacherUncheckedUpdateInput) | (Without<...> & TeacherUpdateInput)'.
+src/modules/teacher/teacher.service.ts(78,16): error TS2322: Type 'number' is not assignable to type 'string'.
+src/modules/teacher/teacher.service.ts(79,38): error TS2322: Type 'false' is not assignable to type 'TeacherStatus | EnumTeacherStatusFieldUpdateOperationsInput | undefined'.
+src/modules/teacher/teacher.service.ts(88,23): error TS2339: Property 'teacherRole' does not exist on type 'PrismaService'.
+src/modules/teacher/teacher.service.ts(94,25): error TS2339: Property 'teacherRole' does not exist on type 'PrismaService'.
+src/modules/teacher/teacher.service.ts(107,23): error TS2551: Property 'teacherTag' does not exist on type 'PrismaService'. Did you mean 'teacher'?
+src/modules/teacher/teacher.service.ts(113,25): error TS2551: Property 'teacherTag' does not exist on type 'PrismaService'. Did you mean 'teacher'?
+src/modules/timeline/timeline.service.ts(74,20): error TS2353: Object literal may only specify known properties, and 'createdAt' does not exist in type 'TimelineEventOrderByWithRelationInput | TimelineEventOrderByWithRelationInput[]'.
+src/modules/timeline/timeline.service.ts(88,41): error TS2353: Object literal may only specify known properties, and 'grade_name' does not exist in type 'GradeSelect<DefaultArgs>'.
+src/modules/timeline/timeline.service.ts(134,16): error TS2322: Type 'bigint' is not assignable to type 'string | (TimelineEventUniq_student_source_eventCompoundUniqueInput & string) | undefined'.
+src/modules/timeline/timeline.service.ts(149,39): error TS2353: Object literal may only specify known properties, and 'grade_name' does not exist in type 'GradeSelect<DefaultArgs>'.
+src/modules/todo/todo.service.ts(67,11): error TS2353: Object literal may only specify known properties, and 'teacher' does not exist in type 'TaskInclude<DefaultArgs>'.
+src/modules/todo/todo.service.ts(92,16): error TS2322: Type 'bigint' is not assignable to type 'string'.
+src/modules/todo/todo.service.ts(94,9): error TS2353: Object literal may only specify known properties, and 'teacher' does not exist in type 'TaskInclude<DefaultArgs>'.
+src/modules/todo/todo.service.ts(110,32): error TS2339: Property 'teacherId' does not exist on type '{ id: string; schoolId: string; status: TaskStatus; createdAt: Date; updatedAt: Date; deletedAt: Date | null; title: string; taskNo: string; content: string | null; ... 11 more ...; creatorId: string; }'.
+src/modules/todo/todo.service.ts(125,16): error TS2322: Type 'bigint' is not assignable to type 'string'.
+src/modules/todo/todo.service.ts(133,9): error TS2367: This comparison appears to be unintentional because the types 'TaskStatus' and '"DONE"' have no overlap.
+src/modules/todo/todo.service.ts(141,32): error TS2339: Property 'teacherId' does not exist on type '{ id: string; schoolId: string; status: TaskStatus; createdAt: Date; updatedAt: Date; deletedAt: Date | null; title: string; taskNo: string; content: string | null; ... 11 more ...; creatorId: string; }'.
+src/modules/todo/todo.service.ts(144,16): error TS2322: Type 'bigint' is not assignable to type 'string'.
+src/modules/todo/todo.service.ts(146,9): error TS2322: Type '"DONE"' is not assignable to type 'TaskStatus | EnumTaskStatusFieldUpdateOperationsInput | undefined'.
+src/modules/todo/todo.service.ts(151,35): error TS2339: Property 'todo_no' does not exist on type '{ id: string; schoolId: string; status: TaskStatus; createdAt: Date; updatedAt: Date; deletedAt: Date | null; title: string; taskNo: string; content: string | null; ... 11 more ...; creatorId: string; }'.
+src/modules/todo/todo.service.ts(176,15): error TS2322: Type 'bigint[]' is not assignable to type 'string[]'.
+  Type 'bigint' is not assignable to type 'string'.
+src/modules/todo/todo.service.ts(177,24): error TS2322: Type '"TODO"' is not assignable to type 'TaskStatus'.
+src/modules/todo/todo.service.ts(177,32): error TS2322: Type '"PROCESSING"' is not assignable to type 'TaskStatus'.
+src/modules/todo/todo.service.ts(181,9): error TS2322: Type '"DONE"' is not assignable to type 'TaskStatus | EnumTaskStatusFieldUpdateOperationsInput | undefined'.
+src/modules/workbench/workbench.service.ts(24,43): error TS2307: Cannot find module '../authorization/types' or its corresponding type declarations.
+src/services/student-status.service.ts(88,44): error TS2551: Property 'currentStatus' does not exist on type 'WorkbenchStudentView'. Did you mean 'current_status'?
+src/services/student-status.service.ts(92,30): error TS2551: Property 'currentStatus' does not exist on type 'WorkbenchStudentView'. Did you mean 'current_status'?
+src/services/student-status.service.ts(93,32): error TS2551: Property 'currentLocation' does not exist on type 'WorkbenchStudentView'. Did you mean 'current_location'?
+src/services/student-status.service.ts(94,29): error TS2551: Property 'boardingType' does not exist on type 'WorkbenchStudentView'. Did you mean 'boarding_type'?
+src/services/student-status.service.ts(165,7): error TS2561: Object literal may only specify known properties, but 'studentNo' does not exist in type 'Student'. Did you mean to write 'student_no'?

@@ -11,7 +11,7 @@ import { CurrentUserPayload } from '@/common/types';
  * TodoController - 待办管理接口
  *
  * 权限通过 @RequirePermissions 标记
- * 数据权限在 Service 层根据角色实现（teacher_id 过滤）
+ * 数据权限在 Service 层根据角色实现（teacherId 过滤）
  *
  * docs/09-API.md 第九章：待办接口
  * docs/10-Permission.md：todo:read / todo:complete
