@@ -22,6 +22,14 @@ import { isTokenExpired } from './jwt.util';
 /** 全局唯一的登录 Promise，保证并发页面只触发一次登录 */
 let loginPromise: Promise<void> | null = null;
 
+/** 最近一次登录失败的原因（供登录落地页展示友好文案，不把原始堆栈抛给用户） */
+let lastLoginError: string | null = null;
+
+/** 读取最近一次登录失败原因；无失败记录时返回 null */
+export function getLastLoginError(): string | null {
+  return lastLoginError;
+}
+
 /** 注册登录态同步：request 层 401 静默重登录后，store 同步更新 */
 configureRequest({
   onTokenRefreshed: (info) => {
@@ -66,7 +74,9 @@ export function ensureLoggedIn(): Promise<void> {
         roles: result.roles ?? [],
         permissions: result.permissions ?? []
       });
+      lastLoginError = null; // 登录成功，清空历史失败原因
     } catch (err) {
+      lastLoginError = err instanceof Error ? err.message : String(err);
       console.error('[SmartGrade] 登录失败:', err);
       loginPromise = null; // 允许下次重试
     }
@@ -82,6 +92,7 @@ export function ensureLoggedIn(): Promise<void> {
  */
 export function resetSession(): void {
   loginPromise = null;
+  lastLoginError = null;
   useUserStore.getState().logout();
 }
 

@@ -12,7 +12,7 @@ import {
 import { getStudents } from '../../api/student';
 import { getLeaves, LeaveListItem } from '../../api/leave';
 import { useUserStore } from '../../store/user';
-import { ensureLoggedIn, useSessionRestore } from '../../utils/session';
+import { ensureLoggedIn, resetSession, getLastLoginError, useSessionRestore } from '../../utils/session';
 import { getWelcomeGreeting } from '../../utils/mock';
 import './index.scss';
 
@@ -170,15 +170,21 @@ export default function Workbench() {
         setLoginStatus('success');
         return true;
       }
-      throw new Error('登录态获取失败，请重试');
+      throw new Error(getLastLoginError() || '登录态获取失败，请重试');
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error('[Workbench] 登录失败:', msg);
       setLoginStatus('failed');
-      setError(`登录失败：${msg}`);
+      setError(msg);
       return false;
     }
   }, []);
+
+  /* —— 重新登录：清空会话后重跑现有登录流程 —— */
+  const retryLogin = useCallback(() => {
+    resetSession();
+    void ensureLogin();
+  }, [ensureLogin]);
 
   /* —— 工作台数据 —— */
   const fetchData = useCallback(async () => {
@@ -231,13 +237,41 @@ export default function Workbench() {
 
   /* —— 状态分支 —— */
   if (loginStatus === 'logging') {
-    return <View className='workbench workbench--state'><View className='state-tip'>登录中…</View></View>;
+    return (
+      <View className='login-page'>
+        <View className='login-page__brand'>
+          <Text className='login-page__title'>SmartGrade</Text>
+          <Text className='login-page__subtitle'>智慧班级管理平台</Text>
+        </View>
+        <View className='login-page__spinner' />
+        <Text className='login-page__status'>正在验证教师身份……</Text>
+      </View>
+    );
   }
   if (loginStatus === 'failed') {
+    const unbound = error.includes('未绑定');
     return (
-      <View className='workbench workbench--state'>
-        <View className='state-tip'>登录失败</View>
-        <View className='state-tip state-error'>{error}</View>
+      <View className='login-page'>
+        <View className='login-page__brand'>
+          <Text className='login-page__title'>SmartGrade</Text>
+          <Text className='login-page__subtitle'>智慧班级管理平台</Text>
+        </View>
+        {unbound ? (
+          <View className='login-page__card'>
+            <Text className='login-page__card-title'>当前微信账号尚未绑定教师账号</Text>
+            <Text className='login-page__card-line'>SmartGrade 仅面向学校教师使用。</Text>
+            <Text className='login-page__card-line'>请联系学校管理员完成教师账号绑定。</Text>
+            <Text className='login-page__card-hint'>如果已经完成绑定，请点击“重新登录”。</Text>
+          </View>
+        ) : (
+          <View className='login-page__card'>
+            <Text className='login-page__card-title'>登录失败</Text>
+            <Text className='login-page__card-line'>请检查网络后重试，或稍后再试。</Text>
+          </View>
+        )}
+        <View className='login-page__btn' onClick={retryLogin}>
+          <Text className='login-page__btn-text'>重新登录</Text>
+        </View>
       </View>
     );
   }

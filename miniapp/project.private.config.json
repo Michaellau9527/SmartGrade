@@ -1,7 +1,19 @@
 {
   "libVersion": "3.16.2",
   "projectname": "SmartGrade",
-  "condition": {},
+  "condition": {
+    "miniprogram": {
+      "list": [
+        {
+          "name": "微信绑定页",
+          "pathName": "pages/wechat-bind/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        }
+      ]
+    }
+  },
   "setting": {
     "urlCheck": true,
     "coverView": false,

@@ -18,11 +18,46 @@ export interface RequestOptions {
 }
 
 /**
- * 后端 API 基地址。
- * 微信云托管后端地址：直接写死，避免 Taro defineConstant 编译期注入失败。
+ * 微信云托管环境 ID（CloudBase env id）。
+ * 权威来源：backend/prisma/01_create_tables.sql 等 SQL 注释中明确的环境选择
+ * `cloud1-d1govsdyt7996cf4e`（域名片段中的 -1426534958 为账号后缀，不属于 env id）。
+ * Taro.cloud.callContainer 通过该 env 路由到云托管容器，免去公网域名/备案/SSL。
  */
-const BASE_URL: string =
-  'https://smartgrade-api-287135-10-1426534958.sh.run.tcloudbase.com/api/v1';
+const CLOUD_ENV = 'cloud1-d1govsdyt7996cf4e';
+
+/**
+ * 后端 API 路径前缀（不含 host）。
+ * 切换为 Taro.cloud.callContainer 后，请求以「路径」形式发往云托管容器，
+ * 不再拼接公网 https 基地址。业务路径与后端 main.ts 的 API_PREFIX 保持一致(/api/v1)。
+ */
+const CLOUD_PATH_PREFIX = '/api/v1';
+
+/**
+ * Taro.cloud.init 全局单例 Promise。
+ * 微信要求 init 全局仅需一次；用单例保证：无论 app.ts 启动登录还是任意业务请求，
+ * 第一次真实 callContainer 前 init 必然已完成，且不会重复 init（多次 init 仅首
+ * 次生效，仍用单例避免重复 Promise 链）。
+ * 这是「首启动登录失败」偶发竞态的根因防护：init ready → callContainer 形成硬依赖，
+ * 而非指望 init 与首请求「恰好」先后完成。
+ */
+let cloudInitPromise: Promise<void> | null = null;
+
+/** 确保云环境已初始化；并发调用复用同一 Promise，失败时清空以便下次重试 */
+export function ensureCloudInit(): Promise<void> {
+  if (cloudInitPromise) {
+    return cloudInitPromise;
+  }
+  cloudInitPromise = new Promise<void>((resolve, reject) => {
+    try {
+      Taro.cloud.init({ env: CLOUD_ENV, traceUser: false });
+      resolve();
+    } catch (err) {
+      cloudInitPromise = null; // 允许下次重试
+      reject(err instanceof Error ? err : new Error(String(err)));
+    }
+  });
+  return cloudInitPromise;
+}
 
 /** 默认超时：云托管冷启动可能耗时数秒，给足 15s */
 const DEFAULT_TIMEOUT = 15000;
@@ -128,11 +163,14 @@ async function rawRequest<T>(
   token?: string
 ): Promise<{ statusCode: number; body: ApiResponse<T> | null }> {
   const bearer = token === undefined ? getToken() : token;
-  const res = await Taro.request<unknown>({
-    url: BASE_URL + url,
-    method: options.method || 'GET',
+  // 每次真实传输前确保云环境已初始化：以单例 Promise 保证 init 已完成，
+  // 彻底消除「首启动登录失败」这类 init 尚未就绪就发 callContainer 的竞态。
+  await ensureCloudInit();
+  const res = await Taro.cloud.callContainer<ApiResponse<T>>({
+    path: CLOUD_PATH_PREFIX + url,
+    method: (options.method || 'GET') as Taro.cloud.CallContainerParam['method'],
     data: options.data,
-    header: buildHeader(options, bearer),
+    header: { ...buildHeader(options, bearer), 'X-WX-SERVICE': 'smartgrade-api' },
     timeout: options.timeout ?? DEFAULT_TIMEOUT
   });
 
