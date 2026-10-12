@@ -445,6 +445,17 @@
   box-shadow: 0 8rpx 24rpx rgba(22, 119, 255, 0.25);
 }
 
+.login-page__btn--secondary {
+  margin-top: 24rpx;
+  background: #fff;
+  border: 2rpx solid #1677ff;
+  box-shadow: none;
+}
+
+.login-page__btn--secondary .login-page__btn-text {
+  color: #1677ff;
+}
+
 .login-page__btn-text {
   color: #fff;
   font-size: 32rpx;

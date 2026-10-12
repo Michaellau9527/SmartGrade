@@ -269,6 +269,14 @@ export default function Workbench() {
             <Text className='login-page__card-line'>请检查网络后重试，或稍后再试。</Text>
           </View>
         )}
+        {unbound && (
+          <View
+            className='login-page__btn login-page__btn--secondary'
+            onClick={() => Taro.navigateTo({ url: '/pages/wechat-bind/index' })}
+          >
+            <Text className='login-page__btn-text'>去绑定微信</Text>
+          </View>
+        )}
         <View className='login-page__btn' onClick={retryLogin}>
           <Text className='login-page__btn-text'>重新登录</Text>
         </View>
