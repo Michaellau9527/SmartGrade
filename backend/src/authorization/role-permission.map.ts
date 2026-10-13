@@ -95,6 +95,9 @@ const HEADMASTER_PERMS = new Set<PermissionCode>([
   PermissionCode.TASK_READ,
   PermissionCode.TASK_COMPLETE,
   PermissionCode.STUDENT_READ,
+  PermissionCode.STUDENT_CREATE,   // 班主任需手动添加本班学生
+  PermissionCode.STUDENT_UPDATE,   // 班主任需修改本班学生
+  PermissionCode.STUDENT_DELETE,   // 班主任需删除本班学生
   PermissionCode.LEAVE_CREATE,
   PermissionCode.LEAVE_READ,
   PermissionCode.LEAVE_UPDATE,

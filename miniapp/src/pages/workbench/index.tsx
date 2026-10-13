@@ -29,6 +29,8 @@ interface NoticeCardItem {
   border: string;
   iconBg: string;
   iconColor: string;
+  /** 点击跳转目标 (P1 阶段未填,可为空字符串) */
+  targetUrl: string;
 }
 
 interface TimelineEntry {
@@ -134,7 +136,8 @@ export default function Workbench() {
         bg: isUrgent ? '#fff7ed' : '#eff6ff',
         border: isUrgent ? '#ffedd5' : '#dbeafe',
         iconBg: isUrgent ? '#ffedd5' : '#dbeafe',
-        iconColor: isUrgent ? '#f59e0b' : '#1677ff'
+        iconColor: isUrgent ? '#f59e0b' : '#1677ff',
+        targetUrl: '/pages/leave/index'
       });
     });
 
@@ -148,7 +151,8 @@ export default function Workbench() {
         bg: isUrgent ? '#fef2f2' : '#eff6ff',
         border: isUrgent ? '#fee2e2' : '#dbeafe',
         iconBg: isUrgent ? '#fee2e2' : '#dbeafe',
-        iconColor: isUrgent ? '#ef4444' : '#1677ff'
+        iconColor: isUrgent ? '#ef4444' : '#1677ff',
+        targetUrl: '/pages/notice/index'
       });
     });
 
@@ -397,6 +401,7 @@ export default function Workbench() {
                 key={i}
                 className='notice-item'
                 style={{ backgroundColor: item.bg, borderColor: item.border }}
+                onClick={() => item.targetUrl && Taro.switchTab({ url: item.targetUrl })}
               >
                 <View
                   className='notice-item__icon'
@@ -418,7 +423,12 @@ export default function Workbench() {
         <View className='timeline-card'>
           <View className='card-head'>
             <Text className='card-head__title'>今日动态</Text>
-            <Text className='card-head__more'>查看更多 ›</Text>
+            <Text
+              className='card-head__more'
+              onClick={() => Taro.switchTab({ url: '/pages/notice/index' })}
+            >
+              查看更多 ›
+            </Text>
           </View>
           <View className='timeline'>
             {TIMELINE_MOCK.map((item, i) => (
