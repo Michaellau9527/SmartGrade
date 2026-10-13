@@ -122,25 +122,29 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   private async loadPermissionsByRoles(roles: string[]): Promise<string[]> {
     if (roles.length === 0) return [];
     try {
-      // 参数化查询（Prisma 模板自动展开数组，杜绝 SQL 注入）
-      const results = await this.prisma.$queryRaw<
-        Array<{ permission_code: string }>
-      >`
-        SELECT DISTINCT p.permission_code FROM role_permission rp
-        JOIN permission p ON rp.permission_id = p.id
-        JOIN role r ON rp.role_id = r.id
-        WHERE r.role_code IN (${roles})
-      `;
-      const perms = results.map((r) => r.permission_code);
-      if (perms.length > 0) return perms;
-    } catch {
-      // role_permission 查询异常：从内存映射加载权限作为兜底（非角色兜底）
+      const roleRecords = await this.prisma.role.findMany({
+        where: { roleCode: { in: roles } },
+        include: {
+          permissions: {
+            include: {
+              permission: { select: { permissionCode: true } },
+            },
+          },
+        },
+      });
+      const codes = new Set<string>();
+      for (const role of roleRecords) {
+        for (const rp of role.permissions) {
+          if (rp.permission?.permissionCode) {
+            codes.add(rp.permission.permissionCode);
+          }
+        }
+      }
+      if (codes.size > 0) return [...codes];
+    } catch (error) {
+      // 保留原有的异常捕获与 fallback 逻辑
+      console.error('Failed to load permissions by roles:', error);
     }
-    const allPerms = new Set<string>();
-    for (const role of roles) {
-      const roleCode = role as RoleCode;
-      getPermissions(roleCode).forEach((p) => allPerms.add(p as string));
-    }
-    return [...allPerms];
+    return [];
   }
 }
