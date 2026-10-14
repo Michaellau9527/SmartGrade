@@ -15,6 +15,7 @@ import { PermissionModule } from './modules/permission/permission.module';
 import { TeacherModule } from './modules/teacher/teacher.module';
 import { WechatBindingModule } from './modules/wechat-binding/wechat-binding.module';
 import { StudentModule } from './modules/student/student.module';
+import { StudentCredentialModule } from './modules/student-credential/student-credential.module';
 import { LeaveModule } from './modules/leave/leave.module';
 import { NoticeModule } from './modules/notice/notice.module';
 import { DocumentModule } from './modules/document/document.module';
@@ -59,6 +60,7 @@ import { WorkbenchModule } from './modules/workbench/workbench.module';
     TeacherModule,
     WechatBindingModule,
     StudentModule,
+    StudentCredentialModule, // P2-QR 阶段E：学生身份二维码凭证基础设施
     LeaveModule,
     NoticeModule,
     DocumentModule,

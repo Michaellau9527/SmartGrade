@@ -91,9 +91,9 @@ describe('测试 6: Day 5.1–5.2 Authorization', () => {
       expect(empty.size).toBe(0);
     });
 
-    it('✅ 2.3 ADMIN 拥有全部权限（28 个）', () => {
+    it('✅ 2.3 ADMIN 拥有全部权限（31 个）', () => {
       const perms = getPermissions(RoleCode.ROLE_ADMIN);
-      expect(perms.size).toBe(28);
+      expect(perms.size).toBe(31); // P2-QR 阶段E：28 + student:qrcode:issue / student:qrcode:batch / verify:scan
       expect(perms.has(PermissionCode.SYSTEM_ADMIN)).toBe(true);
       expect(perms.has(PermissionCode.LEAVE_APPROVE)).toBe(true);
       expect(perms.has(PermissionCode.NOTICE_PUBLISH)).toBe(true);
@@ -349,7 +349,7 @@ describe('测试 6: Day 5.1–5.2 Authorization', () => {
       return { resolve: jest.fn().mockResolvedValue(scope) } as unknown as DataScopeResolver;
     }
 
-    it('✅ 6.1 SYSTEM_ADMIN → ROLE_ADMIN + 28 权限 + 组织 + DataScope + issuedAt', async () => {
+    it('✅ 6.1 SYSTEM_ADMIN → ROLE_ADMIN + 31 权限 + 组织 + DataScope + issuedAt', async () => {
       const deps = {
         findUserById: jest.fn().mockResolvedValue({
           id: 'usr_admin_001', userType: 'SYSTEM_ADMIN' as const,
@@ -366,7 +366,7 @@ describe('测试 6: Day 5.1–5.2 Authorization', () => {
 
       expect(ctx.actor.userType).toBe('SYSTEM_ADMIN');
       expect(ctx.authorization.roleSet.has(RoleCode.ROLE_ADMIN)).toBe(true);
-      expect(ctx.authorization.permissionSet.size).toBe(28);
+      expect(ctx.authorization.permissionSet.size).toBe(31); // P2-QR 阶段E：+3 权限码
       expect(ctx.authorization.dataScope.isSchoolWide).toBe(true);
       expect(ctx.issuedAt).toBeInstanceOf(Date);
       expect(orgResolver.resolve).toHaveBeenCalledWith(ctx.actor);

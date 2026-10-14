@@ -94,6 +94,19 @@ export enum PermissionCode {
   TEACHER_UNBIND_WECHAT = 'teacher:unbind-wechat',
 
   // ============================================================
+  // 学生身份二维码与离校核验（QR Credential & Gate Verify）— P2-QR 阶段E
+  //
+  // 编码形式说明：与上方 teacher:bind-wechat 同理，本域采用 `domain:action`
+  // 冒号形式，与数据库 permission 表真相源及 seed.ts 保持一致。
+  // - student:qrcode:issue  班主任为本班学生签发/补发二维码（数据范围校验在服务层）
+  // - student:qrcode:batch  按年级/班级批量签发（仅 ROLE_ADMIN 使用）
+  // - verify:scan           门卫扫码核验（不授予 student:read，核验结果脱敏）
+  // ============================================================
+  STUDENT_QRCODE_ISSUE = 'student:qrcode:issue',
+  STUDENT_QRCODE_BATCH = 'student:qrcode:batch',
+  VERIFY_SCAN = 'verify:scan',
+
+  // ============================================================
   // 系统管理（System）— 仅 ROLE_ADMIN
   // ============================================================
   SYSTEM_ADMIN = 'system.admin',
@@ -140,6 +153,10 @@ export const PermissionCodeText: Record<PermissionCode, string> = {
 
   [PermissionCode.TEACHER_BIND_WECHAT]: '绑定教师微信',
   [PermissionCode.TEACHER_UNBIND_WECHAT]: '解绑教师微信',
+
+  [PermissionCode.STUDENT_QRCODE_ISSUE]: '补发学生二维码',
+  [PermissionCode.STUDENT_QRCODE_BATCH]: '批量签发学生二维码',
+  [PermissionCode.VERIFY_SCAN]: '扫码核验',
 
   [PermissionCode.SYSTEM_ADMIN]: '系统管理',
 };

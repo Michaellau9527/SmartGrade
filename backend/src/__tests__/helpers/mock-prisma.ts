@@ -45,6 +45,8 @@ export function createMockPrisma(): MockPrisma {
     teacherClassRelation: createMockTable(),
     // P1-13 Gate D：教师微信绑定一次性绑定码
     teacherWechatBinding: createMockTable(),
+    // P2-QR 阶段E：学生身份二维码凭证
+    studentCredential: createMockTable(),
     leaveRecord: createMockTable(),
     notice: createMockTable(),
     noticeRead: createMockTable(),

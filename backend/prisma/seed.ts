@@ -9,7 +9,7 @@ const prisma = new PrismaClient();
  *
  * 初始化：
  * - 学校 + 年级 + 班级
- * - 6 个系统角色 + 32 个权限 + 关联
+ * - 7 个系统角色 + 43 个权限 + 关联（P2-QR 阶段E：新增门卫角色与二维码/核验权限）
  * - 默认管理员（admin / bcrypt 加密密码）+ 额外测试教师
  * - 宿舍楼 + 房间
  * - 5 个测试学生
@@ -44,6 +44,8 @@ async function seedRolesAndPermissions(adminRole: { id: bigint; roleCode: string
     { roleCode: 'ROLE_HEADMASTER', roleName: '班主任', description: '管理本班学生、发起请假、销假' },
     { roleCode: 'ROLE_DORM_MANAGER', roleName: '宿管', description: '查看住宿生、查寝、上报异常' },
     { roleCode: 'ROLE_SUBJECT_TEACHER', roleName: '任课教师', description: '查看通知、查看文件、查看个人待办' },
+    // P2-QR 阶段E：门卫仅扫码核验，不授予 student:read 等学生数据权限
+    { roleCode: 'ROLE_GATE_GUARD', roleName: '门卫', description: '扫码核验学生身份凭证、确认离校' },
   ];
 
   const roleMap = new Map<string, bigint>();
@@ -112,6 +114,10 @@ async function seedRolesAndPermissions(adminRole: { id: bigint; roleCode: string
     // 系统配置
     { permissionCode: 'config:read', permissionName: '查看配置', resource: 'config', action: 'read' },
     { permissionCode: 'config:update', permissionName: '修改配置', resource: 'config', action: 'update' },
+    // 学生身份二维码与离校核验（P2-QR 阶段E）：冒号形式与 PermissionCode/DB 真相源一致
+    { permissionCode: 'student:qrcode:issue', permissionName: '补发学生二维码', resource: 'student', action: 'qrcode-issue' },
+    { permissionCode: 'student:qrcode:batch', permissionName: '批量签发学生二维码', resource: 'student', action: 'qrcode-batch' },
+    { permissionCode: 'verify:scan', permissionName: '扫码核验', resource: 'verify', action: 'scan' },
   ];
 
   const permMap = new Map<string, bigint>();
@@ -160,6 +166,7 @@ async function seedRolesAndPermissions(adminRole: { id: bigint; roleCode: string
       'todo:read', 'todo:complete',
       'student:read', 'student:timeline',
       'leave:read', 'leave:create', 'leave:finish',
+      'student:qrcode:issue', // P2-QR：班主任为本班学生签发/补发二维码（数据范围校验在服务层）
       'timeline:read',
       'statistics:read',
     ],
@@ -176,6 +183,8 @@ async function seedRolesAndPermissions(adminRole: { id: bigint; roleCode: string
       'document:read',
       'todo:read', 'todo:complete',
     ],
+    // P2-QR 阶段E：门卫仅扫码核验，绝不授予 student:read（ROLE_ADMIN 仍为空列表=全权限短路）
+    ROLE_GATE_GUARD: ['verify:scan'],
   };
 
   for (const [roleCode, permCodes] of Object.entries(ROLE_PERMISSIONS)) {

@@ -11,6 +11,7 @@
  * - 8 个角色覆盖 Sprint 2 全部用户类型
  *
  * 冻结状态：v1.0 冻结，Sprint 2 不新增
+ * P2-QR（2026-10 阶段E）按最终设计审查报告新增 ROLE_GATE_GUARD（门卫），其余保持冻结
  */
 
 export enum RoleCode {
@@ -32,6 +33,9 @@ export enum RoleCode {
   /** 宿舍管理员 — 查看住宿生、查寝、上报异常、查看住宿请假 */
   ROLE_DORM_MANAGER = 'ROLE_DORM_MANAGER',
 
+  /** 门卫 — 扫码核验学生身份凭证、确认离校（P2-QR 阶段E 新增；仅 verify:scan，无 student:read） */
+  ROLE_GATE_GUARD = 'ROLE_GATE_GUARD',
+
   /** 家长 — 查看自己孩子信息、接收通知 */
   ROLE_PARENT = 'ROLE_PARENT',
 
@@ -47,6 +51,7 @@ export const RoleCodeText: Record<RoleCode, string> = {
   [RoleCode.ROLE_HEADMASTER]: '班主任',
   [RoleCode.ROLE_SUBJECT_TEACHER]: '任课教师',
   [RoleCode.ROLE_DORM_MANAGER]: '宿管',
+  [RoleCode.ROLE_GATE_GUARD]: '门卫',
   [RoleCode.ROLE_PARENT]: '家长',
   [RoleCode.ROLE_STUDENT]: '学生',
 };

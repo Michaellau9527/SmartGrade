@@ -10,6 +10,7 @@
  * - 多角色合并时：getPermissions(role).forEach(p => allPerms.add(p))
  *
  * 冻结状态：Sprint 2 v1.0 冻结
+ * P2-QR（2026-10 阶段E）：新增 ROLE_GATE_GUARD（门卫，仅 verify:scan）与二维码权限码
  */
 
 import { RoleCode } from '@smartgrade/shared/enums/RoleCode';
@@ -48,6 +49,9 @@ const ADMIN_PERMS = new Set<PermissionCode>([
   PermissionCode.STATISTICS_READ,
   PermissionCode.USER_PROFILE_READ,
   PermissionCode.USER_PROFILE_UPDATE,
+  PermissionCode.STUDENT_QRCODE_ISSUE,
+  PermissionCode.STUDENT_QRCODE_BATCH,
+  PermissionCode.VERIFY_SCAN,
   PermissionCode.SYSTEM_ADMIN,
 ]);
 
@@ -99,6 +103,7 @@ const HEADMASTER_PERMS = new Set<PermissionCode>([
   PermissionCode.LEAVE_READ,
   PermissionCode.LEAVE_UPDATE,
   PermissionCode.LEAVE_CLOSE,
+  PermissionCode.STUDENT_QRCODE_ISSUE, // P2-QR：班主任为本班学生签发/补发二维码（数据范围校验在服务层）
   PermissionCode.LEAVE_CANCEL,
   PermissionCode.INCIDENT_READ,
   PermissionCode.DORM_READ,
@@ -154,6 +159,17 @@ const STUDENT_PERMS = new Set<PermissionCode>([
   PermissionCode.USER_PROFILE_UPDATE,
 ]);
 
+/**
+ * 门卫（P2-QR 阶段E 新增）
+ *
+ * 最小权限：仅扫码核验 verify:scan。
+ * 刻意不授予 student:read 及任何学生列表/详情读取权限，
+ * 核验所需的学生姓名、班级、请假状态由核验接口脱敏返回（阶段G实现）。
+ */
+const GATE_GUARD_PERMS = new Set<PermissionCode>([
+  PermissionCode.VERIFY_SCAN,
+]);
+
 // ============================================================
 // 内部 Map（不导出）
 // ============================================================
@@ -165,6 +181,7 @@ const ROLE_PERMISSION_MAP = new Map<RoleCode, ReadonlySet<PermissionCode>>([
   [RoleCode.ROLE_HEADMASTER, HEADMASTER_PERMS],
   [RoleCode.ROLE_SUBJECT_TEACHER, SUBJECT_TEACHER_PERMS],
   [RoleCode.ROLE_DORM_MANAGER, DORM_MANAGER_PERMS],
+  [RoleCode.ROLE_GATE_GUARD, GATE_GUARD_PERMS],
   [RoleCode.ROLE_PARENT, PARENT_PERMS],
   [RoleCode.ROLE_STUDENT, STUDENT_PERMS],
 ]);
