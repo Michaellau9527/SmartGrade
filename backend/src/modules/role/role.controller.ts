@@ -2,7 +2,8 @@ import { Controller, Get, Post, Put, Delete, Body, Param, Query } from '@nestjs/
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { RoleService } from './role.service';
 import { PaginationDto, IdParamDto } from '@/common/dto';
-import { RequirePermissions } from '@/common/decorators';
+import { RequirePermissions, CurrentUser } from '@/common/decorators';
+import { CurrentUserPayload } from '@/common/types';
 
 @ApiTags('角色权限')
 @ApiBearerAuth()
@@ -31,8 +32,8 @@ export class RoleController {
   @Post()
   @RequirePermissions('role:create')
   @ApiOperation({ summary: '新增角色' })
-  async create(@Body() body: any) {
-    return this.roleService.create(body);
+  async create(@Body() body: any, @CurrentUser() user: CurrentUserPayload) {
+    return this.roleService.create(body, user);
   }
 
   @Put(':id')
@@ -55,7 +56,8 @@ export class RoleController {
   async assignPermissions(
     @Param() params: IdParamDto,
     @Body('permissionIds') permissionIds: number[],
+    @CurrentUser() user: CurrentUserPayload,
   ) {
-    return this.roleService.assignPermissions(params.id, permissionIds);
+    return this.roleService.assignPermissions(params.id, permissionIds, user);
   }
 }

@@ -16,7 +16,7 @@ function createMockMethod(): jest.Mock {
   });
 }
 
-function createMockTable(): any {
+export function createMockTable(): any {
   return new Proxy({} as Record<string, any>, {
     get(target, prop) {
       if (typeof prop === 'symbol' || prop === 'then') return undefined;
