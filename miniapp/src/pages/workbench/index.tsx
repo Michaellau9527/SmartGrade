@@ -50,16 +50,12 @@ const NOTICE_TYPE_LABEL: Record<NoticeType, string> = {
   TEACHING: '教学'
 };
 
-/** 今日动态 mock（用户指定） */
-const TIMELINE_MOCK: TimelineEntry[] = [
-  { title: '张三 已离校', desc: '14:30 · 离校原因: 家长接送', dotColor: '#22c55e', icon: 'house', iconBg: '#f0fdf4', iconColor: '#22c55e' },
-  { title: '李四 提交请假申请', desc: '13:20 · 病假', dotColor: '#f59e0b', icon: 'clock-user', iconBg: '#fff7ed', iconColor: '#f59e0b' },
-  { title: '王五 请假申请已通过', desc: '11:15', dotColor: '#1677ff', icon: 'check', iconBg: '#eff6ff', iconColor: '#1677ff' }
-];
+/** 今日动态：占位学生示例已移除，待真实数据接入后由后端 workbench 接口驱动 */
+const TIMELINE_MOCK: TimelineEntry[] = [];
 
 /** 通知 & 待办兜底 mock */
 const NOTICE_FALLBACK: NoticeCardItem[] = [
-  { icon: 'bell', title: '请假审批提醒', desc: '张三的请假申请等待审批', time: '10分钟前', bg: '#eff6ff', border: '#dbeafe', iconBg: '#dbeafe', iconColor: '#1677ff' },
+  { icon: 'bell', title: '请假审批提醒', desc: '有新的请假申请等待审批', time: '10分钟前', bg: '#eff6ff', border: '#dbeafe', iconBg: '#dbeafe', iconColor: '#1677ff' },
   { icon: 'megaphone', title: '年级通知', desc: '关于期中考试安排通知', time: '今天 08:30', bg: '#fff7ed', border: '#ffedd5', iconBg: '#ffedd5', iconColor: '#f59e0b' }
 ];
 
@@ -321,7 +317,7 @@ export default function Workbench() {
           </View>
           <View className='hero-header__info'>
             <Text className='hero-header__greeting'>{greeting}</Text>
-            <Text className='hero-header__role'>高一 (11) 班班主任</Text>
+            <Text className='hero-header__role'>高二 (14) 班班主任</Text>
           </View>
         </View>
 
@@ -431,27 +427,36 @@ export default function Workbench() {
             </Text>
           </View>
           <View className='timeline'>
-            {TIMELINE_MOCK.map((item, i) => (
-              <View key={i} className='timeline-item'>
-                <View
-                  className='timeline-item__dot'
-                  style={{
-                    backgroundColor: `${item.dotColor}33`,
-                    borderColor: item.dotColor
-                  }}
-                />
-                <View
-                  className='timeline-item__icon'
-                  style={{ backgroundColor: item.iconBg }}
-                >
-                  <AppIcon name={item.icon} size={20} color={item.iconColor} />
+            {TIMELINE_MOCK.length > 0 ? (
+              TIMELINE_MOCK.map((item, i) => (
+                <View key={i} className='timeline-item'>
+                  <View
+                    className='timeline-item__dot'
+                    style={{
+                      backgroundColor: `${item.dotColor}33`,
+                      borderColor: item.dotColor
+                    }}
+                  />
+                  <View
+                    className='timeline-item__icon'
+                    style={{ backgroundColor: item.iconBg }}
+                  >
+                    <AppIcon name={item.icon} size={20} color={item.iconColor} />
+                  </View>
+                  <View className='timeline-item__body'>
+                    <Text className='timeline-item__title'>{item.title}</Text>
+                    <Text className='timeline-item__desc'>{item.desc}</Text>
+                  </View>
                 </View>
+              ))
+            ) : (
+              <View className='timeline-item timeline-item--empty'>
                 <View className='timeline-item__body'>
-                  <Text className='timeline-item__title'>{item.title}</Text>
-                  <Text className='timeline-item__desc'>{item.desc}</Text>
+                  <Text className='timeline-item__title'>暂无动态</Text>
+                  <Text className='timeline-item__desc'>学生动态将在接入真实数据后显示</Text>
                 </View>
               </View>
-            ))}
+            )}
           </View>
         </View>
       </View>

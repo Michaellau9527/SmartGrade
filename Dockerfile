@@ -6,8 +6,9 @@
 #   1. prisma migrate deploy              执行生产环境数据库迁移
 #        若 _prisma_migrations 表不存在（首次部署）会自动创建
 #   2. seed bootstrap (仅首次或显式开启)
-#        - SMARTGRADE_RUN_SEED=true       每次启动都跑 SEED_MODE=bootstrap
-#        - SMARTGRADE_SEED_ONCE=true      仅当数据库中还没有 User 时跑一次
+#        - SMARTGRADE_RUN_SEED=true|1     每次启动都跑 SEED_MODE=bootstrap（兼容 true/1/yes）
+#        - SMARTGRADE_SEED_ONCE=true|1    仅当数据库中还没有 User 时跑一次（兼容 true/1/yes）
+#        - 同时兼容无前缀写法 RUN_SEED / SEED_ONCE（旧部署环境变量）
 #        默认都不设置，则跳过 seed（最安全）
 #        seed 会创建默认管理员 admin / SmartGrade@2025
 #          （可用 SMARTGRADE_ADMIN_USERNAME / SMARTGRADE_ADMIN_PASSWORD 覆盖）
@@ -32,6 +33,16 @@ RUN pnpm --filter @smartgrade/shared build
 RUN pnpm --filter backend prisma:generate
 RUN pnpm --filter backend build
 
+# 将 seed 预编译为独立 CommonJS：运行阶段以 --prod 安装，不含 ts-node，
+# 故此处先用 builder 里的 tsc 编译，运行时改用 node 执行，避免 seed 静默失败。
+RUN cd /app/backend && mkdir -p /app/seed-build && \
+    npx tsc prisma/seed.ts prisma/seed-admin-password.ts \
+      --rootDir prisma \
+      --outDir /app/seed-build \
+      --module commonjs --target es2019 --esModuleInterop --skipLibCheck \
+      --moduleResolution node --resolveJsonModule && \
+    echo '[smartgrade] seed compiled -> /app/seed-build/seed.js'
+
 # ---- 运行阶段 ----
 FROM node:20-alpine AS runner
 
@@ -49,6 +60,7 @@ COPY --from=builder /app/shared/dist ./shared/dist
 COPY --from=builder /app/backend/dist ./backend/dist
 COPY --from=builder /app/backend/prisma ./backend/prisma
 COPY --from=builder /app/backend/package.json ./backend/package.json
+COPY --from=builder /app/seed-build ./seed-build
 
 RUN pnpm install --frozen-lockfile --prod
 RUN pnpm --filter backend exec prisma generate
@@ -66,19 +78,23 @@ CMD ["sh", "-c", "\
           if [ \"$SMARTGRADE_MIGRATE_STRICT\" = \"true\" ]; then exit 78; fi; true )) && \
   echo '[smartgrade] Step 2/3: seed (if enabled)...' && \
   ( \
-    if [ \"$SMARTGRADE_RUN_SEED\" = \"true\" ]; then \
-      echo '[smartgrade] SMARTGRADE_RUN_SEED=true -> run seed now'; \
-      pnpm --filter backend exec ts-node --transpile-only prisma/seed.ts || echo '[smartgrade] seed failed, continuing'; \
-    elif [ \"$SMARTGRADE_SEED_ONCE\" = \"true\" ]; then \
+    RUN_SEED_VAL=${SMARTGRADE_RUN_SEED:-${RUN_SEED:-}}; \
+    SEED_ONCE_VAL=${SMARTGRADE_SEED_ONCE:-${SEED_ONCE:-}}; \
+    case \"$RUN_SEED_VAL\" in 1|true|yes|TRUE|YES) RUN_SEED_EFF=1 ;; *) RUN_SEED_EFF=0 ;; esac; \
+    case \"$SEED_ONCE_VAL\" in 1|true|yes|TRUE|YES) SEED_ONCE_EFF=1 ;; *) SEED_ONCE_EFF=0 ;; esac; \
+    if [ \"$RUN_SEED_EFF\" = \"1\" ]; then \
+      echo '[smartgrade] RUN_SEED enabled -> run seed now'; \
+      node /app/seed-build/seed.js || echo '[smartgrade] seed failed, continuing'; \
+    elif [ \"$SEED_ONCE_EFF\" = \"1\" ]; then \
       EXISTS=$(MYSQL_PWD=\"$DATABASE_PASSWORD\" mysql -h \"${DATABASE_HOST:-localhost}\" -u \"${DATABASE_USER:-root}\" \"${DATABASE_NAME:-smartgrade}\" -N -s -e \"SELECT COUNT(*) FROM user LIMIT 1\" 2>/dev/null || echo 0); \
       if [ \"$EXISTS\" = \"0\" ] || [ -z \"$EXISTS\" ]; then \
-        echo '[smartgrade] SMARTGRADE_SEED_ONCE=true && user table empty -> run seed'; \
-        pnpm --filter backend exec ts-node --transpile-only prisma/seed.ts || echo '[smartgrade] seed failed, continuing'; \
+        echo '[smartgrade] SEED_ONCE enabled && user table empty -> run seed'; \
+        node /app/seed-build/seed.js || echo '[smartgrade] seed failed, continuing'; \
       else \
-        echo '[smartgrade] SMARTGRADE_SEED_ONCE=true but user table not empty -> skip seed'; \
+        echo '[smartgrade] SEED_ONCE enabled but user table not empty -> skip seed'; \
       fi; \
     else \
-      echo '[smartgrade] seed not enabled (set SMARTGRADE_RUN_SEED or SMARTGRADE_SEED_ONCE to enable) -> skip'; \
+      echo '[smartgrade] seed not enabled (set SMARTGRADE_RUN_SEED/RUN_SEED/SMARTGRADE_SEED_ONCE/SEED_ONCE to enable) -> skip'; \
     fi \
   ) && \
   echo '[smartgrade] Step 3/3: Starting NestJS...' && \
