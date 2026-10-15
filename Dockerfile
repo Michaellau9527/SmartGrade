@@ -62,8 +62,8 @@ CMD ["sh", "-c", "\
   (pnpm exec prisma migrate deploy \
      && rm -f /tmp/smartgrade_migrate_failed \
      || ( echo '[smartgrade][FATAL] migrate deploy FAILED - schema NOT up to date'; \
-          echo "failed at $(date -u +%FT%TZ)" > /tmp/smartgrade_migrate_failed; \
-          if [ "$SMARTGRADE_MIGRATE_STRICT" = "true" ]; then exit 78; fi; true )) && \
+          echo \"failed at $(date -u +%FT%TZ)\" > /tmp/smartgrade_migrate_failed; \
+          if [ \"$SMARTGRADE_MIGRATE_STRICT\" = \"true\" ]; then exit 78; fi; true )) && \
   echo '[smartgrade] Step 2/3: seed (if enabled)...' && \
   ( \
     if [ \"$SMARTGRADE_RUN_SEED\" = \"true\" ]; then \
