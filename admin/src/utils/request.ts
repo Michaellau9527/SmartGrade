@@ -3,7 +3,9 @@ import type { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse } from 'a
 import { message } from 'antd';
 
 const request: AxiosInstance = axios.create({
-  baseURL: '/api/v1',
+  // 生产环境由 .env.production 的 VITE_API_BASE_URL 注入绝对地址（CloudBase 纯静态托管下
+  // 无同源代理，必须指向云托管后端域名）；本地 dev 未配置时回退到相对路径 /api/v1（依赖 vite proxy）。
+  baseURL: import.meta.env.VITE_API_BASE_URL || '/api/v1',
   timeout: 10000,
 });
 

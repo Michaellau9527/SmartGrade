@@ -1,0 +1,9 @@
+{
+  "envId": "287135",
+  "region": "ap-shanghai",
+  "hosting": {
+    "distPath": "admin/dist",
+    "deployPath": "/",
+    "index": "index.html"
+  }
+}

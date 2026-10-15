@@ -1,0 +1,44 @@
+name: Deploy Admin to CloudBase Static Hosting
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'admin/**'
+      - 'shared/**'
+      - 'cloudbaserc.json'
+      - '.github/workflows/deploy-admin.yml'
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build admin (production)
+        working-directory: admin
+        run: pnpm build
+
+      - name: Deploy to CloudBase Static Hosting
+        uses: TencentCloudBase/cloudbase-action@v2
+        with:
+          secretId: ${{ secrets.SECRET_ID }}
+          secretKey: ${{ secrets.SECRET_KEY }}
+          envId: ${{ secrets.CLOUDBASE_ENV_ID }}
+          staticSrcPath: admin/dist
