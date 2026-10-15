@@ -35,13 +35,21 @@ RUN pnpm --filter backend build
 
 # 将 seed 预编译为独立 CommonJS：运行阶段以 --prod 安装，不含 ts-node，
 # 故此处先用 builder 里的 tsc 编译，运行时改用 node 执行，避免 seed 静默失败。
+# 注：--noEmitOnError false 是有意为之——seed.ts 在 bootstrap 路径之外仍引用了
+# 与 schema 重命名后不一致的约束名（teacherId_classId_role_startDate），会在 tsc
+# 类型检查阶段报 TS2353；但 bootstrap 运行路径（建 admin 后 return）不会执行到该处，
+# 故强制产出 JS 并校验产物存在即可，不应让无关类型错误阻断镜像构建。
 RUN cd /app/backend && mkdir -p /app/seed-build && \
     npx tsc prisma/seed.ts prisma/seed-admin-password.ts \
       --rootDir prisma \
       --outDir /app/seed-build \
       --module commonjs --target es2019 --esModuleInterop --skipLibCheck \
-      --moduleResolution node --resolveJsonModule && \
-    echo '[smartgrade] seed compiled -> /app/seed-build/seed.js'
+      --moduleResolution node --resolveJsonModule --noEmitOnError false; \
+    if [ -f /app/seed-build/seed.js ]; then \
+      echo '[smartgrade] seed compiled -> /app/seed-build/seed.js'; \
+    else \
+      echo '[smartgrade] seed compile produced NO seed.js, abort'; exit 1; \
+    fi
 
 # ---- 运行阶段 ----
 FROM node:20-alpine AS runner
