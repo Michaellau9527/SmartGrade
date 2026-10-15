@@ -16,6 +16,9 @@ importers:
       '@ant-design/pro-components':
         specifier: ^2.6.43
         version: 2.8.10(antd@5.29.3(luxon@3.5.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(rc-field-form@2.7.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@rc-component/qrcode':
+        specifier: ^1.1.3
+        version: 1.1.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@tanstack/react-query':
         specifier: ^5.17.0
         version: 5.101.2(react@18.3.1)
