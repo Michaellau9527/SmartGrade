@@ -16,6 +16,7 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     'statistics:read', 'dorm:read', 'dorm:check',
     'permission:create', 'permission:update', 'permission:delete',
     'role:create', 'role:update', 'role:delete', 'role:assign-permission',
+    'student:qrcode:issue',
   ],
   GRADE_ADMIN: [
     'statistics:read',
@@ -32,6 +33,7 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     'notice:read',
     'leave:create', 'leave:read', 'leave:approve', 'leave:update', 'leave:finish',
     'student:read', 'student:create', 'student:update', 'student:delete',
+    'student:qrcode:issue',
   ],
   DORM_ADMIN: [
     'statistics:read',
@@ -49,14 +51,6 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
   ],
 };
 
-const ROLE_DATA_SCOPE: Record<string, string> = {
-  SUPER_ADMIN: 'ALL',
-  GRADE_ADMIN: 'GRADE',
-  HEAD_TEACHER: 'CLASS',
-  DORM_ADMIN: 'DORM',
-  TEACHER: 'SELF',
-};
-
 const ROLE_NAMES: Record<string, string> = {
   SUPER_ADMIN: '超级管理员',
   GRADE_ADMIN: '年级主任',
@@ -72,30 +66,46 @@ let notices = [...mockNotices];
 const todos = [...mockTodos];
 
 // ─── Auth ──────────────────────────────────────────────
+// 前端矩阵 key -> 后端角色码（hasPermission / deriveDataScope 均按后端码判断）
+const ROLE_TO_BACKEND: Record<string, string> = {
+  SUPER_ADMIN: 'ROLE_ADMIN',
+  GRADE_ADMIN: 'ROLE_GRADE_DIRECTOR',
+  HEAD_TEACHER: 'ROLE_HEADMASTER',
+  DORM_ADMIN: 'ROLE_DORM_MANAGER',
+  TEACHER: 'ROLE_SUBJECT_TEACHER',
+};
+
 const authHandlers = [
-  http.post('/api/v1/auth/login', async ({ request }) => {
-    const body = (await request.json()) as { role?: string };
-    const role = body.role || 'SUPER_ADMIN';
-    const permissions = ROLE_PERMISSIONS[role] ?? ROLE_PERMISSIONS.SUPER_ADMIN;
+  // 与前端 api/auth.ts loginWithPassword 真实端点一致（阶段 B3）
+  http.post('/api/v1/auth/login-with-password', async ({ request }) => {
+    const body = (await request.json()) as { role?: string; username?: string; password?: string };
+    const roleKey = body.role || 'SUPER_ADMIN';
+    const permissions = ROLE_PERMISSIONS[roleKey] ?? ROLE_PERMISSIONS.SUPER_ADMIN;
+    const backendRole = ROLE_TO_BACKEND[roleKey] || 'ROLE_ADMIN';
     return HttpResponse.json({
-      access_token: 'mock-jwt-token-dev',
-      user: {
-        id: 1,
-        name: `${ROLE_NAMES[role] || role}测试账号`,
-        teacher_no: 'T001',
-        roles: [role],
-        permissions,
-        dataScope: { type: ROLE_DATA_SCOPE[role] || 'SELF' },
+      teacher: {
+        id: '1',
+        teacherNo: 'T001',
+        name: `${ROLE_NAMES[roleKey] || roleKey}测试账号`,
       },
+      roles: [backendRole],
+      permissions,
+      tags: [],
+      token: 'mock-jwt-token-dev',
+      refreshToken: 'mock-refresh-token-dev',
+      expiresIn: '3600',
     });
   }),
 
   http.get('/api/v1/auth/me', () => {
     return HttpResponse.json({
-      id: 1,
+      id: '1',
+      teacherNo: 'T001',
       name: '王老师',
-      teacher_no: 'T001',
-      roles: ['SUPER_ADMIN'],
+      gender: 'MALE',
+      avatar: null,
+      position: '班主任',
+      roles: ['ROLE_ADMIN'],
       permissions: ROLE_PERMISSIONS.SUPER_ADMIN,
       dataScope: { type: 'ALL' },
     });
@@ -624,6 +634,283 @@ const errorHandlers = [
 // 更新 request.ts 在开发环境下注入异常 header
 // 这样可以通过 localStorage 控制异常模拟
 
+// ─── Student Credential (身份二维码，F1) ───────────────
+let credentialStore: Record<string, { hasActive: boolean; version: number; totalIssued: number }> = {};
+
+const credentialHandlers = [
+  http.get('/api/v1/student-credentials/students/:studentId', ({ params }) => {
+    const id = params.studentId as string;
+    const s = credentialStore[id] || { hasActive: false, version: 0, totalIssued: 0 };
+    return HttpResponse.json({
+      studentId: id,
+      hasActive: s.hasActive,
+      active: s.hasActive
+        ? {
+            id: 'mock',
+            version: s.version,
+            issuedBy: '1',
+            issuedAt: new Date().toISOString(),
+            lastVerifiedAt: null,
+            lastVerifiedBy: null,
+          }
+        : null,
+      totalIssued: s.totalIssued,
+    });
+  }),
+  http.post('/api/v1/student-credentials', async ({ request }) => {
+    const body = (await request.json()) as { studentId: string };
+    const prev = credentialStore[body.studentId] || { hasActive: false, version: 0, totalIssued: 0 };
+    const version = prev.hasActive ? prev.version + 1 : 1;
+    credentialStore[body.studentId] = { hasActive: true, version, totalIssued: prev.totalIssued + 1 };
+    return HttpResponse.json(
+      { credentialId: 'mock', version, token: `mock-token-${Math.random().toString(36).slice(2)}` },
+      { status: 201 },
+    );
+  }),
+  http.delete('/api/v1/student-credentials/students/:studentId', ({ params }) => {
+    const id = params.studentId as string;
+    const prev = credentialStore[id] || { hasActive: false, version: 0, totalIssued: 0 };
+    const revokedCount = prev.hasActive ? 1 : 0;
+    credentialStore[id] = { ...prev, hasActive: false };
+    return HttpResponse.json({ studentId: id, revokedCount });
+  }),
+];
+
+// ─── RBAC (角色 / 权限) ───────────────────────────────
+const allPermCodes = Array.from(new Set(Object.values(ROLE_PERMISSIONS).flat()));
+const seededPermissions = allPermCodes.map((code, i) => ({
+  id: i + 1,
+  permissionCode: code,
+  permissionName: code,
+  resource: code.split(':')[0],
+  action: code.split(':')[1] ?? null,
+  description: null,
+}));
+const seededRoles: Array<{ id: number; roleCode: string; roleName: string; description: string | null }> =
+  Object.keys(ROLE_PERMISSIONS).map((roleCode, i) => ({
+    id: i + 1,
+    roleCode,
+    roleName: ROLE_NAMES[roleCode] || roleCode,
+    description: null,
+  }));
+const rolePermMap: Record<string, typeof seededPermissions> = {};
+seededRoles.forEach((r) => {
+  const codes = ROLE_PERMISSIONS[r.roleCode] || [];
+  rolePermMap[String(r.id)] = seededPermissions.filter((p) => codes.includes(p.permissionCode));
+});
+
+const rbacHandlers = [
+  http.get('/api/v1/roles', () => {
+    return HttpResponse.json({
+      list: seededRoles,
+      total: seededRoles.length,
+      page: 1,
+      pageSize: 100,
+    });
+  }),
+  http.get('/api/v1/roles/:id/permissions', ({ params }) => {
+    return HttpResponse.json(rolePermMap[params.id as string] || []);
+  }),
+  http.post('/api/v1/roles/:id/permissions', async ({ request, params }) => {
+    const body = (await request.json()) as { permissionIds: number[] };
+    rolePermMap[params.id as string] = seededPermissions.filter((p) => body.permissionIds.includes(p.id));
+    return HttpResponse.json({ success: true });
+  }),
+  http.post('/api/v1/roles', async ({ request }) => {
+    const body = (await request.json()) as { roleCode: string; roleName: string; description?: string };
+    const role = {
+      id: seededRoles.length + 1,
+      roleCode: body.roleCode,
+      roleName: body.roleName,
+      description: body.description ?? null,
+    };
+    seededRoles.push(role);
+    return HttpResponse.json(role, { status: 201 });
+  }),
+  http.delete('/api/v1/roles/:id', ({ params }) => {
+    const idx = seededRoles.findIndex((r) => String(r.id) === params.id);
+    if (idx >= 0) seededRoles.splice(idx, 1);
+    return HttpResponse.json({ success: true });
+  }),
+  http.get('/api/v1/permissions', () => {
+    return HttpResponse.json({
+      list: seededPermissions,
+      total: seededPermissions.length,
+      page: 1,
+      pageSize: 200,
+    });
+  }),
+];
+
+// ─── Teacher (教师管理) ────────────────────────────────
+interface MockTeacher {
+  id: string;
+  teacherNo: string;
+  name: string;
+  gender: string;
+  phone: string | null;
+  email: string | null;
+  avatar: string | null;
+  teachingGroup: string | null;
+  position: string | null;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+const seedTeachers: MockTeacher[] = [
+  {
+    id: '1',
+    teacherNo: 'T2024001',
+    name: '张明',
+    gender: 'MALE',
+    phone: '13800000001',
+    email: 'zhangming@school.edu',
+    avatar: null,
+    teachingGroup: '数学组',
+    position: '年级主任',
+    status: 'ACTIVE',
+    createdAt: '2026-09-01T08:00:00.000Z',
+    updatedAt: '2026-09-01T08:00:00.000Z',
+  },
+  {
+    id: '2',
+    teacherNo: 'T2024002',
+    name: '李华',
+    gender: 'FEMALE',
+    phone: '13800000002',
+    email: 'lihua@school.edu',
+    avatar: null,
+    teachingGroup: '语文组',
+    position: '班主任',
+    status: 'ACTIVE',
+    createdAt: '2026-09-01T08:00:00.000Z',
+    updatedAt: '2026-09-01T08:00:00.000Z',
+  },
+  {
+    id: '3',
+    teacherNo: 'T2024003',
+    name: '王芳',
+    gender: 'FEMALE',
+    phone: '13800000003',
+    email: 'wangfang@school.edu',
+    avatar: null,
+    teachingGroup: '英语组',
+    position: '任课教师',
+    status: 'ACTIVE',
+    createdAt: '2026-09-01T08:00:00.000Z',
+    updatedAt: '2026-09-01T08:00:00.000Z',
+  },
+  {
+    id: '4',
+    teacherNo: 'T2024004',
+    name: '陈强',
+    gender: 'MALE',
+    phone: '13800000004',
+    email: null,
+    avatar: null,
+    teachingGroup: '物理组',
+    position: '任课教师',
+    status: 'RESIGNED',
+    createdAt: '2026-09-01T08:00:00.000Z',
+    updatedAt: '2026-10-01T08:00:00.000Z',
+  },
+];
+
+let teachers = [...seedTeachers];
+
+// 教师 -> 角色码映射（与后端 teacher.service 同口径；初始仅给示例数据）
+const teacherRoleMap: Record<string, string[]> = {
+  '1': ['ROLE_GRADE_DIRECTOR'],
+  '2': ['ROLE_HEADMASTER'],
+  '3': ['ROLE_SUBJECT_TEACHER'],
+  '4': ['ROLE_SUBJECT_TEACHER'],
+};
+
+const teacherHandlers = [
+  http.get('/api/v1/teachers', ({ request }) => {
+    const url = new URL(request.url);
+    const page = Number(url.searchParams.get('page') || '1');
+    const pageSize = Number(url.searchParams.get('pageSize') || '10');
+    const keyword = url.searchParams.get('keyword')?.toLowerCase();
+    let filtered = [...teachers];
+    if (keyword) {
+      filtered = filtered.filter(
+        (t) => t.name.toLowerCase().includes(keyword) || t.teacherNo.toLowerCase().includes(keyword),
+      );
+    }
+    const start = (page - 1) * pageSize;
+    const list = filtered.slice(start, start + pageSize);
+    return HttpResponse.json({ list, total: filtered.length, page, pageSize });
+  }),
+
+  http.get('/api/v1/teachers/:id', ({ params }) => {
+    const teacher = teachers.find((t) => t.id === params.id);
+    if (!teacher) return HttpResponse.json({ message: 'Not found' }, { status: 404 });
+    return HttpResponse.json(teacher);
+  }),
+
+  http.get('/api/v1/teachers/:id/roles', ({ params }) => {
+    return HttpResponse.json({
+      teacherId: params.id as string,
+      roles: teacherRoleMap[params.id as string] || [],
+    });
+  }),
+
+  http.post('/api/v1/teachers', async ({ request }) => {
+    const body = (await request.json()) as {
+      teacherNo: string;
+      name: string;
+      gender: string;
+      phone?: string | null;
+      email?: string | null;
+      teachingGroup?: string | null;
+      position?: string | null;
+      status?: string;
+    };
+    const now = new Date().toISOString();
+    const newTeacher: MockTeacher = {
+      id: String(teachers.length + 1),
+      teacherNo: body.teacherNo,
+      name: body.name,
+      gender: body.gender,
+      phone: body.phone ?? null,
+      email: body.email ?? null,
+      avatar: null,
+      teachingGroup: body.teachingGroup ?? null,
+      position: body.position ?? null,
+      status: body.status ?? 'ACTIVE',
+      createdAt: now,
+      updatedAt: now,
+    };
+    teachers = [newTeacher, ...teachers];
+    return HttpResponse.json(newTeacher, { status: 201 });
+  }),
+
+  http.put('/api/v1/teachers/:id', async ({ request, params }) => {
+    const body = (await request.json()) as Record<string, unknown>;
+    const teacher = teachers.find((t) => t.id === params.id);
+    if (!teacher) return HttpResponse.json({ message: 'Not found' }, { status: 404 });
+    Object.assign(teacher, body);
+    teacher.updatedAt = new Date().toISOString();
+    return HttpResponse.json(teacher);
+  }),
+
+  http.post('/api/v1/teachers/:id/roles', async ({ request, params }) => {
+    const body = (await request.json()) as { roleIds: number[] };
+    const codes = body.roleIds
+      .map((id) => seededRoles.find((r) => r.id === id)?.roleCode)
+      .filter((c): c is string => typeof c === 'string');
+    teacherRoleMap[params.id as string] = codes;
+    return HttpResponse.json({ success: true, teacherId: params.id as string, roles: codes });
+  }),
+
+  http.post('/api/v1/teachers/:id/bind-wechat/init', ({ params }) => {
+    const token = `BIND-${Math.random().toString(36).slice(2, 10).toUpperCase()}`;
+    return HttpResponse.json({ bindingToken: token, expiresIn: 600, teacherId: params.id as string });
+  }),
+];
+
 export const handlers = [
   ...errorHandlers,
   ...authHandlers,
@@ -632,4 +919,7 @@ export const handlers = [
   ...leaveHandlers,
   ...noticeHandlers,
   ...studentHandlers,
+  ...credentialHandlers,
+  ...teacherHandlers,
+  ...rbacHandlers,
 ];

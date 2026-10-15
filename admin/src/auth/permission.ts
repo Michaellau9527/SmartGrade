@@ -38,6 +38,11 @@ export const PERM = {
   TEACHER_DELETE: 'teacher:delete',
   TEACHER_ASSIGN_ROLE: 'teacher:assign-role',
   TEACHER_ASSIGN_TAG: 'teacher:assign-tag',
+  TEACHER_BIND_WECHAT: 'teacher:bind-wechat',
+  TEACHER_UNBIND_WECHAT: 'teacher:unbind-wechat',
+
+  // Student Credential (身份二维码，F1 后端已上线)
+  STUDENT_QRCODE_ISSUE: 'student:qrcode:issue',
 
   // Dorm
   DORM_READ: 'dorm:read',

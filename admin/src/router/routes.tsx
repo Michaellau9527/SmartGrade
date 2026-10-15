@@ -51,20 +51,23 @@ export const routeConfig: RouteItem[] = [
   { path: 'student', label: '学生管理', icon: <TeamOutlined />, component: Student, permissions: [PERM.STUDENT_READ] },
   { path: 'teacher', label: '教师管理', icon: <UserOutlined />, component: Teacher, permissions: [PERM.TEACHER_READ] },
   { path: 'document', label: '文件管理', icon: <FolderOutlined />, component: Document, permissions: [PERM.DASHBOARD_READ] },
-  { path: 'config', label: '系统配置', icon: <SettingOutlined />, component: Config, permissions: [PERM.ROLE_CREATE] },
+  { path: 'config', label: '角色权限', icon: <SettingOutlined />, component: Config, permissions: [PERM.ROLE_CREATE] },
 ];
 
 /** 获取允许访问的路由列表（用于菜单渲染） */
-export function getAccessibleRoutes(permissions: Set<string>): RouteItem[] {
+export function getAccessibleRoutes(permissions: Set<string>, roles: string[] = []): RouteItem[] {
+  // 与后端 permissions.guard.ts 保持一致：ROLE_ADMIN 可见全部菜单
+  if (roles.includes('ROLE_ADMIN')) return routeConfig;
   return routeConfig.filter((route) =>
     route.permissions.some((p) => permissions.has(p)),
   );
 }
 
 /** 判断是否可以访问指定路径 */
-export function canAccessRoute(path: string, permissions: Set<string>): boolean {
+export function canAccessRoute(path: string, permissions: Set<string>, roles: string[] = []): boolean {
   const normalizedPath = path.replace(/^\//, '');
   const route = routeConfig.find((r) => r.path === normalizedPath);
   if (!route) return true;
+  if (roles.includes('ROLE_ADMIN')) return true;
   return route.permissions.some((p) => permissions.has(p));
 }

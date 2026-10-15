@@ -22,7 +22,7 @@ function useDevRoleSwitch() {
     const dataScope = ROLE_DATA_SCOPE[role];
     setLogin(
       {
-        id: 1,
+        id: '1',
         name: `${ROLE_META[role].label}测试账号`,
         teacher_no: 'T001',
         roles: [role],
@@ -57,12 +57,12 @@ export default function Layout() {
   // 根据权限过滤菜单（直接使用 routeConfig 中的 icon 和 label）
   const menuItems = useMemo(() => {
     if (!user?.permissions) return [];
-    return getAccessibleRoutes(user.permissions).map((route) => ({
+    return getAccessibleRoutes(user.permissions, user.roles ?? []).map((route) => ({
       key: `/${route.path}`,
       icon: route.icon,
       label: route.label,
     }));
-  }, [user?.permissions]);
+  }, [user?.permissions, user?.roles]);
 
   const handleMenuClick = ({ key }: { key: string }) => {
     navigate(key);

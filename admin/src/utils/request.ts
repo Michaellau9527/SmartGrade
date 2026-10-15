@@ -42,9 +42,34 @@ request.interceptors.request.use(
 );
 
 request.interceptors.response.use(
-  (response: AxiosResponse) => response.data,
+  (response: AxiosResponse) => {
+    const body = response.data;
+    // 真实后端经 TransformInterceptor 包装为 { code, message, data }；
+    // MSW Mock 返回原始结构（无数值顶层 code 键），需兼容。
+    // 精确判定 typeof code === 'number' 且含 data 字段，避免业务实体含 code 字符串被误拆。
+    if (
+      body &&
+      typeof body === 'object' &&
+      typeof (body as { code?: unknown }).code === 'number' &&
+      'data' in body
+    ) {
+      return (body as { data: unknown }).data;
+    }
+    return body;
+  },
   (error: unknown) => {
-    const err = error as { response?: { status: number; data?: { message?: string } }; message?: string };
+    const err = error as {
+      config?: { url?: string };
+      response?: { status: number; data?: { message?: string }; config?: { url?: string } };
+      message?: string;
+    };
+    // 登录接口（login-with-password）的失败属于“登录凭证问题”，不属于“已登录会话过期”，
+    // 也不应由全局拦截器弹 Toast。统一交由登录页内联 Alert 展示：此处短路返回，
+    // 不弹全局提示、不清 Token、不执行整页跳转。其余请求维持原有全局处理。
+    const reqUrl = err.config?.url || err.response?.config?.url || '';
+    if (reqUrl.includes('login-with-password')) {
+      return Promise.reject(error);
+    }
     if (!err.response) {
       message.error('网络异常，请检查网络连接');
       return Promise.reject(error);

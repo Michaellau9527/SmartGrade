@@ -43,3 +43,9 @@ export {
   getRecentNotices,
   getRecentTimeline,
 } from './dashboard';
+
+export {
+  issueCredential,
+  revokeCredential,
+  getCredentialStatus,
+} from './credential';
