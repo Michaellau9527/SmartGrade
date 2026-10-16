@@ -1,5 +1,6 @@
 import { PrismaClient, Gender, BoardingType, SchoolType, GradeStage, GradeStatus, ClassStatus, TeacherStatus, TeacherClassRole, UserType, UserStatus, IdentityProvider, IdentityStatus } from '@prisma/client';
 import * as bcryptjs from 'bcryptjs';
+import { randomUUID } from 'crypto';
 import { resolveAdminPassword } from './seed-admin-password';
 
 const prisma = new PrismaClient();
@@ -219,34 +220,36 @@ async function seedDefaultAdmin() {
   const teacherNo = ADMIN_TEACHER_NO;
 
   // 1. 管理员对应 Teacher 记录（工号唯一）
-  const teacher = await prisma.teacher.upsert({
-    where: { teacherNo },
-    update: { name: '系统管理员', gender: Gender.OTHER, status: TeacherStatus.ACTIVE },
-    create: {
-      teacherNo,
-      name: '系统管理员',
-      gender: Gender.OTHER,
-      status: TeacherStatus.ACTIVE,
-    },
-  });
+  // 注意：生产库与当前 schema 存在漂移，teacher 表实际包含 _openid 列（NOT NULL 无默认值），
+  // 而 schema.prisma 未声明该字段，直接使用 prisma.teacher.upsert 会触发 MySQL 1364 错误。
+  // 此处用 $executeRawUnsafe 显式给 _openid 赋值 '' 以适配生产库。
+  await prisma.$executeRawUnsafe(`
+    INSERT INTO teacher (id, teacher_no, name, gender, status, _openid, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, '', NOW(3), NOW(3))
+    ON DUPLICATE KEY UPDATE
+      name = VALUES(name),
+      gender = VALUES(gender),
+      status = VALUES(status),
+      updated_at = NOW(3)
+  `, randomUUID(), teacherNo, '系统管理员', Gender.OTHER, TeacherStatus.ACTIVE);
+
+  const teacher = await prisma.teacher.findUnique({ where: { teacherNo } });
+  if (!teacher) throw new Error(`Teacher upsert failed for ${teacherNo}`);
 
   // 2. 管理员 User 记录（username 唯一；关联 teacherId）
-  const user = await prisma.user.upsert({
-    where: { username: ADMIN_USERNAME },
-    update: {
-      passwordHash,
-      userType: UserType.SYSTEM_ADMIN,
-      teacherId: teacher.id,
-      status: UserStatus.ACTIVE,
-    },
-    create: {
-      username: ADMIN_USERNAME,
-      passwordHash,
-      userType: UserType.SYSTEM_ADMIN,
-      teacherId: teacher.id,
-      status: UserStatus.ACTIVE,
-    },
-  });
+  await prisma.$executeRawUnsafe(`
+    INSERT INTO user (id, username, password_hash, user_type, teacher_id, status, _openid, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, '', NOW(3), NOW(3))
+    ON DUPLICATE KEY UPDATE
+      password_hash = VALUES(password_hash),
+      user_type = VALUES(user_type),
+      teacher_id = VALUES(teacher_id),
+      status = VALUES(status),
+      updated_at = NOW(3)
+  `, randomUUID(), ADMIN_USERNAME, passwordHash, UserType.SYSTEM_ADMIN, teacher.id, UserStatus.ACTIVE);
+
+  const user = await prisma.user.findUnique({ where: { username: ADMIN_USERNAME } });
+  if (!user) throw new Error(`User upsert failed for ${ADMIN_USERNAME}`);
 
   // 3. ACCOUNT 登录身份（便于使用 username/password 登录方式调用 ACCOUNT provider）
   await prisma.userIdentity.upsert({
@@ -420,7 +423,7 @@ async function main() {
 
   await prisma.teacherClassRelation.upsert({
     where: {
-      teacherId_classId_role_startDate: {
+      uniq_teacher_class_role_start: {
         teacherId: headTeacher.id,
         classId: cls.id,
         role: TeacherClassRole.HEAD_TEACHER,
@@ -438,7 +441,7 @@ async function main() {
 
   await prisma.teacherClassRelation.upsert({
     where: {
-      teacherId_classId_role_startDate: {
+      uniq_teacher_class_role_start: {
         teacherId: subjectTeacher.id,
         classId: cls.id,
         role: TeacherClassRole.SUBJECT_TEACHER,
