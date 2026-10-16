@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { Result, Button } from 'antd';
 import { useUserStore } from '@/stores/user';
 
@@ -74,10 +74,10 @@ export function AuthGuard({
   const token = useUserStore((state) => state.token);
   const hasPermission = useUserStore((state) => state.hasPermission);
 
-  // 需要登录但未登录
+  // 需要登录但未登录：渲染期返回 <Navigate>（不要在 render 中调用 navigate()，
+  // 那属于 render 副作用，会导致不稳定跳转/重复渲染告警）。
   if (requireAuth && !user && !token) {
-    navigate('/login', { replace: true });
-    return null;
+    return <Navigate to="/login" replace />;
   }
 
   // 需要特定权限
@@ -85,8 +85,7 @@ export function AuthGuard({
     const authorized = permissions.some((p) => hasPermission(p));
     if (!authorized) {
       if (fallbackPath) {
-        navigate(fallbackPath, { replace: true });
-        return null;
+        return <Navigate to={fallbackPath} replace />;
       }
       return (
         <div style={{ padding: 40 }}>

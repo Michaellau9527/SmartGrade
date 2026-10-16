@@ -21,11 +21,55 @@ interface UserState {
   hasPermission: (permission: string) => boolean;
 }
 
+/** 解析 JWT 载荷（仅 base64 解码，不校验签名）；解析失败返回 null */
+function parseJwtPayload(token: string): Record<string, unknown> | null {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), '=');
+    const json = decodeURIComponent(
+      atob(padded)
+        .split('')
+        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join(''),
+    );
+    return JSON.parse(json) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * 判断 token 是否「可确定为已过期」。
+ * - 仅在能解析出数值 `exp` 且已过期（含 30s 时钟偏移）时返回 true；
+ * - 非 JWT / 无 exp / 解析失败一律返回 false，交由后端 401 兜底。
+ * 这样既能清掉过期 token（消除“幽灵登录态”），又不会误清仍在有效期内的 token。
+ */
+export function isTokenExpired(token: string | null | undefined): boolean {
+  if (!token) return false;
+  const payload = parseJwtPayload(token);
+  const exp = payload?.exp;
+  if (typeof exp !== 'number') return false;
+  return exp * 1000 < Date.now() - 30_000;
+}
+
+// 启动时检验持久化的 token：若确定已过期，清空存储，避免把过期 token 当成“已登录”，
+// 否则首开后台会进入受保护页面（随之 401），表现为“页面异常、需要先退出再登录”。
+const initialToken = localStorage.getItem('token');
+const initialExpired = isTokenExpired(initialToken);
+if (initialExpired) {
+  localStorage.removeItem('token');
+  localStorage.removeItem('user');
+  localStorage.removeItem('permissions');
+}
+
 export const useUserStore = create<UserState>((set, get) => ({
-  // 同步恢复登录态：避免 BrowserRouter/刷新时 user 为 null 而 token 已存在的空窗，
+  // 同步恢复登录态：避免刷新时 user 为 null 而 token 已存在的空窗，
   // 否则会出现“刷新后短暂丢登录、需先退出再登录”的问题。
-  user: restoreUserFromStorage(),
-  token: localStorage.getItem('token'),
+  // 注意：仅恢复「未过期」的 token，过期 token 已在上面被清理。
+  user: initialExpired ? null : restoreUserFromStorage(),
+  token: initialExpired ? null : initialToken,
   setLogin: (user, token) => {
     localStorage.setItem('token', token);
     localStorage.setItem('user', JSON.stringify({

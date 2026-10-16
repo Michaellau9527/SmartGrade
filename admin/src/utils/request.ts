@@ -1,6 +1,7 @@
 import axios from 'axios';
 import type { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse } from 'axios';
 import { message } from 'antd';
+import { useUserStore } from '@/stores/user';
 
 const request: AxiosInstance = axios.create({
   // 生产环境由 .env.production 的 VITE_API_BASE_URL 注入绝对地址（CloudBase 纯静态托管下
@@ -80,12 +81,17 @@ request.interceptors.response.use(
     const msg = data?.message || err.message || '请求失败';
     switch (status) {
       case 401:
-      message.warning('登录已过期，请重新登录');
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      localStorage.removeItem('permissions');
-      window.location.href = '/#/login';
-      break;
+        message.warning('登录已过期，请重新登录');
+        // 同步重置内存 store（清 storage 且置 user/token = null）。
+        // 若只清 localStorage 而不重置内存 store，残留的“幽灵登录态”会让 AuthGuard
+        // 继续放行 → 页面反复请求、反复 401，形成死循环（即“必须先退出才能登录”）。
+        useUserStore.getState().setLogout();
+        // HashRouter 下用 hash 跳转触发 SPA 路由：不发起整页 HTTP 请求、不会 404，
+        // 也避免 window.location.href 可能引发的整页重载/重载循环。
+        if (!window.location.hash.startsWith('#/login')) {
+          window.location.hash = '#/login';
+        }
+        break;
       case 403:
         message.error('您没有权限执行此操作');
         break;
