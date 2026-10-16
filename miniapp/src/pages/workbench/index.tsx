@@ -55,8 +55,8 @@ const TIMELINE_MOCK: TimelineEntry[] = [];
 
 /** 通知 & 待办兜底 mock */
 const NOTICE_FALLBACK: NoticeCardItem[] = [
-  { icon: 'bell', title: '请假审批提醒', desc: '有新的请假申请等待审批', time: '10分钟前', bg: '#eff6ff', border: '#dbeafe', iconBg: '#dbeafe', iconColor: '#1677ff' },
-  { icon: 'megaphone', title: '年级通知', desc: '关于期中考试安排通知', time: '今天 08:30', bg: '#fff7ed', border: '#ffedd5', iconBg: '#ffedd5', iconColor: '#f59e0b' }
+  { icon: 'bell', title: '请假审批提醒', desc: '有新的请假申请等待审批', time: '10分钟前', bg: '#eff6ff', border: '#dbeafe', iconBg: '#dbeafe', iconColor: '#1677ff', targetUrl: '' },
+  { icon: 'megaphone', title: '年级通知', desc: '关于期中考试安排通知', time: '今天 08:30', bg: '#fff7ed', border: '#ffedd5', iconBg: '#ffedd5', iconColor: '#f59e0b', targetUrl: '' }
 ];
 
 /* ============================================================
