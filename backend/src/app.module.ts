@@ -28,6 +28,7 @@ import { ConfigModule as AppConfigModule } from './modules/config/config.module'
 import { UploadModule } from './modules/upload/upload.module';
 import { SchedulerModule } from './modules/scheduler/scheduler.module';
 import { WorkbenchModule } from './modules/workbench/workbench.module';
+import { ClassModule } from './modules/class/class.module';
 
 @Module({
   imports: [
@@ -73,6 +74,7 @@ import { WorkbenchModule } from './modules/workbench/workbench.module';
     UploadModule,
     SchedulerModule,
     WorkbenchModule,
+    ClassModule,
   ],
   providers: [
     // 全局 Guard 执行顺序（providers 注册顺序即执行顺序）：
