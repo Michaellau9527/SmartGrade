@@ -204,6 +204,82 @@ async function seedRolesAndPermissions(adminRole: { id: bigint; roleCode: string
 }
 
 /**
+ * 自适应写入 teacher_role 角色关联。
+ * 生产库 teacher_role 由 99_rbac_seed_data.sql 建立，可能与 schema.prisma 漂移
+ * （例如含 _openid 这类 schema 未声明的 NOT NULL 无默认值列）。
+ * 此处运行时查 information_schema 动态拼装 INSERT：
+ *  - teacher_id / role_id 必填（由调用方传入）
+ *  - id 列用 UUID 填充
+ *  - created_at / updated_at 存在才写，统一给 NOW(3)
+ *  - 其余 NOT NULL 且无默认值的列，按类型补安全空值（字符串→''，数值→0，时间→NOW/日期），
+ *    避免硬编码列名带来的 1054/1364 漂移问题。
+ */
+async function assignTeacherRole(teacherId: string, roleId: string) {
+  const TABLE = 'teacher_role';
+  const cols = await prisma.$queryRawUnsafe<
+    Array<{ COLUMN_NAME: string; DATA_TYPE: string; IS_NULLABLE: string; COLUMN_DEFAULT: string | null }>
+  >(
+    `SELECT COLUMN_NAME, DATA_TYPE, IS_NULLABLE, COLUMN_DEFAULT
+     FROM information_schema.columns
+     WHERE table_schema = DATABASE() AND table_name = ?`,
+    TABLE,
+  );
+  if (!cols || cols.length === 0) {
+    throw new Error(`teacher_role 表不存在或无法读取列定义，无法分配管理员角色`);
+  }
+
+  const colNames: string[] = [];
+  const placeholders: string[] = [];
+  const values: unknown[] = [];
+
+  for (const c of cols) {
+    const name = c.COLUMN_NAME;
+    if (name === 'teacher_id' || name === 'role_id') {
+      colNames.push(name);
+      placeholders.push('?');
+      values.push(name === 'teacher_id' ? teacherId : roleId);
+      continue;
+    }
+    if (name === 'id') {
+      colNames.push(name);
+      placeholders.push('?');
+      values.push(randomUUID());
+      continue;
+    }
+    if (name === 'created_at' || name === 'updated_at') {
+      colNames.push(name);
+      placeholders.push('NOW(3)');
+      continue;
+    }
+    const hasDefault = c.COLUMN_DEFAULT !== null && c.COLUMN_DEFAULT !== 'NULL';
+    if (c.IS_NULLABLE === 'NO' && !hasDefault) {
+      colNames.push(name);
+      placeholders.push('?');
+      values.push(safeEmptyForColumn(c.DATA_TYPE));
+    }
+  }
+
+  const sql =
+    `INSERT INTO ${TABLE} (${colNames.join(', ')}) VALUES (${placeholders.join(', ')})\n` +
+    `ON DUPLICATE KEY UPDATE updated_at = NOW(3)`;
+  await prisma.$executeRawUnsafe(sql, ...values);
+}
+
+function safeEmptyForColumn(dataType: string): unknown {
+  const t = dataType.toLowerCase();
+  if (
+    t.includes('int') || t.includes('decimal') || t.includes('float') ||
+    t.includes('double') || t.includes('numeric') || t.includes('bit')
+  ) return 0;
+  if (
+    t.includes('datetime') || t.includes('timestamp') || t.includes('date') || t.includes('time')
+  ) return new Date();
+  if (t.includes('bool') || t.includes('tinyint')) return 0;
+  // varchar / char / text / enum / json 等字符串型 → 空串
+  return '';
+}
+
+/**
  * 创建默认管理员（ROLE_ADMIN）
  *  - Username: admin（可通过 SMARTGRADE_ADMIN_USERNAME 覆盖）
  *  - Password: 必须通过环境变量 SMARTGRADE_ADMIN_PASSWORD 显式提供（无默认值，缺失即失败）
@@ -220,36 +296,34 @@ async function seedDefaultAdmin() {
   const teacherNo = ADMIN_TEACHER_NO;
 
   // 1. 管理员对应 Teacher 记录（工号唯一）
-  // 注意：生产库与当前 schema 存在漂移，teacher 表实际包含 _openid 列（NOT NULL 无默认值），
-  // 而 schema.prisma 未声明该字段，直接使用 prisma.teacher.upsert 会触发 MySQL 1364 错误。
-  // 此处用 $executeRawUnsafe 显式给 _openid 赋值 '' 以适配生产库。
-  await prisma.$executeRawUnsafe(`
-    INSERT INTO teacher (id, teacher_no, name, gender, status, _openid, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, '', NOW(3), NOW(3))
-    ON DUPLICATE KEY UPDATE
-      name = VALUES(name),
-      gender = VALUES(gender),
-      status = VALUES(status),
-      updated_at = NOW(3)
-  `, randomUUID(), teacherNo, '系统管理员', Gender.OTHER, TeacherStatus.ACTIVE);
-
-  const teacher = await prisma.teacher.findUnique({ where: { teacherNo } });
-  if (!teacher) throw new Error(`Teacher upsert failed for ${teacherNo}`);
+  const teacher = await prisma.teacher.upsert({
+    where: { teacherNo },
+    update: { name: '系统管理员', gender: Gender.OTHER, status: TeacherStatus.ACTIVE },
+    create: {
+      teacherNo,
+      name: '系统管理员',
+      gender: Gender.OTHER,
+      status: TeacherStatus.ACTIVE,
+    },
+  });
 
   // 2. 管理员 User 记录（username 唯一；关联 teacherId）
-  await prisma.$executeRawUnsafe(`
-    INSERT INTO user (id, username, password_hash, user_type, teacher_id, status, _openid, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, '', NOW(3), NOW(3))
-    ON DUPLICATE KEY UPDATE
-      password_hash = VALUES(password_hash),
-      user_type = VALUES(user_type),
-      teacher_id = VALUES(teacher_id),
-      status = VALUES(status),
-      updated_at = NOW(3)
-  `, randomUUID(), ADMIN_USERNAME, passwordHash, UserType.SYSTEM_ADMIN, teacher.id, UserStatus.ACTIVE);
-
-  const user = await prisma.user.findUnique({ where: { username: ADMIN_USERNAME } });
-  if (!user) throw new Error(`User upsert failed for ${ADMIN_USERNAME}`);
+  const user = await prisma.user.upsert({
+    where: { username: ADMIN_USERNAME },
+    update: {
+      passwordHash,
+      userType: UserType.SYSTEM_ADMIN,
+      teacherId: teacher.id,
+      status: UserStatus.ACTIVE,
+    },
+    create: {
+      username: ADMIN_USERNAME,
+      passwordHash,
+      userType: UserType.SYSTEM_ADMIN,
+      teacherId: teacher.id,
+      status: UserStatus.ACTIVE,
+    },
+  });
 
   // 3. ACCOUNT 登录身份（便于使用 username/password 登录方式调用 ACCOUNT provider）
   await prisma.userIdentity.upsert({
@@ -289,15 +363,12 @@ async function seedDefaultAdmin() {
     },
   });
 
-  // 5. 管理员角色分配：直接写入 role_permission 不涉及，这里使用 teacher_role 的原生查询
-  //    seed.ts 中用原生 upsert 替代 prisma 模型中缺失的 TeacherRole
+  // 5. 管理员角色分配：teacher_role 由 99_rbac_seed_data.sql 建立，结构可能与 schema 漂移
+  //    （含 _openid 等 NOT NULL 无默认值列）。改用 assignTeacherRole 运行时自适应写入，
+  //    无需硬编码列名，也不需要任何 DDL/迁移。
   const adminRole = await prisma.role.findUnique({ where: { roleCode: 'ROLE_ADMIN' } });
   if (adminRole) {
-    await prisma.$executeRawUnsafe(`
-      INSERT INTO teacher_role (teacher_id, role_id, created_at, updated_at)
-      VALUES (?, ?, NOW(3), NOW(3))
-      ON DUPLICATE KEY UPDATE updated_at = NOW(3)
-    `, teacher.id, adminRole.id.toString());
+    await assignTeacherRole(teacher.id, adminRole.id.toString());
   }
 
   console.log(`  ✅ Teacher  : ${teacherNo} / ${teacher.name}`);
