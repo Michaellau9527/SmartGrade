@@ -14,12 +14,19 @@ export const todoStatusMap: StatusMap = {
   CANCELLED: { label: '已取消', color: 'default' },
 };
 
+/**
+ * 请假状态映射 — 对齐后端 LeaveStatus 8 状态（v4.2 冻结）：
+ * DRAFT→PENDING→APPROVED→LEFT→RETURNED→CLOSED / REJECTED / CANCELLED
+ * （旧 FINISHED 已被 CLOSED 替代，Sprint 1 遗留禁用）
+ */
 export const leaveStatusMap: StatusMap = {
+  DRAFT: { label: '草稿', color: 'default' },
   PENDING: { label: '待审批', color: 'warning' },
-  APPROVED: { label: '已通过', color: 'success' },
-  REJECTED: { label: '已拒绝', color: 'error' },
-  LEFT: { label: '已离校', color: 'processing' },
-  FINISHED: { label: '已销假', color: 'success' },
+  APPROVED: { label: '已通过', color: 'processing' },
+  REJECTED: { label: '已驳回', color: 'error' },
+  LEFT: { label: '已离校', color: 'orange' },
+  RETURNED: { label: '已返校', color: 'cyan' },
+  CLOSED: { label: '已销假', color: 'success' },
   CANCELLED: { label: '已撤销', color: 'default' },
 };
 

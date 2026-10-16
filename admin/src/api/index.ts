@@ -13,7 +13,9 @@ export {
   approveLeave,
   rejectLeave,
   confirmLeft,
-  finishLeave,
+  confirmReturned,
+  closeLeave,
+  cancelLeave,
 } from './leave';
 
 export {

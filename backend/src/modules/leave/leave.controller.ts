@@ -18,8 +18,9 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 
 import { LeaveCapabilityService } from './leave.capability-service';
 import { PrismaService } from '@/common/prisma';
-import { CurrentUser } from '@/common/decorators';
+import { CurrentUser, RequirePermissions } from '@/common/decorators';
 import { CurrentUserPayload } from '@/common/types';
+import { LeaveListQueryDto } from './dto/leave-list-query.dto';
 import type {
   CreateLeaveRequest, ApproveLeaveRequest, RejectLeaveRequest, CancelLeaveRequest,
 } from '@smartgrade/shared/types/leave/LeaveResponse';
@@ -36,13 +37,29 @@ export class LeaveController {
     private readonly prisma: PrismaService,
   ) {}
 
-  /** GET /leaves — 请假列表（按当前用户数据范围过滤） */
+  /**
+   * GET /leaves — 请假列表（按当前用户数据范围过滤）
+   *
+   * 响应契约：统一分页结构 { list, total, page, pageSize }（与 student/class 模块同口径），
+   * 字段命名 camelCase，列表项 = shared LeaveListItem + studentNo。
+   * 筛选：status / leaveType（均后端过滤生效）；排序：createdAt desc 固定。
+   */
   @Get()
-  @ApiOperation({ summary: '请假列表', description: '获取请假列表（支持按状态筛选，自动按数据范围隔离）' })
-  async list(@Query('status') status: string, @CurrentUser() user: CurrentUserPayload) {
+  @RequirePermissions('leave:read')
+  @ApiOperation({
+    summary: '请假列表',
+    description: '获取请假列表（分页结构，支持按状态/请假大类筛选，自动按数据范围隔离）',
+  })
+  async list(
+    @Query() query: LeaveListQueryDto,
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
     const where: Record<string, unknown> = { deletedAt: null };
-    if (status) {
-      where.status = status;
+    if (query.status) {
+      where.status = query.status;
+    }
+    if (query.leaveType) {
+      where.leaveType = query.leaveType;
     }
 
     // 数据范围隔离：班主任只看本班、年级主任看本年级，管理员/政教/宿管看全部
@@ -57,17 +74,23 @@ export class LeaveController {
     }
     // ALL / DORM：不附加班级/年级过滤
 
-    const records = await this.prisma.leaveRecord.findMany({
-      where,
-      orderBy: { createdAt: 'desc' },
-      take: 50,
-      include: {
-        student: {
-          select: { studentNo: true },
+    const page = query.page || 1;
+    const pageSize = Math.min(query.pageSize || 20, 100);
+    const [records, total] = await Promise.all([
+      this.prisma.leaveRecord.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        include: {
+          student: {
+            select: { studentNo: true },
+          },
         },
-      },
-    });
-    return records.map((r) => ({
+      }),
+      this.prisma.leaveRecord.count({ where }),
+    ]);
+    const list = records.map((r) => ({
       id: r.id,
       leaveNo: r.leaveNo,
       status: r.status,
@@ -84,10 +107,12 @@ export class LeaveController {
       applicantName: r.applicantName,
       createdAt: r.createdAt.toISOString(),
     }));
+    return { list, total, page, pageSize };
   }
 
   /** POST /leaves — 创建请假 */
   @Post()
+  @RequirePermissions('leave:create')
   @ApiOperation({ summary: '创建请假', description: '创建请假记录（PENDING 状态）' })
   async create(@Body() body: CreateLeaveRequest, @CurrentUser() user: CurrentUserPayload) {
     return this.leaveService.createLeave(body, buildAuthContext(user));
@@ -95,6 +120,7 @@ export class LeaveController {
 
   /** GET /leaves/:id — 请假详情 */
   @Get(':id')
+  @RequirePermissions('leave:read')
   @ApiOperation({ summary: '请假详情', description: '返回请假详情（含 Timeline）' })
   async getOne(@Param('id') id: string, @CurrentUser() user: CurrentUserPayload) {
     try {
@@ -109,6 +135,7 @@ export class LeaveController {
 
   /** POST /leaves/:id/approve — 审批通过 */
   @Post(':id/approve')
+  @RequirePermissions('leave:approve')
   @ApiOperation({ summary: '审批通过', description: '审批通过请假（PENDING → APPROVED）' })
   async approve(@Param('id') id: string, @Body() body: ApproveLeaveRequest, @CurrentUser() user: CurrentUserPayload) {
     try {
@@ -126,6 +153,7 @@ export class LeaveController {
 
   /** POST /leaves/:id/reject — 驳回 */
   @Post(':id/reject')
+  @RequirePermissions('leave:approve')
   @ApiOperation({ summary: '驳回请假', description: '驳回请假（PENDING → REJECTED）' })
   async reject(@Param('id') id: string, @Body() body: RejectLeaveRequest, @CurrentUser() user: CurrentUserPayload) {
     try {
@@ -143,6 +171,7 @@ export class LeaveController {
 
   /** POST /leaves/:id/confirm-left — 确认离校 */
   @Post(':id/confirm-left')
+  @RequirePermissions('leave:update')
   @ApiOperation({ summary: '确认离校', description: '确认学生离校（APPROVED → LEFT）' })
   async confirmLeft(@Param('id') id: string, @CurrentUser() user: CurrentUserPayload) {
     try {
@@ -157,6 +186,7 @@ export class LeaveController {
 
   /** POST /leaves/:id/confirm-returned — 确认返校 */
   @Post(':id/confirm-returned')
+  @RequirePermissions('leave:update')
   @ApiOperation({ summary: '确认返校', description: '确认学生返校（LEFT → RETURNED）' })
   async confirmReturned(@Param('id') id: string, @CurrentUser() user: CurrentUserPayload) {
     try {
@@ -171,6 +201,7 @@ export class LeaveController {
 
   /** POST /leaves/:id/close — 销假完成 */
   @Post(':id/close')
+  @RequirePermissions('leave:close')
   @ApiOperation({ summary: '销假完成', description: '销假完成（RETURNED → CLOSED）' })
   async close(@Param('id') id: string, @CurrentUser() user: CurrentUserPayload) {
     try {
@@ -185,6 +216,7 @@ export class LeaveController {
 
   /** POST /leaves/:id/cancel — 取消请假 */
   @Post(':id/cancel')
+  @RequirePermissions('leave:cancel')
   @ApiOperation({ summary: '取消请假', description: '取消请假（PENDING → CANCELLED）' })
   async cancel(@Param('id') id: string, @Body() body: CancelLeaveRequest, @CurrentUser() user: CurrentUserPayload) {
     try {

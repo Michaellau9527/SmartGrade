@@ -14,18 +14,13 @@ import ApproveModal from './ApproveModal';
 import RejectModal from './RejectModal';
 import CreateLeaveModal from './CreateLeaveModal';
 import { getLeaveList } from '@/api/leave';
+import { LeaveTypeText } from '@/types/leave';
 import type {
   LeaveItem,
   LeaveQueryParams,
   LeaveStatus,
   LeaveType,
 } from '@/types/leave';
-
-const leaveTypeNames: Record<string, string> = {
-  LEAVE_SCHOOL: '离校请假',
-  RETURN_DORM: '回寝请假',
-  OTHER: '其他',
-};
 
 interface LeaveStatsData {
   total: number;
@@ -59,7 +54,7 @@ export default function LeavePage() {
     page,
     pageSize,
     status: appliedFilters.status as LeaveStatus | undefined,
-    leaveType: appliedFilters.leave_type as LeaveType | undefined,
+    leaveType: appliedFilters.leaveType as LeaveType | undefined,
   };
 
   const { data: listData, isLoading: listLoading } = useQuery({
@@ -73,7 +68,7 @@ export default function LeavePage() {
     approved: listData?.list.filter((item) => item.status === 'APPROVED').length ?? 0,
     today:
       listData?.list.filter(
-        (item) => new Date(item.created_at).toDateString() === new Date().toDateString(),
+        (item) => new Date(item.createdAt).toDateString() === new Date().toDateString(),
       ).length ?? 0,
   };
 
@@ -104,12 +99,13 @@ export default function LeavePage() {
   };
 
   const columns = [
-    { title: '请假编号', dataIndex: 'leave_no', key: 'leave_no', width: 140 },
-    { title: '学生姓名', dataIndex: 'student_name', key: 'student_name', width: 100 },
-    { title: '请假类型', dataIndex: 'leave_type', key: 'leave_type', width: 100, render: (val: string) => leaveTypeNames[val] || val },
+    { title: '请假编号', dataIndex: 'leaveNo', key: 'leaveNo', width: 140 },
+    { title: '学生姓名', dataIndex: 'studentName', key: 'studentName', width: 100 },
+    { title: '班级', dataIndex: 'className', key: 'className', width: 120 },
+    { title: '请假类型', dataIndex: 'leaveType', key: 'leaveType', width: 100, render: (val: string) => LeaveTypeText[val as LeaveType] || val },
     { title: '状态', dataIndex: 'status', key: 'status', width: 100, render: (val: string) => <StatusTag type="leave-status" value={val} /> },
-    { title: '申请教师', dataIndex: 'apply_teacher_name', key: 'apply_teacher_name', width: 100 },
-    { title: '申请时间', dataIndex: 'created_at', key: 'created_at', width: 160, render: (val: string) => fmtDate(val) },
+    { title: '申请教师', dataIndex: 'applicantName', key: 'applicantName', width: 100 },
+    { title: '申请时间', dataIndex: 'createdAt', key: 'createdAt', width: 160, render: (val: string) => fmtDate(val) },
     {
       title: '操作',
       key: 'action',

@@ -310,6 +310,10 @@ export class LeaveCapabilityService {
       throw new LeaveNotFoundError(id);
     }
 
+    // 1.1 数据范围校验：越权访问直接拒绝
+    // 防止通过猜测 / 替换 leaveId 操作其他班级 / 年级学生的请假（IDOR）
+    this.enforceScope(record.classId, record.gradeId, ctx);
+
     // 2. DomainService 校验状态机 + 获取 Timeline 事件类型
     const eventType = domainService.validateTransition(record.status as LeaveStatus, targetStatus);
 

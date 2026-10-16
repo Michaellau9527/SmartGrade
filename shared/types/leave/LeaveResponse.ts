@@ -177,6 +177,7 @@ export interface QueryLeavesParams {
   status?: LeaveStatus;
   studentId?: string;
   classId?: string;
+  leaveType?: LeaveType;
   page?: number;
   pageSize?: number;
 }
