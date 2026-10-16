@@ -22,7 +22,9 @@ interface UserState {
 }
 
 export const useUserStore = create<UserState>((set, get) => ({
-  user: null,
+  // 同步恢复登录态：避免 BrowserRouter/刷新时 user 为 null 而 token 已存在的空窗，
+  // 否则会出现“刷新后短暂丢登录、需先退出再登录”的问题。
+  user: restoreUserFromStorage(),
   token: localStorage.getItem('token'),
   setLogin: (user, token) => {
     localStorage.setItem('token', token);

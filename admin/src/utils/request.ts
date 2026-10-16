@@ -84,7 +84,7 @@ request.interceptors.response.use(
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       localStorage.removeItem('permissions');
-      window.location.href = '/login';
+      window.location.href = '/#/login';
       break;
       case 403:
         message.error('您没有权限执行此操作');
