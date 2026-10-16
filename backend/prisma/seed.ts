@@ -209,7 +209,7 @@ async function seedRolesAndPermissions(adminRole: { id: bigint; roleCode: string
  * （例如含 _openid 这类 schema 未声明的 NOT NULL 无默认值列）。
  * 此处运行时查 information_schema 动态拼装 INSERT：
  *  - teacher_id / role_id 必填（由调用方传入）
- *  - id 列用 UUID 填充
+ *  - id 列：若为 AUTO_INCREMENT 则由数据库生成（不写入）；否则用 UUID 填充
  *  - created_at / updated_at 存在才写，统一给 NOW(3)
  *  - 其余 NOT NULL 且无默认值的列，按类型补安全空值（字符串→''，数值→0，时间→NOW/日期），
  *    避免硬编码列名带来的 1054/1364 漂移问题。
@@ -217,9 +217,9 @@ async function seedRolesAndPermissions(adminRole: { id: bigint; roleCode: string
 async function assignTeacherRole(teacherId: string, roleId: string) {
   const TABLE = 'teacher_role';
   const cols = await prisma.$queryRawUnsafe<
-    Array<{ COLUMN_NAME: string; DATA_TYPE: string; IS_NULLABLE: string; COLUMN_DEFAULT: string | null }>
+    Array<{ COLUMN_NAME: string; DATA_TYPE: string; IS_NULLABLE: string; COLUMN_DEFAULT: string | null; EXTRA: string }>
   >(
-    `SELECT COLUMN_NAME, DATA_TYPE, IS_NULLABLE, COLUMN_DEFAULT
+    `SELECT COLUMN_NAME, DATA_TYPE, IS_NULLABLE, COLUMN_DEFAULT, EXTRA
      FROM information_schema.columns
      WHERE table_schema = DATABASE() AND table_name = ?`,
     TABLE,
@@ -241,6 +241,10 @@ async function assignTeacherRole(teacherId: string, roleId: string) {
       continue;
     }
     if (name === 'id') {
+      // teacher_role.id 在生产库为 BIGINT AUTO_INCREMENT，不能由应用写入 UUID 字符串，
+      // 否则触发 MySQL 1265 Data truncated。自增列交由数据库生成，不写入。
+      const isAutoIncrement = (c.EXTRA || '').toUpperCase().includes('AUTO_INCREMENT');
+      if (isAutoIncrement) continue;
       colNames.push(name);
       placeholders.push('?');
       values.push(randomUUID());
