@@ -9,7 +9,7 @@ import { mockStudents, mockLeaves, mockNotices, mockTodos } from './data';
 const ROLE_PERMISSIONS: Record<string, string[]> = {
   SUPER_ADMIN: [
     'todo:read', 'todo:complete',
-    'leave:create', 'leave:read', 'leave:approve', 'leave:update', 'leave:finish',
+    'leave:create', 'leave:read', 'leave:approve', 'leave:update', 'leave:close', 'leave:cancel',
     'notice:read', 'notice:create', 'notice:update', 'notice:delete',
     'student:read', 'student:create', 'student:update', 'student:delete',
     'teacher:read', 'teacher:create', 'teacher:update', 'teacher:delete',
@@ -22,7 +22,7 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     'statistics:read',
     'todo:read', 'todo:complete',
     'notice:read', 'notice:create', 'notice:update', 'notice:delete',
-    'leave:create', 'leave:read', 'leave:approve', 'leave:update', 'leave:finish',
+    'leave:create', 'leave:read', 'leave:approve', 'leave:update', 'leave:close', 'leave:cancel',
     'student:read', 'student:create', 'student:update', 'student:delete',
     'teacher:read',
     'dorm:read',
@@ -31,7 +31,7 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     'statistics:read',
     'todo:read', 'todo:complete',
     'notice:read',
-    'leave:create', 'leave:read', 'leave:approve', 'leave:update', 'leave:finish',
+    'leave:create', 'leave:read', 'leave:approve', 'leave:update', 'leave:close', 'leave:cancel',
     'student:read', 'student:create', 'student:update', 'student:delete',
     'student:qrcode:issue',
   ],

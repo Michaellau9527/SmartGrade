@@ -17,7 +17,8 @@ export const PERM = {
   LEAVE_CREATE: 'leave:create',
   LEAVE_APPROVE: 'leave:approve',
   LEAVE_UPDATE: 'leave:update',
-  LEAVE_FINISH: 'leave:finish',
+  LEAVE_CLOSE: 'leave:close',
+  LEAVE_CANCEL: 'leave:cancel',
 
   // Notice
   NOTICE_READ: 'notice:read',
@@ -30,6 +31,12 @@ export const PERM = {
   STUDENT_CREATE: 'student:create',
   STUDENT_UPDATE: 'student:update',
   STUDENT_DELETE: 'student:delete',
+
+  // Class（班级管理，与后端 @RequirePermissions('class:*') 一一对应）
+  CLASS_READ: 'class:read',
+  CLASS_CREATE: 'class:create',
+  CLASS_UPDATE: 'class:update',
+  CLASS_DELETE: 'class:delete',
 
   // Teacher
   TEACHER_READ: 'teacher:read',         // GET 无显式权限，约定为 'teacher:read'

@@ -64,6 +64,22 @@ export enum PermissionCode {
   STUDENT_READ = 'student.read',
 
   // ============================================================
+  // 班级（Class）— 班级管理
+  //
+  // 编码形式说明：与上方 teacher:bind-wechat / student:qrcode:issue 同理，
+  // 本域采用 `domain:action` 冒号形式，与运行时真相源（数据库 permission 表 +
+  // seed.ts + 99_rbac_seed_data.sql）及 controller @RequirePermissions 保持一致。
+  // 授权：
+  // - ROLE_ADMIN 由 PermissionsGuard 短路放行（全权，不落库 role_permission）
+  // - ROLE_GRADE_DIRECTOR 具备全部四项，服务层限定「本年级」数据范围
+  // - ROLE_POLITICAL / ROLE_HEADMASTER 仅 class:read（只读，且受数据范围约束）
+  // ============================================================
+  CLASS_READ = 'class:read',
+  CLASS_CREATE = 'class:create',
+  CLASS_UPDATE = 'class:update',
+  CLASS_DELETE = 'class:delete',
+
+  // ============================================================
   // 数据统计（Statistics）
   // ============================================================
   STATISTICS_READ = 'statistics.read',
@@ -142,6 +158,11 @@ export const PermissionCodeText: Record<PermissionCode, string> = {
   [PermissionCode.DORM_REPORT]: '宿舍异常上报',
 
   [PermissionCode.STUDENT_READ]: '查看学生',
+
+  [PermissionCode.CLASS_READ]: '查看班级',
+  [PermissionCode.CLASS_CREATE]: '新增班级',
+  [PermissionCode.CLASS_UPDATE]: '修改班级',
+  [PermissionCode.CLASS_DELETE]: '删除班级',
 
   [PermissionCode.STATISTICS_READ]: '查看统计',
 

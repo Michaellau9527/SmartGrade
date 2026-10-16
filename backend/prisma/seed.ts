@@ -10,7 +10,8 @@ const prisma = new PrismaClient();
  *
  * 初始化：
  * - 学校 + 年级 + 班级
- * - 7 个系统角色 + 43 个权限 + 关联（P2-QR 阶段E：新增门卫角色与二维码/核验权限）
+ * - 7 个系统角色 + 47 个权限 + 关联（P2-QR 阶段E：新增门卫角色与二维码/核验权限；
+ *   班级管理：新增 class:read/create/update/delete，年级主任具备全部四项）
  * - 默认管理员（admin / bcrypt 加密密码）+ 额外测试教师
  * - 宿舍楼 + 房间
  * - 5 个测试学生
@@ -40,7 +41,7 @@ async function seedRolesAndPermissions(adminRole: { id: bigint; roleCode: string
 
   const ROLES = [
     { roleCode: 'ROLE_ADMIN', roleName: '系统管理员', description: '拥有全部权限' },
-    { roleCode: 'ROLE_GRADE_DIRECTOR', roleName: '年级主任', description: '查看本年级全部数据、发布通知、查看统计' },
+    { roleCode: 'ROLE_GRADE_DIRECTOR', roleName: '年级主任', description: '查看本年级全部数据、管理本年级班级、发布通知、查看统计' },
     { roleCode: 'ROLE_POLITICAL', roleName: '政教', description: '审批请假、查看学生状态、处理异常' },
     { roleCode: 'ROLE_HEADMASTER', roleName: '班主任', description: '管理本班学生、发起请假、销假' },
     { roleCode: 'ROLE_DORM_MANAGER', roleName: '宿管', description: '查看住宿生、查寝、上报异常' },
@@ -80,11 +81,19 @@ async function seedRolesAndPermissions(adminRole: { id: bigint; roleCode: string
     { permissionCode: 'student:update', permissionName: '修改学生', resource: 'student', action: 'update' },
     { permissionCode: 'student:delete', permissionName: '删除学生', resource: 'student', action: 'delete' },
     { permissionCode: 'student:timeline', permissionName: '查看学生时间轴', resource: 'student', action: 'timeline' },
-    // 请假
+    // 班级管理（冒号形式，与 PermissionCode / controller @RequirePermissions 真相源一致）
+    { permissionCode: 'class:read', permissionName: '查看班级', resource: 'class', action: 'read' },
+    { permissionCode: 'class:create', permissionName: '新增班级', resource: 'class', action: 'create' },
+    { permissionCode: 'class:update', permissionName: '修改班级', resource: 'class', action: 'update' },
+    { permissionCode: 'class:delete', permissionName: '删除班级', resource: 'class', action: 'delete' },
+    // 请假（leave:finish 为历史死权限已移除：后端路由为 close/update/cancel，
+    // 与 leave.controller @RequirePermissions 及 99_rbac_seed_data.sql 对齐）
     { permissionCode: 'leave:read', permissionName: '查看请假', resource: 'leave', action: 'read' },
     { permissionCode: 'leave:create', permissionName: '发起请假', resource: 'leave', action: 'create' },
     { permissionCode: 'leave:approve', permissionName: '审批请假', resource: 'leave', action: 'approve' },
-    { permissionCode: 'leave:finish', permissionName: '销假', resource: 'leave', action: 'finish' },
+    { permissionCode: 'leave:update', permissionName: '确认离校/返校', resource: 'leave', action: 'update' },
+    { permissionCode: 'leave:close', permissionName: '销假完成', resource: 'leave', action: 'close' },
+    { permissionCode: 'leave:cancel', permissionName: '取消请假', resource: 'leave', action: 'cancel' },
     // 查寝
     { permissionCode: 'dorm:read', permissionName: '查看宿舍', resource: 'dorm', action: 'read' },
     { permissionCode: 'dorm:check', permissionName: '查寝', resource: 'dorm', action: 'check' },
@@ -143,7 +152,10 @@ async function seedRolesAndPermissions(adminRole: { id: bigint; roleCode: string
       'document:read',
       'todo:read', 'todo:complete',
       'student:read', 'student:timeline',
+      // 年级主任：管理「本年级」班级（数据范围校验在 ClassService 服务层强制）
+      'class:read', 'class:create', 'class:update', 'class:delete',
       'leave:read',
+      'dorm:read', // 与 role-permission.map.ts GRADE_DIRECTOR_PERMS.DORM_READ / 99_rbac 对齐（RUN_SEED 重建防缩水）
       'timeline:read',
       'statistics:read',
       'teacher:read',
@@ -154,7 +166,9 @@ async function seedRolesAndPermissions(adminRole: { id: bigint; roleCode: string
       'document:read',
       'todo:read', 'todo:complete',
       'student:read', 'student:timeline',
+      'class:read', // 政教：仅只读班级（数据范围 ALL），无增删改
       'leave:read', 'leave:approve',
+      'incident:create', // 与 role-permission.map.ts POLITICAL_PERMS.INCIDENT_CREATE / 99_rbac 对齐
       'incident:read', 'incident:handle',
       'timeline:read',
       'statistics:read',
@@ -166,8 +180,11 @@ async function seedRolesAndPermissions(adminRole: { id: bigint; roleCode: string
       'document:read',
       'todo:read', 'todo:complete',
       'student:read', 'student:timeline',
-      'leave:read', 'leave:create', 'leave:finish',
+      'class:read', // 班主任：仅只读本班（数据范围 CLASS），无班级增删改
+      // leave:update=确认离校/返校，leave:close=销假，leave:cancel=取消（原 leave:finish 已废除）
+      'leave:read', 'leave:create', 'leave:update', 'leave:close', 'leave:cancel',
       'student:qrcode:issue', // P2-QR：班主任为本班学生签发/补发二维码（数据范围校验在服务层）
+      'dorm:read', // 与 role-permission.map.ts HEADMASTER_PERMS.DORM_READ / 99_rbac 对齐（RUN_SEED 重建防缩水）
       'timeline:read',
       'statistics:read',
     ],

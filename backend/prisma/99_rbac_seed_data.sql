@@ -15,7 +15,8 @@
 --
 -- 本脚本：
 --   1. CREATE TABLE teacher_role (schema.prisma 没有,P1-13 漂移补救)
---   2. INSERT 8 个角色 + 39 个权限 (冒号格式,与 controller @RequirePermissions 对齐)
+--   2. INSERT 8 个角色 + 43 个权限 (冒号格式,与 controller @RequirePermissions 对齐)
+--      2026-10-16 追加 4 个班级权限 (class:read/create/update/delete) → 共 47 个
 --   3. INSERT role_permission 关联 (从 role-permission.map.ts HEADMASTER_PERMS 同步)
 --   4. INSERT teacher_role 关联 (体验者007→HEADMASTER, admin T001→ADMIN)
 --
@@ -75,6 +76,11 @@ INSERT IGNORE INTO `permission` (`permission_code`, `permission_name`, `resource
 ('student:update',           '修改学生',           'student',   'update'),
 ('student:delete',           '删除学生',           'student',   'delete'),
 ('student:timeline',         '查看学生时间轴',     'student',   'timeline'),
+-- 班级管理（2026-10-16 新增，与 seed.ts / PermissionCode 一致）
+('class:read',               '查看班级',           'class',     'read'),
+('class:create',             '新增班级',           'class',     'create'),
+('class:update',             '修改班级',           'class',     'update'),
+('class:delete',             '删除班级',           'class',     'delete'),
 ('leave:read',               '查看请假',           'leave',     'read'),
 ('leave:create',             '发起请假',           'leave',     'create'),
 ('leave:update',             '修改请假',           'leave',     'update'),
@@ -97,7 +103,23 @@ INSERT IGNORE INTO `permission` (`permission_code`, `permission_name`, `resource
 ('teacher:unbind-wechat',    '解绑教师微信',       'teacher',   'unbind-wechat'),
 ('system:admin',             '系统管理',           'system',    'admin'),
 ('user:profile:read',        '查看个人资料',       'user',      'profile:read'),
-('user:profile:update',      '修改个人资料',       'user',      'profile:update');
+('user:profile:update',      '修改个人资料',       'user',      'profile:update'),
+-- 2026-10-16 与 seed.ts 权威定义对齐补齐（此前漂移缺失，会导致纯 SQL 兜底部署时 403）
+('role:read',                '查看角色',           'role',      'read'),
+('role:create',              '新增角色',           'role',      'create'),
+('role:update',              '修改角色',           'role',      'update'),
+('role:delete',              '删除角色',           'role',      'delete'),
+('role:assign-permission',   '分配权限',           'role',      'assign-permission'),
+('config:read',              '查看配置',           'config',    'read'),
+('config:update',            '修改配置',           'config',    'update'),
+('teacher:assign-role',      '分配角色',           'teacher',   'assign-role'),
+('teacher:assign-tag',       '分配标签',           'teacher',   'assign-tag'),
+('student:qrcode:issue',     '补发学生二维码',     'student',   'qrcode-issue'),
+('student:qrcode:batch',     '批量签发学生二维码', 'student',   'qrcode-batch'),
+('verify:scan',              '扫码核验',           'verify',    'scan');
+-- 注：workbench:view / system:admin / task:* / user:profile:* / incident:close
+-- 为兼容项（后端 @RequirePermissions 未引用），保留以避免影响已执行过本脚本的环境。
+-- seed.ts 为运行时权威真相源（RUN_SEED=1 每次部署 upsert 权限并重建 role_permission）。
 
 -- ============================================================
 -- 第四步:role_permission 关联 (从 role-permission.map.ts 同步)
@@ -114,6 +136,7 @@ WHERE r.role_code = 'ROLE_ADMIN'
     'document:read','document:create','document:delete',
     'todo:read','todo:complete','task:assign','task:delete',
     'student:read',
+    'class:read','class:create','class:update','class:delete',
     'leave:read','leave:create','leave:update','leave:approve','leave:close','leave:cancel',
     'dorm:read','dorm:check',
     'incident:read','incident:create','incident:handle','incident:close',
@@ -134,6 +157,7 @@ WHERE r.role_code = 'ROLE_GRADE_DIRECTOR'
     'document:read','document:create',
     'todo:read','task:assign',
     'student:read',
+    'class:read','class:create','class:update','class:delete',
     'leave:read',
     'incident:read','dorm:read','statistics:read',
     'teacher:read',
@@ -146,7 +170,7 @@ SELECT r.id, p.id FROM `role` r, `permission` p
 WHERE r.role_code = 'ROLE_POLITICAL'
   AND p.permission_code IN (
     'workbench:view','notice:read','document:read',
-    'todo:read','student:read',
+    'todo:read','student:read','class:read',
     'leave:read','leave:approve',
     'incident:read','incident:create','incident:handle',
     'dorm:read','statistics:read','teacher:read',
@@ -161,6 +185,7 @@ WHERE r.role_code = 'ROLE_HEADMASTER'
     'workbench:view','notice:read','document:read',
     'todo:read','todo:complete',
     'student:read','student:create','student:update','student:delete','student:timeline',
+    'class:read',
     'leave:create','leave:read','leave:update','leave:close','leave:cancel',
     'incident:read',
     'dorm:read',

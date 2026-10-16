@@ -33,6 +33,10 @@ const ADMIN_PERMS = new Set<PermissionCode>([
   PermissionCode.TASK_COMPLETE,
   PermissionCode.TASK_DELETE,
   PermissionCode.STUDENT_READ,
+  PermissionCode.CLASS_READ,
+  PermissionCode.CLASS_CREATE,
+  PermissionCode.CLASS_UPDATE,
+  PermissionCode.CLASS_DELETE,
   PermissionCode.LEAVE_CREATE,
   PermissionCode.LEAVE_READ,
   PermissionCode.LEAVE_UPDATE,
@@ -65,6 +69,12 @@ const GRADE_DIRECTOR_PERMS = new Set<PermissionCode>([
   PermissionCode.TASK_READ,
   PermissionCode.TASK_ASSIGN,
   PermissionCode.STUDENT_READ,
+  // 年级主任：管理「本年级」班级（增删改查）；数据范围校验在 ClassService 服务层
+  // （按其 DataScope.gradeId 强制限定，绝不信任前端传入的 gradeId）
+  PermissionCode.CLASS_READ,
+  PermissionCode.CLASS_CREATE,
+  PermissionCode.CLASS_UPDATE,
+  PermissionCode.CLASS_DELETE,
   PermissionCode.LEAVE_READ,
   PermissionCode.INCIDENT_READ,
   PermissionCode.DORM_READ,
@@ -80,6 +90,8 @@ const POLITICAL_PERMS = new Set<PermissionCode>([
   PermissionCode.FILE_READ,
   PermissionCode.TASK_READ,
   PermissionCode.STUDENT_READ,
+  // 政教：仅可「只读」班级（数据范围 ALL），无班级增删改
+  PermissionCode.CLASS_READ,
   PermissionCode.LEAVE_READ,
   PermissionCode.LEAVE_APPROVE,
   PermissionCode.INCIDENT_CREATE,
@@ -99,6 +111,8 @@ const HEADMASTER_PERMS = new Set<PermissionCode>([
   PermissionCode.TASK_READ,
   PermissionCode.TASK_COMPLETE,
   PermissionCode.STUDENT_READ,
+  // 班主任：仅可「只读」本班（数据范围 CLASS 由服务层强制），无班级增删改
+  PermissionCode.CLASS_READ,
   PermissionCode.LEAVE_CREATE,
   PermissionCode.LEAVE_READ,
   PermissionCode.LEAVE_UPDATE,
