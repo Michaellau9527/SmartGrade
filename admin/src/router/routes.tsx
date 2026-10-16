@@ -51,7 +51,7 @@ export const routeConfig: RouteItem[] = [
   { path: 'notice', label: '通知管理', icon: <NotificationOutlined />, component: Notice, permissions: [PERM.NOTICE_READ] },
   { path: 'leave', label: '请假管理', icon: <FileTextOutlined />, component: Leave, permissions: [PERM.LEAVE_READ] },
   { path: 'student', label: '学生管理', icon: <TeamOutlined />, component: Student, permissions: [PERM.STUDENT_READ] },
-  { path: 'class', label: '班级管理', icon: <SolutionOutlined />, component: Class, permissions: [PERM.STUDENT_READ] },
+  { path: 'class', label: '班级管理', icon: <SolutionOutlined />, component: Class, permissions: [PERM.CLASS_READ] },
   { path: 'teacher', label: '教师管理', icon: <UserOutlined />, component: Teacher, permissions: [PERM.TEACHER_READ] },
   { path: 'document', label: '文件管理', icon: <FolderOutlined />, component: Document, permissions: [PERM.DASHBOARD_READ] },
   { path: 'config', label: '角色权限', icon: <SettingOutlined />, component: Config, permissions: [PERM.ROLE_CREATE] },

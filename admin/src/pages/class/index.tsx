@@ -1,26 +1,39 @@
 import { useState } from 'react';
-import { Input, Select, Button, Space, Tag, Card } from 'antd';
-import { SearchOutlined, ReloadOutlined } from '@ant-design/icons';
-import { useQuery } from '@tanstack/react-query';
+import { Input, Select, Button, Space, Tag, Card, Popconfirm, message } from 'antd';
+import { PlusOutlined, SearchOutlined, ReloadOutlined } from '@ant-design/icons';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ProTable, PageHeader } from '@/components';
-import { getClassList } from '@/api/class';
+import { getClassList, deleteClass } from '@/api/class';
+import { PERM } from '@/auth/permission';
+import { useUserStore } from '@/stores/user';
 import type { ClassItem, ClassQueryParams } from '@/types/class';
+import ClassFormModal from './ClassFormModal';
 
+/** 与后端 Prisma enum ClassStatus 保持一致 */
 const STATUS_LABEL: Record<string, { color: string; text: string }> = {
   ACTIVE: { color: 'green', text: '启用' },
-  INACTIVE: { color: 'default', text: '停用' },
+  GRADUATED: { color: 'blue', text: '已毕业' },
   ARCHIVED: { color: 'orange', text: '归档' },
 };
 
 export default function ClassPage() {
+  const queryClient = useQueryClient();
   const [filters, setFilters] = useState<{ schoolId?: string; gradeId?: string; keyword?: string }>({});
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
 
+  // 前端按钮门控仅为体验，真正拦截在后端（@RequirePermissions + 数据范围校验）
+  const canCreate = useUserStore((s) => s.hasPermission(PERM.CLASS_CREATE));
+  const canUpdate = useUserStore((s) => s.hasPermission(PERM.CLASS_UPDATE));
+  const canDelete = useUserStore((s) => s.hasPermission(PERM.CLASS_DELETE));
+
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editItem, setEditItem] = useState<ClassItem | null>(null);
+
   // 拉取全量班级用于派生学校/年级筛选选项
   const { data: allData } = useQuery({
     queryKey: ['allClassesOptions'],
-    queryFn: () => getClassList({ page: 1, pageSize: 200 }),
+    queryFn: () => getClassList({ page: 1, pageSize: 100 }),
   });
 
   const schoolOptions = Array.from(
@@ -48,12 +61,47 @@ export default function ClassPage() {
     queryFn: () => getClassList(queryParams),
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => deleteClass(id),
+    onSuccess: () => {
+      void message.success('删除成功');
+      void queryClient.invalidateQueries({ queryKey: ['classList'] });
+      void queryClient.invalidateQueries({ queryKey: ['allClassesOptions'] });
+    },
+    // 失败原因（如「仍存在关联数据（12 名学生…）」）由 request 拦截器统一提示
+  });
+
+  const handleCreate = () => {
+    setEditItem(null);
+    setModalOpen(true);
+  };
+
+  const handleEdit = (record: ClassItem) => {
+    setEditItem(record);
+    setModalOpen(true);
+  };
+
+  const handleSearch = () => {
+    setPage(1);
+  };
+
+  const handleReset = () => {
+    setFilters({});
+    setPage(1);
+  };
+
   const columns = [
     {
       title: '班级名称',
       dataIndex: 'name',
       key: 'name',
-      width: 140,
+      width: 160,
+      render: (_: unknown, record: ClassItem) => (
+        <span>
+          {record.name}
+          <span style={{ color: '#999', marginLeft: 6 }}>({record.code})</span>
+        </span>
+      ),
     },
     {
       title: '年级',
@@ -92,16 +140,39 @@ export default function ClassPage() {
         return s ? <Tag color={s.color}>{s.text}</Tag> : <Tag>{val}</Tag>;
       },
     },
+    {
+      title: '操作',
+      key: 'action',
+      width: 140,
+      fixed: 'right' as const,
+      render: (_: unknown, record: ClassItem) => {
+        if (!canUpdate && !canDelete) return <span style={{ color: '#bbb' }}>—</span>;
+        return (
+          <Space size="small">
+            {canUpdate && (
+              <Button type="link" size="small" onClick={() => handleEdit(record)}>
+                编辑
+              </Button>
+            )}
+            {canDelete && (
+              <Popconfirm
+                title="确认删除该班级？"
+                description="存在关联学生、教师班级关系、请假记录或时间轴事件时将被拒绝；删除为软删除，历史数据保留。"
+                okText="删除"
+                cancelText="取消"
+                okButtonProps={{ danger: true, loading: deleteMutation.isPending }}
+                onConfirm={() => deleteMutation.mutate(record.id)}
+              >
+                <Button type="link" size="small" danger>
+                  删除
+                </Button>
+              </Popconfirm>
+            )}
+          </Space>
+        );
+      },
+    },
   ];
-
-  const handleSearch = () => {
-    setPage(1);
-  };
-
-  const handleReset = () => {
-    setFilters({});
-    setPage(1);
-  };
 
   return (
     <div>
@@ -151,11 +222,24 @@ export default function ClassPage() {
         loading={isLoading}
         rowKey="id"
         headerTitle="班级列表"
-        scroll={{ x: 900 }}
+        scroll={{ x: 1000 }}
+        extra={
+          canCreate ? (
+            <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
+              新增班级
+            </Button>
+          ) : null
+        }
         onChange={(nextPage: number, nextPageSize: number) => {
           setPage(nextPage);
           setPageSize(nextPageSize);
         }}
+      />
+
+      <ClassFormModal
+        open={modalOpen}
+        editItem={editItem}
+        onClose={() => setModalOpen(false)}
       />
     </div>
   );
