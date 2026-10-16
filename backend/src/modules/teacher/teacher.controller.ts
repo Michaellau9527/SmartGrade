@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { TeacherService } from './teacher.service';
+import { AssignRolesDto } from './dto';
 import { PaginationDto, IdParamDto } from '@/common/dto';
 import { CurrentUser, RequirePermissions } from '@/common/decorators';
 import type { CurrentUserPayload } from '@/common/types';
@@ -26,6 +27,12 @@ export class TeacherController {
   @ApiOperation({ summary: '获取教师详情' })
   async findOne(@Param() params: IdParamDto) {
     return this.teacherService.findOne(params.id);
+  }
+
+  @Get(':id/roles')
+  @ApiOperation({ summary: '获取教师的角色列表（只读）' })
+  async getTeacherRoles(@Param() params: IdParamDto) {
+    return this.teacherService.getTeacherRoles(params.id);
   }
 
   @Post()
@@ -81,12 +88,13 @@ export class TeacherController {
 
   @Post(':id/roles')
   @RequirePermissions('teacher:assign-role')
-  @ApiOperation({ summary: '分配教师角色' })
-  async assignRoles(
-    @Param() params: IdParamDto,
-    @Body('roleIds') roleIds: number[],
-  ) {
-    return this.teacherService.assignRoles(params.id, roleIds);
+  @ApiOperation({
+    summary: '分配教师角色',
+    description:
+      '全量替换该教师的角色。空数组 = 显式清空全部角色。白名单由服务端强制：ROLE_ADMIN 不允许通过本接口授予。',
+  })
+  async assignRoles(@Param() params: IdParamDto, @Body() dto: AssignRolesDto) {
+    return this.teacherService.assignRoles(params.id, dto);
   }
 
   @Post(':id/tags')
