@@ -22,7 +22,7 @@ const genderMap: Record<string, string> = {
 
 const boardingMap: Record<string, string> = {
   BOARDING: '住校',
-  DAY: '走读',
+  DAY_STUDENT: '走读',
 };
 
 function formatDate(val: string): string {
@@ -77,18 +77,18 @@ export default function StudentDetail({ studentId, open, onClose }: StudentDetai
       {student && (
         <>
           <Descriptions column={1} size="small" labelStyle={{ width: 100, fontWeight: 500 }}>
-            <Descriptions.Item label="学号">{student.student_no}</Descriptions.Item>
+            <Descriptions.Item label="学号">{student.studentNo}</Descriptions.Item>
             <Descriptions.Item label="姓名">{student.name}</Descriptions.Item>
             <Descriptions.Item label="性别">{genderMap[student.gender] || student.gender}</Descriptions.Item>
-            <Descriptions.Item label="状态"><StatusTag type="student-status" value={student.status} /></Descriptions.Item>
+            <Descriptions.Item label="状态"><StatusTag type="student-status" value={student.currentStatus} /></Descriptions.Item>
             <Descriptions.Item label="班级">
               {student.class
-                ? `${student.class.grade?.grade_name || ''} ${student.class.class_name}`
+                ? `${student.class.grade?.name || ''} ${student.class.name}`
                 : '-'}
             </Descriptions.Item>
             <Descriptions.Item label="住宿类型">
-              <Tag color={student.boarding_type === 'BOARDING' ? 'blue' : 'default'}>
-                {boardingMap[student.boarding_type] || student.boarding_type}
+              <Tag color={student.boardingType === 'BOARDING' ? 'blue' : 'default'}>
+                {boardingMap[student.boardingType] || student.boardingType}
               </Tag>
             </Descriptions.Item>
           </Descriptions>
@@ -97,21 +97,19 @@ export default function StudentDetail({ studentId, open, onClose }: StudentDetai
 
           <Descriptions title="联系方式" column={1} size="small" labelStyle={{ width: 100, fontWeight: 500 }}>
             <Descriptions.Item label="学生电话">{student.phone || '-'}</Descriptions.Item>
-            <Descriptions.Item label="家长姓名">{student.parent_name || '-'}</Descriptions.Item>
-            <Descriptions.Item label="家长电话">{student.parent_phone || '-'}</Descriptions.Item>
           </Descriptions>
 
-          {student.boarding_type === 'BOARDING' && (
+          {student.boardingType === 'BOARDING' && (
             <>
               <Divider style={{ margin: '16px 0' }} />
               <Descriptions title="宿舍信息" column={1} size="small" labelStyle={{ width: 100, fontWeight: 500 }}>
                 <Descriptions.Item label="宿舍楼">
-                  {student.dorm_room?.building?.building_name || '-'}
+                  {student.dorm?.building?.name || '-'}
                 </Descriptions.Item>
                 <Descriptions.Item label="房间号">
-                  {student.dorm_room ? `${student.dorm_room.room_no} (第${student.dorm_room.floor}层)` : '-'}
+                  {student.dorm ? `${student.dorm.roomNo} (第${student.dorm.floor}层)` : '-'}
                 </Descriptions.Item>
-                <Descriptions.Item label="床位">{student.bed_no || '-'}</Descriptions.Item>
+                <Descriptions.Item label="床位">{student.bedNo || '-'}</Descriptions.Item>
               </Descriptions>
             </>
           )}
@@ -163,7 +161,7 @@ export default function StudentDetail({ studentId, open, onClose }: StudentDetai
           <Divider style={{ margin: '16px 0' }} />
 
           <Descriptions column={1} size="small" labelStyle={{ width: 100, fontWeight: 500 }}>
-            <Descriptions.Item label="创建时间">{formatDate(student.created_at)}</Descriptions.Item>
+            <Descriptions.Item label="创建时间">{formatDate(student.createdAt)}</Descriptions.Item>
           </Descriptions>
         </>
       )}

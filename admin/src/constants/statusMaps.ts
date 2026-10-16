@@ -50,12 +50,16 @@ export const businessTypeMap: StatusMap = {
   SYSTEM: { label: '系统', color: 'default' },
 };
 
+/**
+ * 学生状态映射 — 对齐 Prisma StudentStatus（currentStatus 字段，v1.2 双维度状态）：
+ * ON_CAMPUS / OUT_OF_SCHOOL / GRADUATED / TRANSFERRED
+ * （筛选口径 IN_SCHOOL 等由后端 mapStatusToCurrentStatus 转换，列表展示用此映射）
+ */
 export const studentStatusMap: StatusMap = {
-  IN_SCHOOL: { label: '在校', color: 'success' },
-  PENDING_LEAVE: { label: '待离校', color: 'warning' },
-  LEFT_SCHOOL: { label: '离校', color: 'processing' },
-  SUSPENDED: { label: '休学', color: 'default' },
+  ON_CAMPUS: { label: '在校', color: 'success' },
+  OUT_OF_SCHOOL: { label: '离校', color: 'processing' },
   GRADUATED: { label: '毕业', color: 'default' },
+  TRANSFERRED: { label: '转学', color: 'default' },
 };
 
 export const dormStatusMap: StatusMap = {

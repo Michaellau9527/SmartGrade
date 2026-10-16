@@ -1,5 +1,7 @@
 import { Select, Input } from 'antd';
+import { useQuery } from '@tanstack/react-query';
 import FilterBar from '@/components/FilterBar';
+import { getClassList } from '@/api/class';
 
 interface StudentFilterProps {
   filters: Record<string, string | undefined>;
@@ -8,22 +10,14 @@ interface StudentFilterProps {
   onReset: () => void;
 }
 
+/**
+ * 状态筛选值 = 后端 QueryStudentDto.status 筛选口径
+ * （IN_SCHOOL / PENDING_LEAVE / LEFT_SCHOOL，服务端映射到 currentStatus）。
+ */
 const statusOptions = [
-  { label: '全部状态', value: '' },
   { label: '在校', value: 'IN_SCHOOL' },
-  { label: '待离校', value: 'PENDING_LEAVE' },
+  { label: '请假中', value: 'PENDING_LEAVE' },
   { label: '离校', value: 'LEFT_SCHOOL' },
-  { label: '休学', value: 'SUSPENDED' },
-  { label: '毕业', value: 'GRADUATED' },
-];
-
-const classOptions = [
-  { label: '全部班级', value: '' },
-  { label: '高一(1)班', value: '1' },
-  { label: '高一(2)班', value: '2' },
-  { label: '高一(3)班', value: '3' },
-  { label: '高二(1)班', value: '4' },
-  { label: '高二(2)班', value: '5' },
 ];
 
 const genderOptions = [
@@ -32,16 +26,26 @@ const genderOptions = [
   { label: '女', value: 'FEMALE' },
 ];
 
+/** 住宿类型枚举对齐后端：BOARDING | DAY_STUDENT（旧 'DAY' 已废弃） */
 const boardingOptions = [
-  { label: '全部住宿', value: '' },
   { label: '住校', value: 'BOARDING' },
-  { label: '走读', value: 'DAY' },
+  { label: '走读', value: 'DAY_STUDENT' },
 ];
 
 export default function StudentFilter({ filters, onChange, onSearch, onReset }: StudentFilterProps) {
   const handleChange = (key: string) => (value: string) => {
     onChange(key, value || undefined);
   };
+
+  // 班级下拉来自真实班级列表接口（生产 class.id 为 cuid/UUID 字符串）
+  const { data: classData } = useQuery({
+    queryKey: ['classListForFilter'],
+    queryFn: () => getClassList({ page: 1, pageSize: 100 }),
+  });
+  const classOptions = (classData?.list ?? []).map((c) => ({
+    value: c.id,
+    label: c.grade?.name ? `${c.grade.name} ${c.name}` : c.name,
+  }));
 
   return (
     <FilterBar onSearch={onSearch} onReset={onReset}>
@@ -60,6 +64,9 @@ export default function StudentFilter({ filters, onChange, onSearch, onReset }: 
         options={classOptions}
         style={{ width: 160 }}
         allowClear
+        showSearch
+        optionFilterProp="label"
+        loading={!classData}
       />
       <Select
         placeholder="性别"

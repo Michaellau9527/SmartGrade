@@ -2,9 +2,8 @@ import { useEffect } from 'react';
 import { Modal, Form, Input, Select, Radio, Space, Button, message } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createStudent, updateStudent, getStudentDetail } from '@/api/student';
-import type { CreateStudentParams, UpdateStudentParams } from '@/types/student';
-
-const { Option } = Select;
+import { getClassList } from '@/api/class';
+import type { CreateStudentParams, UpdateStudentParams, BoardingType } from '@/types/student';
 
 interface CreateStudentModalProps {
   open: boolean;
@@ -12,17 +11,18 @@ interface CreateStudentModalProps {
   editId?: string | null;
 }
 
+/** 表单字段名与后端 CreateStudentDto / UpdateStudentDto 一致（camelCase） */
 interface StudentFormData {
   name: string;
-  student_no: string;
+  studentNo: string;
   gender: string;
-  class_id: string;
-  boarding_type: string;
-  dorm_room_id?: string;
-  bed_no?: string;
+  classId: string;
+  boardingType: BoardingType;
+  dormRoomId?: string;
+  bedNo?: string;
   phone?: string;
-  parent_name?: string;
-  parent_phone?: string;
+  parentName?: string;
+  parentPhone?: string;
 }
 
 export default function CreateStudentModal({ open, onClose, editId }: CreateStudentModalProps) {
@@ -36,6 +36,17 @@ export default function CreateStudentModal({ open, onClose, editId }: CreateStud
     enabled: open && isEdit && !!editId,
   });
 
+  // 班级下拉：来自真实班级列表接口（旧版硬编码数字 ID 与生产 VARCHAR(36) 班级 ID 不符）
+  const { data: classData } = useQuery({
+    queryKey: ['classListForStudentForm'],
+    queryFn: () => getClassList({ page: 1, pageSize: 100 }),
+    enabled: open,
+  });
+  const classOptions = (classData?.list ?? []).map((c) => ({
+    value: c.id,
+    label: c.grade?.name ? `${c.grade.name} ${c.name}` : c.name,
+  }));
+
   const createMutation = useMutation({
     mutationFn: createStudent,
     onSuccess: () => {
@@ -45,8 +56,12 @@ export default function CreateStudentModal({ open, onClose, editId }: CreateStud
       void queryClient.invalidateQueries({ queryKey: ['studentDetail'] });
       onClose();
     },
-    onError: () => {
-      void message.error('创建失败');
+    onError: (err: unknown) => {
+      const resp = (
+        err as { response?: { data?: { message?: string | string[] } } }
+      )?.response?.data;
+      const detail = Array.isArray(resp?.message) ? resp!.message.join('；') : resp?.message;
+      void message.error(detail || '创建失败');
     },
   });
 
@@ -59,8 +74,12 @@ export default function CreateStudentModal({ open, onClose, editId }: CreateStud
       void queryClient.invalidateQueries({ queryKey: ['studentDetail'] });
       onClose();
     },
-    onError: () => {
-      void message.error('保存失败');
+    onError: (err: unknown) => {
+      const resp = (
+        err as { response?: { data?: { message?: string | string[] } } }
+      )?.response?.data;
+      const detail = Array.isArray(resp?.message) ? resp!.message.join('；') : resp?.message;
+      void message.error(detail || '保存失败');
     },
   });
 
@@ -69,21 +88,19 @@ export default function CreateStudentModal({ open, onClose, editId }: CreateStud
     if (isEdit && editStudent) {
       form.setFieldsValue({
         name: editStudent.name,
-        student_no: editStudent.student_no,
+        studentNo: editStudent.studentNo,
         gender: editStudent.gender,
-        class_id: String(editStudent.class_id),
-        boarding_type: editStudent.boarding_type,
-        dorm_room_id: editStudent.dorm_room_id != null ? String(editStudent.dorm_room_id) : undefined,
-        bed_no: editStudent.bed_no ?? undefined,
+        classId: editStudent.classId,
+        boardingType: editStudent.boardingType,
+        dormRoomId: editStudent.dormId ?? undefined,
+        bedNo: editStudent.bedNo ?? undefined,
         phone: editStudent.phone ?? undefined,
-        parent_name: editStudent.parent_name ?? undefined,
-        parent_phone: editStudent.parent_phone ?? undefined,
       });
     } else if (!isEdit) {
       form.resetFields();
       form.setFieldsValue({
         gender: 'MALE',
-        boarding_type: 'BOARDING',
+        boardingType: 'BOARDING',
       });
     }
   }, [open, isEdit, editStudent, form]);
@@ -97,26 +114,26 @@ export default function CreateStudentModal({ open, onClose, editId }: CreateStud
         const updateData: UpdateStudentParams = {
           name: values.name,
           gender: values.gender,
-          boarding_type: values.boarding_type,
-          dorm_room_id: values.dorm_room_id ? Number(values.dorm_room_id) : undefined,
-          bed_no: values.bed_no || undefined,
+          boardingType: values.boardingType,
+          dormRoomId: values.dormRoomId || undefined,
+          bedNo: values.bedNo || undefined,
           phone: values.phone || undefined,
-          parent_name: values.parent_name || undefined,
-          parent_phone: values.parent_phone || undefined,
+          parentName: values.parentName || undefined,
+          parentPhone: values.parentPhone || undefined,
         };
         updateMutation.mutate({ id: editId, data: updateData });
       } else {
         const createData: CreateStudentParams = {
-          student_no: values.student_no,
+          studentNo: values.studentNo,
           name: values.name,
           gender: values.gender,
-          class_id: Number(values.class_id),
-          boarding_type: values.boarding_type,
-          dorm_room_id: values.dorm_room_id ? Number(values.dorm_room_id) : undefined,
-          bed_no: values.bed_no || undefined,
+          classId: values.classId,
+          boardingType: values.boardingType,
+          dormRoomId: values.dormRoomId || undefined,
+          bedNo: values.bedNo || undefined,
           phone: values.phone || undefined,
-          parent_name: values.parent_name || undefined,
-          parent_phone: values.parent_phone || undefined,
+          parentName: values.parentName || undefined,
+          parentPhone: values.parentPhone || undefined,
         };
         createMutation.mutate(createData);
       }
@@ -150,7 +167,7 @@ export default function CreateStudentModal({ open, onClose, editId }: CreateStud
         </Form.Item>
 
         <Form.Item
-          name="student_no"
+          name="studentNo"
           label="学号"
           rules={[{ required: true, message: '请输入学号' }]}
         >
@@ -169,35 +186,36 @@ export default function CreateStudentModal({ open, onClose, editId }: CreateStud
         </Form.Item>
 
         <Form.Item
-          name="class_id"
+          name="classId"
           label="班级"
           rules={[{ required: true, message: '请选择班级' }]}
         >
-          <Select placeholder="请选择班级" disabled={isEdit}>
-            <Option value="1">高一(1)班</Option>
-            <Option value="2">高一(2)班</Option>
-            <Option value="3">高一(3)班</Option>
-            <Option value="4">高二(1)班</Option>
-            <Option value="5">高二(2)班</Option>
-          </Select>
+          <Select
+            placeholder="请选择班级"
+            disabled={isEdit}
+            options={classOptions}
+            showSearch
+            optionFilterProp="label"
+            notFoundContent="暂无班级数据"
+          />
         </Form.Item>
 
         <Form.Item
-          name="boarding_type"
+          name="boardingType"
           label="住宿类型"
           rules={[{ required: true, message: '请选择住宿类型' }]}
         >
           <Radio.Group>
             <Radio value="BOARDING">住校</Radio>
-            <Radio value="DAY">走读</Radio>
+            <Radio value="DAY_STUDENT">走读</Radio>
           </Radio.Group>
         </Form.Item>
 
-        <Form.Item name="dorm_room_id" label="宿舍房间ID">
-          <Input placeholder="请输入宿舍房间ID（选填）" maxLength={20} />
+        <Form.Item name="dormRoomId" label="宿舍房间ID">
+          <Input placeholder="宿舍房间ID（选填，住宿生）" maxLength={36} />
         </Form.Item>
 
-        <Form.Item name="bed_no" label="床位号">
+        <Form.Item name="bedNo" label="床位号">
           <Input placeholder="请输入床位号（选填）" maxLength={20} />
         </Form.Item>
 
@@ -205,11 +223,11 @@ export default function CreateStudentModal({ open, onClose, editId }: CreateStud
           <Input placeholder="请输入学生电话" maxLength={20} />
         </Form.Item>
 
-        <Form.Item name="parent_name" label="家长姓名">
+        <Form.Item name="parentName" label="家长姓名" extra="预留字段，当前版本暂不保存">
           <Input placeholder="请输入家长姓名" maxLength={20} />
         </Form.Item>
 
-        <Form.Item name="parent_phone" label="家长电话">
+        <Form.Item name="parentPhone" label="家长电话" extra="预留字段，当前版本暂不保存">
           <Input placeholder="请输入家长电话" maxLength={20} />
         </Form.Item>
       </Form>

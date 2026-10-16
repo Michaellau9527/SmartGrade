@@ -123,7 +123,7 @@ export default function StudentDetailPage() {
       await updateStudent(studentId, {
         name: editName.trim(), gender: editGender, boardingType: editBoarding,
         phone: editPhone || undefined,
-        dorm_room_id: editBoarding === 'BOARDING' ? editDormNo || undefined : undefined,
+        dormRoomId: editBoarding === 'BOARDING' ? editDormNo || undefined : undefined,
         bedNo: editBoarding === 'BOARDING' ? editBedNo || undefined : undefined
       });
       Taro.showToast({ title: '保存成功', icon: 'success' });

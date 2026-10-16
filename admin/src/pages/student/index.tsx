@@ -11,7 +11,7 @@ import { getStudentList, deleteStudent } from '@/api/student';
 import type {
   StudentItem,
   StudentQueryParams,
-  StudentStatus,
+  StudentStatusFilter,
   BoardingType,
 } from '@/types/student';
 import StudentStats from './StudentStats';
@@ -50,8 +50,8 @@ export default function StudentPage() {
   const queryParams: StudentQueryParams = {
     page,
     pageSize,
-    status: appliedFilters.status as StudentStatus | undefined,
-    classId: appliedFilters.classId ? Number(appliedFilters.classId) : undefined,
+    status: appliedFilters.status as StudentStatusFilter | undefined,
+    classId: appliedFilters.classId,
     gender: appliedFilters.gender,
     boardingType: appliedFilters.boardingType as BoardingType | undefined,
     keyword: appliedFilters.keyword,
@@ -75,12 +75,10 @@ export default function StudentPage() {
 
   const stats: StudentStatsData = {
     total: listData?.total ?? 0,
-    inSchool: listData?.list.filter((s) => s.status === 'IN_SCHOOL').length ?? 0,
+    inSchool: listData?.list.filter((s) => s.currentStatus === 'ON_CAMPUS').length ?? 0,
     onLeave:
-      listData?.list.filter(
-        (s) => s.status === 'PENDING_LEAVE' || s.status === 'LEFT_SCHOOL',
-      ).length ?? 0,
-    boarding: listData?.list.filter((s) => s.boarding_type === 'BOARDING').length ?? 0,
+      listData?.list.filter((s) => s.currentStatus === 'OUT_OF_SCHOOL').length ?? 0,
+    boarding: listData?.list.filter((s) => s.boardingType === 'BOARDING').length ?? 0,
   };
 
   const handleFilterChange = (key: string, value: string | undefined) => {
@@ -116,8 +114,8 @@ export default function StudentPage() {
   const columns = [
     {
       title: '学号',
-      dataIndex: 'student_no',
-      key: 'student_no',
+      dataIndex: 'studentNo',
+      key: 'studentNo',
       width: 120,
     },
     {
@@ -143,20 +141,20 @@ export default function StudentPage() {
       width: 140,
       render: (_: unknown, record: StudentItem) => {
         const cls = record.class;
-        return cls ? `${cls.grade?.grade_name || ''} ${cls.class_name}` : '-';
+        return cls ? `${cls.grade?.name || ''} ${cls.name}` : '-';
       },
     },
     {
       title: '状态',
-      dataIndex: 'status',
-      key: 'status',
+      dataIndex: 'currentStatus',
+      key: 'currentStatus',
       width: 100,
       render: (val: string) => <StatusTag type="student-status" value={val} />,
     },
     {
       title: '住宿',
-      dataIndex: 'boarding_type',
-      key: 'boarding_type',
+      dataIndex: 'boardingType',
+      key: 'boardingType',
       width: 90,
       render: (val: string) => (
         <Tag color={val === 'BOARDING' ? 'blue' : 'default'}>
@@ -166,19 +164,19 @@ export default function StudentPage() {
     },
     {
       title: '宿舍',
-      dataIndex: 'dorm_room',
-      key: 'dorm_room',
+      dataIndex: 'dorm',
+      key: 'dorm',
       width: 180,
       render: (_: unknown, record: StudentItem) => {
-        if (!record.dorm_room) return '-';
-        const b = record.dorm_room.building;
-        return `${b?.building_name || ''} ${record.dorm_room.room_no}`;
+        if (!record.dorm) return '-';
+        const b = record.dorm.building;
+        return `${b?.name || ''} ${record.dorm.roomNo}`;
       },
     },
     {
-      title: '家长电话',
-      dataIndex: 'parent_phone',
-      key: 'parent_phone',
+      title: '学生电话',
+      dataIndex: 'phone',
+      key: 'phone',
       width: 140,
       render: (val: string | null) => val || '-',
     },

@@ -45,10 +45,10 @@ export default function StudentCreate() {
         classId: '1', // TODO: 从上下文获取当前班级ID
         boardingType: form.boardingType,
         phone: form.phone || undefined,
-        dorm_room_id: form.boardingType === 'BOARDING' && form.dormNo ? form.dormNo : undefined,
+        dormRoomId: form.boardingType === 'BOARDING' && form.dormNo ? form.dormNo : undefined,
         bedNo: form.boardingType === 'BOARDING' ? form.bedNo : undefined,
-        parent_name: form.parentName || undefined,
-        parent_phone: form.parentPhone || undefined
+        parentName: form.parentName || undefined,
+        parentPhone: form.parentPhone || undefined
       });
       Taro.showToast({ title: '添加成功', icon: 'success' });
       setTimeout(() => Taro.navigateBack(), 800);

@@ -189,9 +189,12 @@ export class StudentService {
       throw new BadRequestException('班级不存在');
     }
 
+    // 数据范围校验：仅可在本人可管理的班级/年级下新增学生，防止跨班注入
+    this.assertClassInScope(cls.id, cls.gradeId, user.dataScope);
+
     // 验证宿舍（如果是住宿生）
-    if (dto.boardingType === 'BOARDING' && dto.dorm_room_id) {
-      await this.validateDormitory(String(dto.dorm_room_id), dto.bedNo);
+    if (dto.boardingType === 'BOARDING' && dto.dormRoomId) {
+      await this.validateDormitory(String(dto.dormRoomId), dto.bedNo);
     }
 
     // 创建学生
@@ -204,7 +207,7 @@ export class StudentService {
         gradeId: cls.gradeId,
         schoolId: cls.schoolId,
         boardingType: dto.boardingType as BoardingType,
-        dormId: dto.dorm_room_id ? String(dto.dorm_room_id) : null,
+        dormId: dto.dormRoomId ? String(dto.dormRoomId) : null,
         bedNo: dto.bedNo || null,
         phone: dto.phone,
         enrolledAt: new Date(),
@@ -247,8 +250,8 @@ export class StudentService {
     this.checkDataScopeAccess(student.classId, student.gradeId, student.boardingType, user.dataScope);
 
     // 如果修改住宿类型为 BOARDING，需要验证宿舍
-    if (dto.boardingType === 'BOARDING' && dto.dorm_room_id) {
-      await this.validateDormitory(String(dto.dorm_room_id), dto.bedNo);
+    if (dto.boardingType === 'BOARDING' && dto.dormRoomId) {
+      await this.validateDormitory(String(dto.dormRoomId), dto.bedNo);
     }
 
     // 如果从住宿改为走读，清除宿舍信息
@@ -256,14 +259,14 @@ export class StudentService {
     if (dto.boardingType === 'DAY_STUDENT') {
       data.dormId = null;
       data.bedNo = null;
-    } else if (dto.dorm_room_id !== undefined) {
-      data.dormId = dto.dorm_room_id ? String(dto.dorm_room_id) : null;
+    } else if (dto.dormRoomId !== undefined) {
+      data.dormId = dto.dormRoomId ? String(dto.dormRoomId) : null;
     }
 
     // 删除 DTO 中不存在于 Student 模型的字段
-    delete data.parent_name;
-    delete data.parent_phone;
-    delete data.dorm_room_id;
+    delete data.parentName;
+    delete data.parentPhone;
+    delete data.dormRoomId;
 
     const updated = await this.prisma.student.update({
       where: { id },
@@ -330,12 +333,12 @@ export class StudentService {
 
     this.checkDataScopeAccess(student.classId, student.gradeId, student.boardingType, user.dataScope);
 
-    await this.validateDormitory(String(dto.dorm_room_id), dto.bedNo);
+    await this.validateDormitory(String(dto.dormRoomId), dto.bedNo);
 
     const updated = await this.prisma.student.update({
       where: { id },
       data: {
-        dormId: String(dto.dorm_room_id),
+        dormId: String(dto.dormRoomId),
         bedNo: dto.bedNo,
         boardingType: 'BOARDING' as BoardingType,
       },
@@ -348,7 +351,7 @@ export class StudentService {
       },
     });
 
-    this.logger.log(`设置住宿: ${student.studentNo} → 房间${dto.dorm_room_id} 床位${dto.bedNo}, 操作人: ${user.name}`);
+    this.logger.log(`设置住宿: ${student.studentNo} → 房间${dto.dormRoomId} 床位${dto.bedNo}, 操作人: ${user.name}`);
 
     return updated;
   }
@@ -363,7 +366,7 @@ export class StudentService {
     user: CurrentUserPayload,
   ): Promise<{ success: number; failed: number; errors: { row: number; message: string }[] }> {
     const errors: { row: number; message: string }[] = [];
-    const valid: CreateStudentDto[] = [];
+    const valid: { s: CreateStudentDto; cls: { gradeId: string; schoolId: string } }[] = [];
 
     for (let i = 0; i < students.length; i++) {
       const s = students[i];
@@ -374,21 +377,31 @@ export class StudentService {
       if (!s.gender || !['MALE', 'FEMALE'].includes(s.gender)) { errors.push({ row, message: `性别无效: ${s.gender}` }); continue; }
       if (!s.boardingType || !['DAY_STUDENT', 'BOARDING'].includes(s.boardingType)) { errors.push({ row, message: `住宿类型无效: ${s.boardingType}` }); continue; }
       if (!s.classId) { errors.push({ row, message: '班级ID不能为空' }); continue; }
+
+      // 逐行解析班级：gradeId/schoolId 取自该学生所属班级（修复跨班共用首行归属问题）
+      const cls = await this.prisma.class.findUnique({ where: { id: String(s.classId) } });
+      if (!cls) { errors.push({ row, message: '班级不存在' }); continue; }
+
+      // 数据范围校验：每一行的班级都必须在当前用户可管理范围内
+      try {
+        this.assertClassInScope(cls.id, cls.gradeId, user.dataScope);
+      } catch (e: any) {
+        errors.push({ row, message: e?.message || '无权在该班级新增学生' });
+        continue;
+      }
+
       // 学号重复检查
       const exists = await this.prisma.student.findFirst({
         where: { studentNo: s.studentNo, deletedAt: null },
       });
       if (exists) { errors.push({ row, message: `学号 ${s.studentNo} 已存在` }); continue; }
-      valid.push(s);
+
+      valid.push({ s, cls });
     }
 
     // 批量创建
     if (valid.length > 0) {
-      // 查询班级信息（假设所有学生同班）
-      const cls = await this.prisma.class.findUnique({ where: { id: String(valid[0].classId) } });
-      if (!cls) return { success: 0, failed: students.length, errors: [{ row: 0, message: '班级不存在' }] };
-
-      const data = valid.map((s) => ({
+      const data = valid.map(({ s, cls }) => ({
         studentNo: s.studentNo.trim(),
         name: s.name.trim(),
         gender: s.gender as Gender,
@@ -421,6 +434,33 @@ export class StudentService {
   }
 
   // ==================== 私有方法 ====================
+
+  /**
+   * 校验目标班级是否在当前用户的数据范围内（用于新增 / 导入学生）
+   *
+   * 防止班主任将学生挂到非本人管理的班级（跨班注入）。
+   * ALL：放行；GRADE：班级所属年级必须匹配；CLASS：班级必须精确匹配；
+   * DORM / SELF：通常无 student:create 数据范围，拒绝越权创建。
+   */
+  private assertClassInScope(classId: string, gradeId: string, dataScope: DataScope): void {
+    switch (dataScope.type) {
+      case 'ALL':
+        return;
+      case 'GRADE':
+        if (dataScope.gradeId && String(gradeId) !== String(dataScope.gradeId)) {
+          throw new BadRequestException('无权在该年级下新增学生');
+        }
+        return;
+      case 'CLASS':
+        if (dataScope.classId && String(classId) !== String(dataScope.classId)) {
+          throw new BadRequestException('无权在该班级下新增学生');
+        }
+        return;
+      case 'DORM':
+      case 'SELF':
+        throw new BadRequestException('当前角色无权新增学生');
+    }
+  }
 
   /**
    * 根据 DataScope 构建数据权限过滤条件

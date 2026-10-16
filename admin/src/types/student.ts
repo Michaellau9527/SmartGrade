@@ -1,45 +1,59 @@
-export type StudentStatus = 'IN_SCHOOL' | 'PENDING_LEAVE' | 'LEFT_SCHOOL' | 'SUSPENDED' | 'GRADUATED';
-export type BoardingType = 'BOARDING' | 'DAY';
+/**
+ * 学生模块前端类型 — 与后端契约对齐（camelCase）
+ *
+ * 权威来源：Prisma Student 模型 + StudentService.findAll/findOne 返回结构（include class{grade,headTeacher}, dorm{building}）。
+ * 注意：
+ * - 后端返回的状态字段名为 currentStatus（v1.2 双维度状态），筛选参数为 status（IN_SCHOOL/...，服务端映射）。
+ * - BoardingType 枚举为 BOARDING | DAY_STUDENT（前端旧 'DAY' 已废弃）。
+ * - Student 模型无家长姓名/电话字段（存于 StudentParent 关联表，当前接口不返回）。
+ */
+
+export type StudentStatus = 'ON_CAMPUS' | 'OUT_OF_SCHOOL' | 'GRADUATED' | 'TRANSFERRED';
+export type BoardingType = 'BOARDING' | 'DAY_STUDENT';
+
+/** 筛选口径（后端 QueryStudentDto.status，服务端映射到 currentStatus） */
+export type StudentStatusFilter = 'IN_SCHOOL' | 'PENDING_LEAVE' | 'LEFT_SCHOOL';
 
 export interface StudentItem {
   [key: string]: unknown;
   id: string;
-  student_no: string;
+  studentNo: string;
   name: string;
   gender: string;
   phone: string | null;
-  parent_name: string | null;
-  parent_phone: string | null;
-  boarding_type: BoardingType;
-  dorm_room_id: number | null;
-  bed_no: string | null;
-  status: StudentStatus;
-  class_id: number;
-  created_at: string;
+  boardingType: BoardingType;
+  classId: string;
+  gradeId: string;
+  schoolId: string;
+  dormId: string | null;
+  bedNo: string | null;
+  currentStatus: StudentStatus;
+  enrolledAt: string;
+  createdAt: string;
   class: {
-    id: number;
-    class_name: string;
-    grade: {
-      id: number;
-      grade_name: string;
-    } | null;
+    id: string;
+    name: string;
+    code: string;
+    grade: { id: string; name: string; code: string } | null;
+    headTeacher: { id: string; name: string; teacherNo: string } | null;
   } | null;
-  dorm_room: {
-    id: number;
-    room_no: string;
+  dorm: {
+    id: string;
+    roomNo: string;
     floor: number;
-    building: {
-      id: number;
-      building_name: string;
-    } | null;
+    building: { id: string; name: string } | null;
   } | null;
+  /** 仅详情接口返回 */
+  leaveCount?: number;
+  timelineCount?: number;
 }
 
 export interface StudentQueryParams {
   page?: number;
   pageSize?: number;
-  status?: StudentStatus;
-  classId?: number;
+  status?: StudentStatusFilter;
+  classId?: string;
+  gradeId?: string;
   gender?: string;
   boardingType?: BoardingType;
   keyword?: string;
@@ -52,34 +66,36 @@ export interface StudentListResponse {
   pageSize: number;
 }
 
-/** 创建学生参数（对应后端 CreateStudentDto） */
+/** 创建学生参数（对应后端 CreateStudentDto，camelCase） */
 export interface CreateStudentParams {
-  student_no: string;
+  studentNo: string;
   name: string;
   gender: string;
-  class_id: number;
-  boarding_type: string;
-  dorm_room_id?: number;
-  bed_no?: string;
+  classId: string;
+  boardingType: string;
+  dormRoomId?: string;
+  bedNo?: string;
   phone?: string;
-  parent_name?: string;
-  parent_phone?: string;
+  /** 预留字段：后端当前版本不落库 */
+  parentName?: string;
+  parentPhone?: string;
 }
 
 /** 修改学生参数（对应后端 UpdateStudentDto，所有字段可选） */
 export interface UpdateStudentParams {
   name?: string;
   gender?: string;
-  boarding_type?: string;
-  dorm_room_id?: number;
-  bed_no?: string;
+  boardingType?: string;
+  dormRoomId?: string;
+  bedNo?: string;
   phone?: string;
-  parent_name?: string;
-  parent_phone?: string;
+  /** 预留字段：后端当前版本不落库 */
+  parentName?: string;
+  parentPhone?: string;
 }
 
-/** 设置住宿信息参数 */
+/** 设置住宿信息参数（对应后端 SetDormitoryDto，dormRoomId 为 DormRoom cuid） */
 export interface SetDormitoryParams {
-  dorm_room_id: number;
-  bed_no: string;
+  dormRoomId: string;
+  bedNo: string;
 }

@@ -188,11 +188,11 @@ export function createStudent(data: {
   gender: string;
   classId: string;
   boardingType: string;
-  dorm_room_id?: string;
+  dormRoomId?: string;
   bedNo?: string;
   phone?: string;
-  parent_name?: string;
-  parent_phone?: string;
+  parentName?: string;
+  parentPhone?: string;
 }): Promise<StudentDetail> {
   return request<RawStudent>('/students', {
     method: 'POST',
@@ -210,11 +210,11 @@ export function updateStudent(
     name?: string;
     gender?: string;
     boardingType?: string;
-    dorm_room_id?: string;
+    dormRoomId?: string;
     bedNo?: string;
     phone?: string;
-    parent_name?: string;
-    parent_phone?: string;
+    parentName?: string;
+    parentPhone?: string;
   }
 ): Promise<StudentDetail> {
   return request<RawStudent>(`/students/${id}`, {
