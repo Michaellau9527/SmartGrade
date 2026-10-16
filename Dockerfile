@@ -39,14 +39,14 @@ RUN pnpm --filter backend build
 # 与 schema 重命名后不一致的约束名（teacherId_classId_role_startDate），会在 tsc
 # 类型检查阶段报 TS2353；但 bootstrap 运行路径（建 admin 后 return）不会执行到该处，
 # 故强制产出 JS 并校验产物存在即可，不应让无关类型错误阻断镜像构建。
-RUN cd /app/backend && mkdir -p /app/seed-build && \
+RUN cd /app/backend && mkdir -p /app/backend/seed-build && \
     npx tsc prisma/seed.ts prisma/seed-admin-password.ts \
       --rootDir prisma \
-      --outDir /app/seed-build \
+      --outDir /app/backend/seed-build \
       --module commonjs --target es2019 --esModuleInterop --skipLibCheck \
       --moduleResolution node --resolveJsonModule --noEmitOnError false; \
-    if [ -f /app/seed-build/seed.js ]; then \
-      echo '[smartgrade] seed compiled -> /app/seed-build/seed.js'; \
+    if [ -f /app/backend/seed-build/seed.js ]; then \
+      echo '[smartgrade] seed compiled -> /app/backend/seed-build/seed.js'; \
     else \
       echo '[smartgrade] seed compile produced NO seed.js, abort'; exit 1; \
     fi
@@ -68,7 +68,7 @@ COPY --from=builder /app/shared/dist ./shared/dist
 COPY --from=builder /app/backend/dist ./backend/dist
 COPY --from=builder /app/backend/prisma ./backend/prisma
 COPY --from=builder /app/backend/package.json ./backend/package.json
-COPY --from=builder /app/seed-build ./seed-build
+COPY --from=builder /app/backend/seed-build ./backend/seed-build
 
 RUN pnpm install --frozen-lockfile --prod
 RUN pnpm --filter backend exec prisma generate
@@ -92,12 +92,12 @@ CMD ["sh", "-c", "\
     case \"$SEED_ONCE_VAL\" in 1|true|yes|TRUE|YES) SEED_ONCE_EFF=1 ;; *) SEED_ONCE_EFF=0 ;; esac; \
     if [ \"$RUN_SEED_EFF\" = \"1\" ]; then \
       echo '[smartgrade] RUN_SEED enabled -> run seed now'; \
-      node /app/seed-build/seed.js || echo '[smartgrade] seed failed, continuing'; \
+      node /app/backend/seed-build/seed.js || echo '[smartgrade] seed failed, continuing'; \
     elif [ \"$SEED_ONCE_EFF\" = \"1\" ]; then \
       EXISTS=$(MYSQL_PWD=\"$DATABASE_PASSWORD\" mysql -h \"${DATABASE_HOST:-localhost}\" -u \"${DATABASE_USER:-root}\" \"${DATABASE_NAME:-smartgrade}\" -N -s -e \"SELECT COUNT(*) FROM user LIMIT 1\" 2>/dev/null || echo 0); \
       if [ \"$EXISTS\" = \"0\" ] || [ -z \"$EXISTS\" ]; then \
         echo '[smartgrade] SEED_ONCE enabled && user table empty -> run seed'; \
-        node /app/seed-build/seed.js || echo '[smartgrade] seed failed, continuing'; \
+        node /app/backend/seed-build/seed.js || echo '[smartgrade] seed failed, continuing'; \
       else \
         echo '[smartgrade] SEED_ONCE enabled but user table not empty -> skip seed'; \
       fi; \
